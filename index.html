@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tizen TV Player DRM</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <script src="$WEBAPIS/webapis/webapis.js"></script>
+
+<style>
+        /* =========================================
+           ESTILOS GENERALES
+           ========================================= */
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Roboto', sans-serif; user-select: none; }
+        .player-wrapper { position: relative; width: 100vw; height: 100vh; background: #000; }
+        [data-shaka-player-container] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+
+        /* =========================================
+           SIDEBAR Y CANALES
+           ========================================= */
+        .sidebar {
+            position: absolute; top: 0; left: 0; bottom: 0; width: 400px;
+            background: rgba(10, 10, 18, 0.96); 
+            z-index: 5000; 
+            transform: translateX(-100%); 
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            display: flex; flex-direction: column; 
+            border-right: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar.open { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.9); }
+        
+        .sidebar-header {
+            padding: 25px; background: rgba(255,255,255,0.08); color: #fff;
+            font-size: 1.2rem; font-weight: bold; text-align: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); letter-spacing: 1px;
+        }
+
+        .channel-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+
+        /* ITEM CANAL MEJORADO */
+        .channel-item {
+            display: flex; align-items: center; padding: 12px 20px; color: #bbb;
+            cursor: pointer; transition: all 0.2s; border-left: 5px solid transparent; outline: none;
+        }
+
+        .channel-item:focus, .channel-item:hover, .channel-item.active {
+            background: linear-gradient(90deg, rgba(0, 229, 255, 0.15) 0%, transparent 100%);
+            color: #fff; border-left-color: #00e5ff;
+        }
+
+        .channel-icon { 
+            width: 50px; text-align: center; margin-right: 15px; font-size: 1.5rem; flex-shrink: 0;
+        }
+        
+        /* Contenedor de textos (Nombre y Grupo) */
+        .channel-info { display: flex; flex-direction: column; justify-content: center; }
+        
+        .channel-name { font-size: 1.1rem; font-weight: 500; line-height: 1.2; }
+        
+        /* Estilo para el GROUP-TITLE (IZZI, DEPORTES, ETC) */
+        .channel-group { 
+            font-size: 0.75rem; color: #00e5ff; opacity: 0.8; margin-top: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;
+        }
+
+        /* UI ELEMENTS */
+        .shaka-controls-container { transition: opacity 0.3s ease; }
+        .shaka-seek-bar-container .shaka-seek-bar-playhead { background: #00e5ff !important; }
+        .material-icons-round { font-size: 45px !important; color: #f0f0f0; }
+        
+        #btn-menu-custom {
+            background: transparent; border: none; color: white; cursor: pointer;
+            padding: 5px 15px; margin-right: 20px; border-radius: 4px;
+        }
+        #btn-menu-custom span { font-size: 48px !important; }
+        
+        #loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #00e5ff; font-size: 20px; font-weight: bold; display: none; z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-wrapper">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">LISTA DE CANALES</div>
+            <div class="channel-list" id="channel-list"></div>
+        </div>
+
+        <div data-shaka-player-container>
+            <video autoplay data-shaka-player id="video"></video>
+            <div id="loader">CARGANDO...</div>
+        </div>
+    </div>
+
+<script>
+        // ==========================================
+        // 1. CONFIGURACIÓN
+        // ==========================================
+        const M3U_URL = "https://dl.dropboxusercontent.com/s/5wcyoevb2z4wf7qo82nlv/TVU.m3u?rlkey=mkxpksws68zbrix9qisj4e7vp&dl=1";
+
+        let misCanales = [];
+        let epgURL = ""; // Aquí guardaremos el link del EPG
+        let player, ui, controls;
+        let sidebarOpen = false;
+        let currentChannelIndex = 0;
+
+        // ==========================================
+        // 2. PARSEADOR AVANZADO (KODI + METADATA)
+        // ==========================================
+        async function cargarListaM3u() {
+            try {
+                const response = await fetch(M3U_URL);
+                if (!response.ok) throw new Error("Error HTTP: " + response.status);
+                const text = await response.text();
+                parsearM3U(text);
+            } catch (e) {
+                console.error("Error cargando lista:", e);
+                alert("Error al cargar la lista remota.");
+            }
+        }
+
+        function parsearM3U(content) {
+            const lines = content.split('\n');
+            let currentChannel = { nombre: "", icono: "📺", group: "", mpd: "", kid: "", key: "" };
+            
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+
+                // A) DETECTAR CABECERA Y URL-TVG
+                if (line.startsWith('#EXTM3U')) {
+                    const epgMatch = line.match(/url-tvg="([^"]*)"/);
+                    if (epgMatch) {
+                        epgURL = epgMatch[1];
+                        console.log("EPG URL DETECTADA:", epgURL);
+                    }
+                }
+
+                // B) DETECTAR INFO DEL CANAL (#EXTINF)
+                else if (line.startsWith('#EXTINF')) {
+                    currentChannel = { nombre: "Sin Nombre", icono: "📺", group: "", mpd: "", kid: "", key: "" };
+                    
+                    // 1. Extraer Nombre (lo último tras la coma)
+                    const parts = line.split(',');
+                    if (parts.length > 1) currentChannel.nombre = parts[parts.length - 1].trim();
+
+                    // 2. Extraer Logo (tvg-logo)
+                    const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+                    if (logoMatch && logoMatch[1]) {
+                        currentChannel.icono = `<img src="${logoMatch[1]}" style="width:40px; height:40px; object-fit:contain;">`;
+                    }
+
+                    // 3. Extraer Grupo (group-title) -> AQUÍ ESTÁ LA MAGIA PARA "IZZI"
+                    const groupMatch = line.match(/group-title="([^"]*)"/);
+                    if (groupMatch) {
+                        currentChannel.group = groupMatch[1].trim(); // Guardamos "IZZI"
+                    }
+                } 
+                
+                // C) DETECTAR LLAVES DRM (KODI STYLE)
+                else if (line.includes('license_key=')) {
+                    const keyString = line.split('license_key=')[1];
+                    if (keyString.includes(':')) {
+                        const parts = keyString.split(':');
+                        currentChannel.kid = parts[0].trim();
+                        currentChannel.key = parts[1].trim();
+                    }
+                }
+                
+                // D) DETECTAR URL (MPD)
+                else if (!line.startsWith('#')) {
+                    currentChannel.mpd = line;
+                    if (currentChannel.mpd.includes('.mpd')) {
+                        misCanales.push(currentChannel);
+                    }
+                }
+            });
+            
+            renderChannelList();
+            if(misCanales.length > 0) playChannel(0);
+        }
+
+        // ==========================================
+        // 3. INICIALIZACIÓN
+        // ==========================================
+        async function init() {
+            const video = document.getElementById('video');
+            ui = video['ui'];
+            controls = ui.getControls();
+            player = controls.getPlayer();
+
+            const uiConfig = {
+                'controlPanelElements': ['play_pause', 'time_and_duration', 'spacer', 'quality', 'fullscreen'],
+                'seekBarColors': { base: 'rgba(255,255,255,0.3)', played: '#00e5ff', buffered: 'rgba(255,255,255,0.5)' }
+            };
+            ui.configure(uiConfig);
+
+            // User Agent Anti-Bloqueo
+            player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36';
+            });
+
+            addMenuButtonSafe();
+            await cargarListaM3u(); 
+            document.addEventListener('keydown', handleRemoteControl);
+        }
+
+        // ==========================================
+        // 4. LÓGICA DE REPRODUCCIÓN
+        // ==========================================
+        async function loadStream(mpd, kid, key) {
+            const loader = document.getElementById('loader');
+            if(loader) loader.style.display = 'block';
+
+            let config = { preferredAudioLanguage: 'es', drm: { clearKeys: {} } };
+
+            if (kid && key) {
+                config.drm.clearKeys[kid] = key;
+            } else {
+                config.drm = {};
+            }
+            player.configure(config);
+
+            try {
+                await player.load(mpd);
+            } catch (e) {
+                console.error('Error cargando video', e);
+            } finally {
+                if(loader) loader.style.display = 'none';
+            }
+        }
+
+        function playChannel(index) {
+            if(index < 0 || index >= misCanales.length) return;
+            currentChannelIndex = index;
+            
+            const items = document.querySelectorAll('.channel-item');
+            items.forEach(el => el.classList.remove('active'));
+            if(items[index]) items[index].classList.add('active');
+
+            if(sidebarOpen) toggleSidebar();
+            
+            const canal = misCanales[index];
+            loadStream(canal.mpd, canal.kid, canal.key);
+        }
+
+        // ==========================================
+        // 5. INTERFAZ (RENDERIZADO CON GRUPOS)
+        // ==========================================
+        function renderChannelList() {
+            const container = document.getElementById('channel-list');
+            container.innerHTML = "";
+            misCanales.forEach((canal, index) => {
+                const div = document.createElement('div');
+                div.className = 'channel-item';
+                div.tabIndex = 0;
+                
+                // Icono
+                let iconHtml = canal.icono;
+                if(!iconHtml.includes('<img') && !iconHtml.match(/[\u0000-\u007F]/)) {
+                   iconHtml = `<span class="channel-icon">${canal.icono}</span>`;
+                } else if (!iconHtml.includes('<img')) {
+                   iconHtml = `<span class="channel-icon">📺</span>`;
+                }
+
+                // AQUI MOSTRAMOS EL GROUP TITLE (IZZI)
+                // Si existe el grupo, lo mostramos, si no, mostramos "GENERAL"
+                const groupText = canal.group ? canal.group : "GENERAL";
+
+                div.innerHTML = `
+                    ${iconHtml}
+                    <div class="channel-info">
+                        <span class="channel-name">${canal.nombre}</span>
+                        <span class="channel-group">${groupText}</span>
+                    </div>
+                `;
+
+                div.onclick = () => playChannel(index);
+                div.addEventListener('keydown', (e) => { if (e.key === 'Enter') playChannel(index); });
+                container.appendChild(div);
+            });
+        }
+
+        // ==========================================
+        // 6. CONTROL REMOTO & UI
+        // ==========================================
+        function addMenuButtonSafe() {
+            const menuBtn = document.createElement('button');
+            menuBtn.id = "btn-menu-custom";
+            menuBtn.className = "shaka-overflow-menu-button shaka-tooltip-status";
+            menuBtn.innerHTML = '<span class="material-icons-round">menu_open</span>';
+            menuBtn.onclick = toggleSidebar;
+
+            const interval = setInterval(() => {
+                const controlsPanel = document.querySelector('.shaka-controls-button-panel');
+                if (controlsPanel) {
+                    controlsPanel.prepend(menuBtn);
+                    clearInterval(interval);
+                }
+            }, 100);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebarOpen = !sidebarOpen;
+            if (sidebarOpen) {
+                sidebar.classList.add('open');
+                setTimeout(() => {
+                    const items = document.querySelectorAll('.channel-item');
+                    if(items[currentChannelIndex]) items[currentChannelIndex].focus();
+                }, 200);
+            } else {
+                sidebar.classList.remove('open');
+                const btn = document.getElementById('btn-menu-custom');
+                if(btn) btn.focus();
+            }
+        }
+
+        function handleRemoteControl(e) {
+            const video = document.getElementById('video');
+            const code = e.keyCode;
+            const key = e.key;
+
+            if (code === 10009 || key === 'Return' || key === 'Back') {
+                if (sidebarOpen) toggleSidebar();
+                else { try { tizen.application.getCurrentApplication().exit(); } catch (err) {} }
+            }
+            if (key === 'MediaPlayPause' || code === 10252) video.paused ? video.play() : video.pause();
+            if (key === 'ArrowRight' && sidebarOpen) toggleSidebar();
+        }
+
+        document.addEventListener('shaka-ui-loaded', init);
+    </script>
+</body>
+</html>

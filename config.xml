@@ -1,0 +1,6 @@
+<widget ...>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.audio"/>
+    <access origin="*" subdomains="true"/>
+</widget>
