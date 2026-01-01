@@ -52,42 +52,61 @@
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           VISTA DE DETALLES (HÍBRIDA TV/MÓVIL)
+           VISTA DE DETALLES (CORREGIDA)
            ========================================= */
         #details-view { 
             position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; 
             overflow-x: hidden; overflow-y: auto; 
         }
         
+        /* CORRECCIÓN SOMBREADO DERECHO: Se eliminó el degradado lateral (to right) */
         .details-hero { 
             position: absolute; inset: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center top; 
-            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to right, black 30%, transparent 95%);
+            /* Solo degradado hacia abajo para integrar con el fondo negro */
+            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
         }
-        .hero-gradient { position: absolute; inset: 0; background: radial-gradient(circle at 30% 50%, rgba(0,0,0,0.4) 0%, #000000 90%); }
+        
+        /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
+        .hero-gradient { 
+            position: absolute; inset: 0; 
+            background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.5) 50%, transparent 100%); 
+        }
 
+        /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
         .details-content { 
-            position: absolute; top: 15%; left: 5%; width: 45%; z-index: 10; 
-            display: flex; flex-direction: column; 
+            position: absolute; 
+            top: 10%; 
+            left: 5%; 
+            width: 50%; /* Ancho limitado para horizontal */
+            z-index: 10; 
+            display: flex; 
+            flex-direction: column; 
+            /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
+            max-height: calc(100vh - 260px); 
+            justify-content: flex-end; /* Alinea contenido hacia abajo de su caja */
         }
-        .details-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; text-shadow: 2px 2px 10px black; line-height: 1; }
-        .details-meta { font-size: 1.2rem; color: #ccc; margin-bottom: 20px; font-weight: bold; display: flex; gap: 15px; align-items: center;}
+
+        .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
+        .details-meta { font-size: 1.1rem; color: #ccc; margin-bottom: 10px; font-weight: bold; display: flex; gap: 15px; align-items: center;}
         .tag { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 0.9rem; }
+        
         .details-desc { 
-            font-size: 1.1rem; line-height: 1.5; color: #ddd; margin-bottom: 30px; 
-            max-height: 120px; overflow: hidden; text-overflow: ellipsis; 
-            display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; 
+            font-size: 1rem; line-height: 1.4; color: #ddd; margin-bottom: 20px; 
+            overflow: hidden; text-overflow: ellipsis; 
+            display: -webkit-box; -webkit-line-clamp: 3; /* Limitado a 3 líneas en horizontal */
+            -webkit-box-orient: vertical; 
             text-shadow: 1px 1px 2px black;
         }
 
-        .action-row { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
-        .btn-large { padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s;}
+        .action-row { display: flex; gap: 15px; margin-bottom: 5px; flex-wrap: wrap; }
+        .btn-large { padding: 10px 25px; font-size: 1rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s;}
         .btn-primary { background: white; color: black; border: 3px solid transparent; }
         .btn-secondary { background: rgba(100, 100, 100, 0.6); color: white; border: 3px solid transparent; }
         
         #series-container { 
-            position: absolute; bottom: 30px; left: 5%; right: 5%; z-index: 20; background: transparent;
+            position: absolute; bottom: 20px; left: 5%; right: 5%; z-index: 20; background: transparent;
         }
         .season-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
         .season-selector { background: #333; color: white; border: 1px solid #555; padding: 5px 15px; border-radius: 4px; font-size: 1rem; }
@@ -141,6 +160,7 @@
         @media (orientation: portrait) {
             .details-hero { 
                 height: 50vh; width: 100%; top: 0;
+                /* Sin degradado a la derecha, solo abajo */
                 -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
                 mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             }
@@ -149,6 +169,8 @@
             .details-content { 
                 position: relative; top: auto; margin-top: 35vh; 
                 width: 90%; left: 5%; margin-bottom: 20px;
+                max-height: none; /* Reseteamos la altura máxima en vertical */
+                justify-content: flex-start;
             }
             .details-title { font-size: 2.5rem; }
             .details-desc { -webkit-line-clamp: 6; }
@@ -743,6 +765,10 @@
         }
 
         function showError(msg) {
+            // FIX: Detener reproducción para que no suene de fondo
+            const v = document.getElementById('video');
+            if (v) v.pause();
+
             const m = document.getElementById('error-modal');
             document.getElementById('error-msg').innerText = msg;
             m.style.display = 'block';
