@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamNet - Pro</title>
+    <title>StreamNet - TV Edition</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
@@ -72,31 +72,30 @@
         .card img { width: 100%; height: 100%; object-fit: cover; background: #333; }
         .card:hover { transform: scale(1.05); z-index: 10; border-color: white; }
         
-        /* Barra de Progreso Roja */
         .progress-track {
             position: absolute; bottom: 0; left: 0; right: 0;
             height: 4px; background: rgba(255,255,255,0.3); z-index: 5;
-            display: none; /* Se activa con JS */
+            display: none; 
         }
         .progress-fill {
             height: 100%; background: var(--primary); width: 0%;
         }
 
-        /* MODAL (AJUSTADO PARA QUE SEA MÁS PEQUEÑO) */
+        /* MODAL */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
-            display: none; justify-content: center; align-items: center; /* Centrado vertical */
+            display: none; justify-content: center; align-items: center; 
             padding: 20px;
         }
         
         .modal-content {
             background: #181818; 
             width: 100%; 
-            max-width: 550px; /* <--- REDUCIDO EL ANCHO MÁXIMO (Antes 800px) */
-            max-height: 90vh; /* Evita que sea más alto que la pantalla */
+            max-width: 550px; 
+            max-height: 90vh;
             border-radius: 8px;
             position: relative; 
-            overflow-y: auto; /* Scroll interno si es necesario */
+            overflow-y: auto; 
             box-shadow: 0 0 50px rgba(0,0,0,0.9);
             display: flex; flex-direction: column;
         }
@@ -108,7 +107,7 @@
         }
         
         .modal-hero { 
-            height: 250px; /* <--- REDUCIDA LA ALTURA (Antes 350px) */
+            height: 250px; 
             background-size: cover; background-position: center; position: relative; background-color: #333; 
             flex-shrink: 0;
         }
@@ -132,6 +131,20 @@
         #player-ui { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
         
+        /* Elementos que se ocultan (Título, Subtítulo, Flecha Atrás, Controles Next/Prev) */
+        .player-header, .player-controls-layer, .back-arrow {
+            transition: opacity 0.5s ease; /* Transición suave */
+            opacity: 1; /* Visibles por defecto */
+        }
+
+        /* Clase para ocultar */
+        .ui-hidden .player-header,
+        .ui-hidden .player-controls-layer,
+        .ui-hidden .back-arrow {
+            opacity: 0;
+            pointer-events: none; /* Para que no interrumpan clicks */
+        }
+
         .player-header {
             position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
@@ -209,7 +222,7 @@
         </div>
     </div>
 
-    <div id="player-ui">
+    <div id="player-ui" tabindex="0">
         <div class="player-header">
             <div id="player-info-text">
                 <div class="player-title" id="p-title">Título del Contenido</div>
@@ -241,6 +254,7 @@
         let player = null;
         let currentSeries = null;
         let activeContentId = null; 
+        let uiTimer = null; // Timer para ocultar controles
 
         // Series state
         let currentSeasonIdx = 0;
@@ -248,7 +262,13 @@
 
         window.onload = async () => {
             initShaka();
+            
+            // Escuchar teclas para el control remoto
             document.addEventListener('keydown', handleRemoteControl);
+            
+            // Escuchar movimiento del mouse para reactivar UI
+            document.addEventListener('mousemove', resetPlayerUITimer);
+
             window.addEventListener('scroll', () => {
                 document.getElementById('navbar').style.background = window.scrollY > 30 ? '#141414' : 'linear-gradient(to bottom, rgba(0,0,0,0.95), transparent)';
             });
@@ -259,7 +279,7 @@
             await loadData();
         };
 
-        // --- GESTIÓN DE PROGRESO (LocalStorage) ---
+        // --- GESTIÓN DE PROGRESO ---
         function saveProgress(id, currentTime, duration) {
             if (!id || duration === 0) return;
             const percentage = (currentTime / duration) * 100;
@@ -340,7 +360,7 @@
             if(viewName === 'home') {
                 navs[0].classList.add('active');
                 
-                // 1. FILTRAR "CONTINUAR VIENDO" REAL
+                // FILTRAR "CONTINUAR VIENDO"
                 const watching = fullCatalog.filter(item => {
                     const p = getProgress(item.id);
                     return p.pct > 1 && p.pct < 95; 
@@ -509,6 +529,26 @@
             document.getElementById('p-sub').innerText = subTitle || "";
         }
 
+        // AUTO-HIDE PLAYER UI
+        function resetPlayerUITimer() {
+            // Solo si el reproductor está abierto
+            if(document.getElementById('player-ui').style.display !== 'block') return;
+
+            const ui = document.getElementById('player-ui');
+            ui.classList.remove('ui-hidden'); // Mostrar controles
+            
+            if (uiTimer) clearTimeout(uiTimer);
+            
+            // Ocultar después de 3 segundos
+            uiTimer = setTimeout(() => {
+                const video = document.getElementById('video');
+                // Solo ocultar si está reproduciendo
+                if (!video.paused) {
+                    ui.classList.add('ui-hidden');
+                }
+            }, 3000);
+        }
+
         async function playContent(item) {
             activeContentId = item.id; 
             document.getElementById('player-ui').style.display = 'block';
@@ -527,6 +567,7 @@
                 }
 
                 document.getElementById('video').play();
+                resetPlayerUITimer(); // Iniciar timer de ocultado
             } catch(e) { alert("Error reproduciendo."); stopPlayer(); }
         }
 
@@ -551,6 +592,7 @@
                 
                 await player.load(episode.mpd);
                 document.getElementById('video').play();
+                resetPlayerUITimer(); // Iniciar timer de ocultado
             } catch(e) { console.error(e); }
         }
 
@@ -573,16 +615,49 @@
 
         function stopPlayer() {
             document.getElementById('player-ui').style.display = 'none';
+            document.getElementById('player-ui').classList.remove('ui-hidden'); // Restaurar visibilidad para la proxima
             document.getElementById('video').pause();
             player.unload();
             currentSeries = null;
             activeContentId = null;
+            if (uiTimer) clearTimeout(uiTimer);
             document.body.classList.remove('modal-open');
             renderView('home'); 
         }
 
         function handleEnter(e, id) { if (e.key === 'Enter') openModal(id); }
-        function handleRemoteControl(e) { }
+        
+        // --- LOGICA BOTON ATRAS REMOTO ---
+        function handleRemoteControl(e) {
+            // Teclas comunes de "Atrás" en TV (Backspace, Escape, 10009=Samsung, 461=LG)
+            const isBack = e.key === 'Backspace' || e.key === 'Escape' || e.keyCode === 10009 || e.keyCode === 461;
+
+            // Si se presiona Atrás
+            if (isBack) {
+                e.preventDefault(); // Evitar que salga de la web
+                
+                const playerOpen = document.getElementById('player-ui').style.display === 'block';
+                const modalOpen = document.body.classList.contains('modal-open');
+
+                if (playerOpen) {
+                    stopPlayer(); // Si hay video, ciérralo
+                } else if (modalOpen) {
+                    // Si hay modal, ciérralo manualmente
+                    document.getElementById('modal').style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    if(document.querySelectorAll('.nav-link')[0].classList.contains('active')) {
+                        renderView('home');
+                    }
+                } else {
+                    // Si está en la vista principal, no hacer nada (o podrías ir a Home)
+                    console.log("Ya estás en el menú principal");
+                }
+            } else {
+                // Cualquier otra tecla (flechas, enter, play) reactiva la UI del reproductor
+                resetPlayerUITimer();
+            }
+        }
+        
         function doSearch(q) {
             const term = q.toLowerCase();
             const results = fullCatalog.filter(i => i.title.toLowerCase().includes(term));
