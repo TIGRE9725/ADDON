@@ -755,6 +755,9 @@
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
+        function onError(e) {
+        }
+
         function showError(msg) {
             // FIX: Detener reproducción para que no suene de fondo
             const v = document.getElementById('video');
