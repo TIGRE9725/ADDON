@@ -3,388 +3,517 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamNet - Versión Rápida</title>
+    <title>StreamNet - Diseño Original + Mejoras</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        /* ESTILOS DE LA INTERFAZ */
+        /* --- ESTILOS GENERALES --- */
         :root { --primary: #E50914; --bg: #141414; }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow-x: hidden; overscroll-behavior-y: none; user-select: none; }
-        body.modal-open { overflow: hidden; }
-
-        /* FOCO Y NAVEGACIÓN TV */
-        .focusable:focus, .card:focus, .season-select:focus, .ep-row:focus, .btn-play:focus, .close-btn:focus, .ctrl-btn:focus, input:focus, .back-arrow:focus {
-            outline: none; border: 3px solid white; background: rgba(255,255,255,0.15); transform: scale(1.05); box-shadow: 0 0 15px rgba(0,0,0,0.8); z-index: 100;
+        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow-x: hidden; user-select: none; }
+        
+        /* FOCO TV */
+        .focusable:focus {
+            outline: none; border: 3px solid white; transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;
+            background-color: rgba(255,255,255,0.1);
         }
 
         /* HEADER */
-        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; transition: 0.3s; }
-        .nav-left { display: flex; align-items: center; gap: 15px; }
-        .logo { color: var(--primary); font-size: 20px; font-weight: bold; text-decoration: none; margin-right: 10px; }
-        .nav-link { background: transparent; border: 3px solid transparent; color: #e5e5e5; font-size: 14px; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
-        .nav-link.active { font-weight: bold; color: white; }
+        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
+        .nav-btn { background: transparent; border: none; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .nav-btn.active { color: white; font-size: 15px; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
         .search-box { display: flex; align-items: center; background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 5px 10px; border-radius: 4px; }
         .search-box input { background: transparent; border: none; color: white; outline: none; width: 120px; font-size: 14px; }
-        
+
         /* CONTENEDOR PRINCIPAL */
-        #app { padding-top: 70px; min-height: 100vh; padding-bottom: 50px; }
-        .section-title { margin-left: 4%; font-size: 1.2rem; color: #e5e5e5; margin-bottom: 10px; text-shadow: 1px 1px 2px black;}
+        #app { padding-top: 80px; min-height: 100vh; padding-bottom: 50px; }
+        
+        /* ESTILOS HOME (HORIZONTAL) - RESTAURADOS */
+        .section-title { margin-left: 4%; font-size: 1.3rem; color: #e5e5e5; margin-bottom: 10px; margin-top: 20px; text-shadow: 1px 1px 2px black; font-weight: bold;}
         .horizontal-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 10px 4%; scroll-behavior: smooth; }
-        .horizontal-scroll::-webkit-scrollbar { height: 0px; } 
+        .horizontal-scroll::-webkit-scrollbar { height: 0px; } /* Ocultar scrollbar */
+        
+        /* ESTILOS GRID (SECCIONES) */
         .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 20px 4%; }
         
-        /* TARJETAS (CARDS) */
-        .card { min-width: 140px; height: 210px; background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.2s; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; }
+        /* TARJETAS */
+        .card { 
+            min-width: 140px; height: 210px; /* Tamaño fijo para scroll horizontal */
+            background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
+            transition: transform 0.2s; border: 3px solid transparent; 
+            display: flex; align-items: center; justify-content: center;
+        }
         .card img { width: 100%; height: 100%; object-fit: cover; background: #333; }
+        
+        /* Barra de progreso en la tarjeta */
         .progress-track { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.3); z-index: 5; display: none; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
-        /* MODAL DE DETALLES */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .modal-content { background: #181818; width: 100%; max-width: 550px; max-height: 90vh; border-radius: 8px; position: relative; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.9); display: flex; flex-direction: column; }
-        .close-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: 3px solid transparent; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 20; }
-        .modal-hero { height: 250px; flex-shrink: 0; background-size: cover; background-position: center; position: relative; background-color: #333; }
-        .modal-gradient { position:absolute; inset:0; background:linear-gradient(to top, #181818 5%, transparent 100%); }
-        .modal-info { padding: 15px 25px; position: relative; }
-        .btn-play { background: white; color: black; border: 3px solid transparent; padding: 10px 25px; font-weight: bold; font-size: 1.1rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-top: 15px; width: fit-content; }
-        .season-select { background: #333; color: white; border: 2px solid #555; padding: 10px; margin-top: 20px; font-size: 1rem; border-radius: 4px; width: 100%; max-width: 250px; }
-        .episode-list { margin-top: 15px; padding-bottom: 20px;}
-        .ep-row { display: flex; align-items: center; gap: 10px; padding: 10px 5px; border-bottom: 1px solid #333; cursor: pointer; border: 3px solid transparent; border-radius: 4px; }
-        .ep-row:hover { background: #252525; }
-        .ep-thumb { width: 100px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #333; }
-
-        /* INTERFAZ DEL REPRODUCTOR */
-        #player-ui { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
-        #video { width: 100%; height: 100%; }
-        .player-header { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 5004; pointer-events: none; display: flex; align-items: flex-start; transition: opacity 0.5s ease, visibility 0.5s; opacity: 1; visibility: visible; }
-        .player-title { color: white; font-size: 1.5rem; font-weight: bold; margin-left: 60px; text-shadow: 2px 2px 4px black; }
-        .player-subtitle { color: #ddd; font-size: 1rem; margin-left: 60px; display: block; text-shadow: 1px 1px 2px black;}
-        .back-arrow { position: absolute; top: 25px; left: 25px; z-index: 5005; background: rgba(0,0,0,0.5); color: white; border: 3px solid transparent; padding: 8px; border-radius: 50%; cursor: pointer; pointer-events: auto; transition: opacity 0.5s ease, visibility 0.5s; opacity: 1; visibility: visible; }
-        .player-controls-layer { position: absolute; top: 50%; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; pointer-events: none; z-index: 5002; transition: opacity 0.5s ease, visibility 0.5s; opacity: 1; visibility: visible; }
-        .ctrl-btn { background: rgba(0,0,0,0.6); color: white; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; width: 55px; height: 55px; cursor: pointer; pointer-events: auto; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        /* --- NUEVA VISTA DE DETALLES (PANTALLA COMPLETA) --- */
+        #details-view {
+            position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; overflow-y: auto;
+        }
+        .details-hero {
+            width: 100%; height: 65vh; background-size: cover; background-position: center top; position: relative;
+        }
+        .hero-gradient {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, var(--bg) 5%, rgba(20,20,20,0.8) 20%, transparent 100%),
+                        linear-gradient(to right, var(--bg) 0%, rgba(20,20,20,0.6) 40%, transparent 80%);
+        }
+        .details-content { position: absolute; bottom: 20px; left: 4%; max-width: 700px; padding-right: 4%; }
+        .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 10px; text-shadow: 2px 2px 10px black; line-height: 1; }
+        .details-meta { color: #ccc; font-weight: bold; font-size: 1.1rem; margin-bottom: 15px; }
+        .details-desc { font-size: 1.1rem; line-height: 1.4; color: #ddd; margin-bottom: 25px; text-shadow: 1px 1px 2px black; max-width: 600px; }
         
-        .ui-fade-out .player-header, .ui-fade-out .player-controls-layer, .ui-fade-out .back-arrow { opacity: 0; visibility: hidden; pointer-events: none; }
-        @media (max-width: 768px) { .modal-content { width: 95%; max-height: 85vh; } .player-title { font-size: 1rem; margin-left: 45px; } .player-controls-layer { padding: 0 10px; } }
+        .btn-large {
+            padding: 12px 30px; font-size: 1.2rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; margin-right: 15px;
+        }
+        .btn-primary { background: white; color: black; border: 3px solid transparent; }
+        .btn-secondary { background: rgba(109, 109, 110, 0.7); color: white; border: 3px solid transparent; }
+        .action-row { display: flex; margin-bottom: 30px; }
+
+        /* EPISODIOS EN PANTALLA COMPLETA */
+        #series-container { padding: 0 4% 50px 4%; display: none; position: relative; top: -20px; }
+        .season-selector { padding: 10px; background: #333; color: white; border: 2px solid #555; font-size: 1rem; border-radius: 4px; margin-bottom: 20px; }
+        .episode-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #333; cursor: pointer; border: 3px solid transparent; border-radius: 6px; gap: 15px; }
+        .episode-item:hover { background: #333; }
+        .ep-thumb { width: 140px; height: 80px; object-fit: cover; border-radius: 4px; background: #222; }
+
+        /* REPRODUCTOR */
+        #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
+        #video { width: 100%; height: 100%; }
+        .player-ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 30px; }
+        .btn-back-player { pointer-events: auto; background: rgba(0,0,0,0.5); color: white; border: 3px solid transparent; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .player-info { margin-left: 20px; text-shadow: 2px 2px 4px black; }
+        .player-top { display: flex; align-items: center; }
+        .fade-out { opacity: 0; transition: opacity 0.5s; }
+        
+        /* ERROR TOAST */
+        .error-msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(50,0,0,0.95); padding: 30px; border-radius: 8px; text-align: center; z-index: 6000; display: none; border: 1px solid #555; box-shadow: 0 0 20px black; }
+
     </style>
 </head>
 <body>
 
-    <header id="navbar">
+    <header id="main-header">
         <div class="nav-left">
-            <a href="#" class="logo focusable" onclick="renderView('home')">STREAMNET</a>
-            <button class="nav-link active focusable" onclick="renderView('home')">Inicio</button>
-            <button class="nav-link focusable" onclick="renderView('series')">Series</button>
-            <button class="nav-link focusable" onclick="renderView('movies')">Películas</button>
+            <a href="#" class="logo">STREAMNET</a>
+            <button class="nav-btn focusable active" onclick="loadView('home')">Inicio</button>
+            <button class="nav-btn focusable" onclick="loadView('series')">Series</button>
+            <button class="nav-btn focusable" onclick="loadView('movies')">Películas</button>
         </div>
         <div class="search-box">
-            <span class="material-icons-round" style="color:#ddd">search</span>
-            <input type="text" id="searchInput" class="focusable" placeholder="Buscar...">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="search" class="focusable" placeholder="Buscar...">
         </div>
     </header>
 
-    <div id="app"><h2 style="text-align:center; margin-top:50px;">Cargando catálogo...</h2></div>
+    <div id="app">
+        <h2 style="text-align:center; margin-top:100px; color:#777;" id="loading-msg">Cargando catálogo...</h2>
+    </div>
 
-    <div id="modal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <button class="close-btn focusable" tabindex="0" onclick="closeModal()"><span class="material-icons-round">close</span></button>
-            <div class="modal-hero" id="m-bg"><div class="modal-gradient"></div></div>
-            <div class="modal-info">
-                <h1 id="m-title" style="margin:0; font-size:1.8rem; text-shadow: 2px 2px 4px black;">Título</h1>
-                <p id="m-meta" style="color:#aaa; margin:8px 0; font-weight:bold;">2024</p>
-                <p id="m-desc" style="line-height:1.4; color:#ddd; font-size: 0.95rem;">Sin descripción.</p>
-                <button id="m-play-btn" class="btn-play focusable" tabindex="0"><span class="material-icons-round">play_arrow</span> Reproducir</button>
-                <div id="series-area" style="display:none;">
-                    <label for="season-select" style="display:block; margin-top:15px; color:#aaa; font-size: 0.9rem;">Temporadas:</label>
-                    <select id="season-select" class="season-select focusable" tabindex="0"></select>
-                    <div id="episodes-list" class="episode-list"></div>
+    <div id="details-view">
+        <div class="details-hero" id="det-hero">
+            <div class="hero-gradient"></div>
+            <div class="details-content">
+                <h1 class="details-title" id="det-title">TITULO</h1>
+                <div class="details-meta" id="det-meta">METADATA</div>
+                <p class="details-desc" id="det-desc">Descripción...</p>
+                
+                <div class="action-row">
+                    <button id="btn-play-hero" class="btn-large btn-primary focusable">
+                        <span class="material-icons-round">play_arrow</span> Reproducir
+                    </button>
+                    <button id="btn-back-details" class="btn-large btn-secondary focusable" onclick="closeDetails()">
+                        <span class="material-icons-round">arrow_back</span> Volver
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="series-container">
+            <h3 class="section-title">Episodios</h3>
+            <select id="season-select" class="season-selector focusable"></select>
+            <div id="episodes-list"></div>
+        </div>
+    </div>
+
+    <div id="player-container">
+        <video id="video" autoplay></video>
+        <div id="player-ui" class="player-ui-layer">
+            <div class="player-top">
+                <button class="btn-back-player focusable" onclick="exitPlayer()">
+                    <span class="material-icons-round">arrow_back</span>
+                </button>
+                <div class="player-info">
+                    <h2 id="p-title" style="margin:0">Titulo</h2>
+                    <span id="p-sub" style="color:#ccc"></span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="player-ui">
-        <div class="player-header">
-            <div id="player-info-text"><div class="player-title" id="p-title">Título</div><span class="player-subtitle" id="p-sub">Detalles</span></div>
-        </div>
-        <button class="back-arrow focusable" tabindex="0" onclick="stopPlayer()"><span class="material-icons-round">arrow_back</span></button>
-        <div class="player-controls-layer" id="series-controls">
-            <button class="ctrl-btn focusable" tabindex="0" id="btn-prev" onclick="changeEpisode(-1)"><span class="material-icons-round">skip_previous</span></button>
-            <button class="ctrl-btn focusable" tabindex="0" id="btn-next" onclick="changeEpisode(1)"><span class="material-icons-round">skip_next</span></button>
-        </div>
-        <video id="video" autoplay></video>
+    <div id="error-toast" class="error-msg">
+        <h3 style="margin-top:0; color:#ff5555">Error de Reproducción</h3>
+        <p id="error-text" style="color:#ddd; margin-bottom:20px;"></p>
+        <button class="btn-primary focusable" style="padding:10px 20px; border-radius:4px; border:none;" onclick="document.getElementById('error-toast').style.display='none'; exitPlayer()">Cerrar</button>
     </div>
 
     <script>
-        // CONFIGURACIÓN E IMÁGENES POR DEFECTO
         const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
-
-        let fullCatalog = [];
+        let catalog = [];
+        let currentView = 'home'; 
+        let currentItem = null;
         let player = null;
-        let currentSeries = null;
-        let activeContentId = null; 
-        let lastFocus = null; 
-        let uiTimer = null; 
+        let uiTimer;
+        
+        // Variables series
         let currentSeasonIdx = 0;
-        let currentEpisodeIdx = 0;
+        let currentEpIdx = 0;
 
-        // CÓDIGOS DE TECLAS (MANDO TV Y TECLADO)
-        const KEYS = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 8, ESC: 27, TIZEN_BACK: 10009, WEBOS_BACK: 461 };
+        // TECLAS
+        const KEYS = { BACK: 8, BACK_WEBOS: 461, BACK_TIZEN: 10009, ENTER: 13, LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ESC: 27 };
 
         window.onload = async () => {
             initShaka();
-            document.addEventListener('keydown', handleRemoteControl);
-            // Enfocar el primer elemento después de un momento
-            setTimeout(() => { const first = document.querySelector('.focusable'); if(first) first.focus(); }, 1000);
+            document.addEventListener('keydown', handleRemote);
             await loadData();
         };
 
-        // --- CARGA DE DATOS OPTIMIZADA (SIN API EXTERNA) ---
+        // --- SISTEMA DE ATRÁS ARREGLADO ---
+        function handleRemote(e) {
+            const k = e.keyCode;
+            
+            // Si es un botón de volver
+            if (k === KEYS.BACK || k === KEYS.BACK_TIZEN || k === KEYS.BACK_WEBOS || k === KEYS.ESC) {
+                e.preventDefault(); 
+                if (document.getElementById('error-toast').style.display === 'block') {
+                    document.getElementById('error-toast').style.display = 'none';
+                    exitPlayer();
+                } else if (currentView === 'player') {
+                    exitPlayer(); // De video a detalles
+                } else if (currentView === 'details') {
+                    closeDetails(); // De detalles a home
+                } else {
+                    console.log("Ya estás en home"); // Aquí podrías poner un confirm de salir
+                }
+                return;
+            }
+
+            // Navegación
+            if([KEYS.UP, KEYS.DOWN, KEYS.LEFT, KEYS.RIGHT].includes(k)) {
+                e.preventDefault();
+                moveFocus(k);
+            }
+            if(k === KEYS.ENTER && document.activeElement) {
+                document.activeElement.click();
+            }
+        }
+
+        function moveFocus(dir) {
+            const focusables = Array.from(document.querySelectorAll('.focusable'))
+                .filter(el => el.offsetParent !== null);
+            
+            if (focusables.length === 0) return;
+
+            const current = document.activeElement;
+            const idx = focusables.indexOf(current);
+            
+            if (idx === -1) { focusables[0].focus(); return; }
+
+            // Lógica simple para moverse al siguiente elemento visible
+            // En Grid y Flex nativos, el navegador hace un buen trabajo si se usan flechas,
+            // pero esto fuerza el foco si el navegador falla.
+            let next = null;
+            
+            // Nota: Para una navegación 100% perfecta en grillas complejas se requiere cálculo geométrico.
+            // Para simplificar y que funcione el scroll horizontal nativo:
+            if(dir === KEYS.RIGHT && idx < focusables.length - 1) next = focusables[idx + 1];
+            if(dir === KEYS.LEFT && idx > 0) next = focusables[idx - 1];
+            
+            // Para arriba y abajo en listas largas, intentamos saltar filas (aprox 5 items)
+            if(dir === KEYS.DOWN) {
+                let target = Math.min(idx + 1, focusables.length - 1);
+                // Si es grid view, saltar más
+                if(current.closest('.grid-view')) target = Math.min(idx + 5, focusables.length - 1);
+                next = focusables[target];
+            }
+            if(dir === KEYS.UP) {
+                let target = Math.max(idx - 1, 0);
+                if(current.closest('.grid-view')) target = Math.max(idx - 5, 0);
+                next = focusables[target];
+            }
+
+            if(next) {
+                next.focus();
+                next.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
+            }
+        }
+
+        // --- CARGA DATOS ---
         async function loadData() {
             try {
-                // Descargar ambos archivos en paralelo (URLs corregidas con comillas)
-                const [resMovies, resSeries] = await Promise.all([
+                // TUS ENLACES DE DROPBOX
+                const [r1, r2] = await Promise.all([
                     fetch('https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=0'),
                     fetch('https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=0')
                 ]);
-
-                const moviesRaw = await resMovies.json();
-                const seriesRaw = await resSeries.json();
-
-                // Combinar listas
-                const combinedRaw = [...moviesRaw, ...seriesRaw];
-
-                // Procesar datos localmente (sin esperar a OMDb)
-                fullCatalog = combinedRaw.map(rawItem => normalizeData(rawItem));
+                const d1 = await r1.json();
+                const d2 = await r2.json();
                 
-                renderView('home');
+                catalog = [...d1, ...d2].map(normalizeItem);
+                document.getElementById('loading-msg').style.display = 'none';
+                loadView('home');
 
             } catch(e) {
-                console.error(e);
-                document.getElementById('app').innerHTML = `<h3 style="text-align:center; padding:20px;">Error al cargar catálogo.<br><small style="color:#aaa">${e.message}</small></h3>`;
+                document.getElementById('loading-msg').innerText = "Error cargando datos: " + e.message;
             }
         }
 
-        // --- NORMALIZACIÓN DE DATOS ---
-        function normalizeData(rawItem) {
+        function normalizeItem(i) {
             let type = 'movie';
-            // Detección automática de tipo
-            if (rawItem.tipo && rawItem.tipo.toLowerCase().includes('serie')) type = 'series';
-            else if (rawItem.tipo && rawItem.tipo.toLowerCase().includes('película')) type = 'movie';
+            if(i.tipo && i.tipo.toLowerCase().includes('serie')) type = 'series';
             
+            let img = i.poster || i.img || DEFAULT_IMG;
             let seasons = [];
-            if (rawItem.estaciones) {
-                seasons = rawItem.estaciones.map(s => ({
-                    number: s.número || s.number,
-                    episodes: s.episodios || s.episodes
-                }));
+            if(i.estaciones) {
+                seasons = i.estaciones.map(s => ({ num: s.número||s.number, episodes: s.episodios||s.episodes }));
+                if(!img && seasons[0]?.episodes[0]?.img) img = seasons[0].episodes[0].img;
             }
-
-            // Lógica para encontrar imagen: usa img del item, poster, o la imagen del primer episodio
-            let fallbackImg = rawItem.img || rawItem.poster;
-            if (!fallbackImg && seasons.length > 0 && seasons[0].episodes.length > 0) {
-                fallbackImg = seasons[0].episodes[0].img;
-            }
-            if (!fallbackImg) fallbackImg = DEFAULT_IMG;
 
             return {
-                id: rawItem.id,
-                imdbID: rawItem.imdbID, // Se guarda pero no se usa para fetch
-                type: type,
-                // Si no hay título explícito, usamos el ID formateado
-                title: rawItem.titulo || rawItem.title || rawItem.id.toUpperCase().replace(/_/g, ' '), 
-                desc: rawItem.sinopsis || "Sin descripción disponible.", 
-                year: rawItem.year || '',
-                poster: fallbackImg,
-                seasons: seasons,
-                mpd: rawItem.mpd,
-                drm: rawItem.drm
+                id: i.id, title: i.titulo || i.title || i.id, desc: i.sinopsis || "...",
+                poster: img, hero: img, type: type, year: i.year || '',
+                mpd: i.mpd, drm: i.drm, seasons: seasons
             };
         }
 
-        // --- SISTEMA DE FADE OUT (Auto-ocultar UI) ---
-        function resetInactivityTimer() {
-            const uiContainer = document.getElementById('player-ui');
-            const video = document.getElementById('video');
-            uiContainer.classList.remove('ui-fade-out');
-            clearTimeout(uiTimer);
-            if (video.paused) return;
-            uiTimer = setTimeout(() => { if (!video.paused) uiContainer.classList.add('ui-fade-out'); }, 3000);
-        }
-        function setupActivityListeners() {
-            const ui = document.getElementById('player-ui');
-            ui.onmousemove = resetInactivityTimer; ui.onmousedown = resetInactivityTimer; ui.onkeydown = resetInactivityTimer; ui.ontouchstart = resetInactivityTimer;
-            document.addEventListener('keydown', (e) => { if(document.getElementById('player-ui').style.display === 'block') resetInactivityTimer(); });
-        }
-
-        // --- PROGRESO (LocalStorage) ---
-        function saveProgress(id, currentTime, duration) {
-            if (!id || duration === 0) return;
-            localStorage.setItem('streamnet_prog_' + id, JSON.stringify({ time: currentTime, pct: (currentTime/duration)*100, lastUpdate: Date.now() }));
-        }
-        function getProgress(id) { const data = localStorage.getItem('streamnet_prog_' + id); return data ? JSON.parse(data) : { time: 0, pct: 0 }; }
-
         // --- VISTAS ---
-        function renderView(viewName) {
+        function loadView(view) {
+            currentView = view === 'player' ? 'player' : (view === 'details' ? 'details' : 'home');
             const app = document.getElementById('app');
             app.innerHTML = '';
-            document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
-            const navs = document.querySelectorAll('.nav-link');
             
-            if(viewName === 'home') {
-                navs[0].classList.add('active');
-                const watching = fullCatalog.filter(item => { const p = getProgress(item.id); return p.pct > 1 && p.pct < 95; });
-                if (watching.length > 0) createRow("Continuar Viendo", watching);
-                createRow("Series", fullCatalog.filter(i => i.type === 'series'));
-                createRow("Películas", fullCatalog.filter(i => i.type === 'movie'));
-            } else if (viewName === 'series') {
-                navs[1].classList.add('active');
-                createGrid(fullCatalog.filter(i => i.type === 'series'));
-            } else if (viewName === 'movies') {
-                navs[2].classList.add('active');
-                createGrid(fullCatalog.filter(i => i.type === 'movie'));
-            }
-        }
-        function createRow(title, items) { if(items.length === 0) return; document.getElementById('app').insertAdjacentHTML('beforeend', `<div style="margin-bottom:10px;"><h3 class="section-title">${title}</h3><div class="horizontal-scroll">${items.map(i => cardHTML(i)).join('')}</div></div>`); }
-        function createGrid(items) { document.getElementById('app').insertAdjacentHTML('beforeend', `<div class="grid-view">${items.map(i => cardHTML(i)).join('')}</div>`); }
-        function cardHTML(item) {
-            const prog = getProgress(item.id);
-            let pb = prog.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width: ${prog.pct}%"></div></div>` : '';
-            return `<div class="card focusable" tabindex="0" onclick="openModal('${item.id}')" data-id="${item.id}"><img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">${pb}</div>`;
-        }
-
-        // --- CONTROL Y NAVEGACIÓN ---
-        function handleRemoteControl(e) {
-            const k = e.keyCode;
-            if([KEYS.UP, KEYS.DOWN, KEYS.LEFT, KEYS.RIGHT].includes(k)) e.preventDefault();
-            if (k === KEYS.BACK || k === KEYS.ESC || k === KEYS.TIZEN_BACK || k === KEYS.WEBOS_BACK) {
-                if(document.getElementById('player-ui').style.display === 'block') stopPlayer();
-                else if(document.body.classList.contains('modal-open')) closeModal();
-                return;
-            }
-            if (k === KEYS.ENTER) { if(document.activeElement) document.activeElement.click(); return; }
-            moveFocus(k);
-        }
-        function moveFocus(dir) {
-            const visibleFocusable = Array.from(document.querySelectorAll('.focusable')).filter(el => el.offsetParent !== null && !el.disabled && el.style.display !== 'none');
-            if (visibleFocusable.length === 0) return;
-            const current = document.activeElement;
-            const index = visibleFocusable.indexOf(current);
-            if (index === -1) { visibleFocusable[0].focus(); return; }
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
-            const currentRect = current.getBoundingClientRect();
-            const curX = currentRect.left + currentRect.width / 2; const curY = currentRect.top + currentRect.height / 2;
-            let best = null; let minDist = Infinity;
-
-            visibleFocusable.forEach(el => {
-                if (el === current) return;
-                const rect = el.getBoundingClientRect();
-                const elX = rect.left + rect.width / 2; const elY = rect.top + rect.height / 2;
-                let isValid = false;
-                if (dir === KEYS.RIGHT) isValid = elX > curX && Math.abs(elY - curY) < currentRect.height;
-                if (dir === KEYS.LEFT) isValid = elX < curX && Math.abs(elY - curY) < currentRect.height;
-                if (dir === KEYS.DOWN) isValid = elY > curY;
-                if (dir === KEYS.UP) isValid = elY < curY;
-                if (isValid) { const dist = Math.sqrt(Math.pow(elX - curX, 2) + Math.pow(elY - curY, 2)); if (dist < minDist) { minDist = dist; best = el; } }
-            });
-            if (best) { best.focus(); best.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            if(view === 'home') {
+                // DISEÑO ORIGINAL: Filas Horizontales
+                document.querySelectorAll('.nav-btn')[0].classList.add('active');
+                
+                const watching = catalog.filter(x => { const p = getProgress(x.id); return p.pct > 1 && p.pct < 95; });
+                if(watching.length > 0) createRow("Continuar Viendo", watching);
+                
+                createRow("Series", catalog.filter(x => x.type === 'series'));
+                createRow("Películas", catalog.filter(x => x.type === 'movie'));
+                
+            } else if(view === 'series') {
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                createGrid(catalog.filter(x => x.type === 'series'));
+            } else if(view === 'movies') {
+                document.querySelectorAll('.nav-btn')[2].classList.add('active');
+                createGrid(catalog.filter(x => x.type === 'movie'));
+            }
+            
+            // Foco inicial
+            setTimeout(() => { document.querySelector('.card')?.focus(); }, 100);
         }
 
-        // --- MODAL Y PLAYER ---
-        function openModal(id) {
-            lastFocus = document.activeElement;
-            const item = fullCatalog.find(i => i.id === id);
+        function createRow(title, items) {
+            if(items.length === 0) return;
+            const html = `
+                <div style="margin-bottom:20px;">
+                    <h3 class="section-title">${title}</h3>
+                    <div class="horizontal-scroll">
+                        ${items.map(item => getCardHTML(item)).join('')}
+                    </div>
+                </div>
+            `;
+            document.getElementById('app').insertAdjacentHTML('beforeend', html);
+        }
+
+        function createGrid(items) {
+            const html = `<div class="grid-view">${items.map(item => getCardHTML(item)).join('')}</div>`;
+            document.getElementById('app').innerHTML = html;
+        }
+
+        function getCardHTML(item) {
+            const p = getProgress(item.id);
+            const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
+            // Importante: onclick llama a openDetails ahora
+            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')">
+                        <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
+                        ${bar}
+                    </div>`;
+        }
+
+        // --- DETALLES (FULL SCREEN) ---
+        function openDetails(id) {
+            const item = catalog.find(x => x.id === id);
             if(!item) return;
-            document.body.classList.add('modal-open');
-            const modal = document.getElementById('modal');
-            document.getElementById('m-bg').style.backgroundImage = `url('${item.poster}')`;
-            document.getElementById('m-title').innerText = item.title;
-            document.getElementById('m-desc').innerText = item.desc;
-            document.getElementById('m-meta').innerText = `${item.year ? item.year + ' | ' : ''}${item.type === 'series' ? 'Serie' : 'Película'}`;
-            const playBtn = document.getElementById('m-play-btn');
-            const prog = getProgress(item.id);
-            playBtn.innerHTML = (prog.pct > 1 && prog.pct < 98) ? '<span class="material-icons-round">play_arrow</span> Reanudar' : '<span class="material-icons-round">play_arrow</span> Reproducir';
-            const seriesArea = document.getElementById('series-area');
+            currentItem = item;
+            currentView = 'details';
+
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('main-header').style.display = 'none'; // Ocultar header en detalles
+            const det = document.getElementById('details-view');
+            det.style.display = 'block';
+            det.scrollTop = 0;
+
+            document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
+            document.getElementById('det-title').innerText = item.title;
+            document.getElementById('det-meta').innerText = `${item.year} | ${item.type==='series'?'Serie':'Película'}`;
+            document.getElementById('det-desc').innerText = item.desc;
+
+            const btnPlay = document.getElementById('btn-play-hero');
+            const seriesC = document.getElementById('series-container');
+
             if(item.type === 'series') {
-                seriesArea.style.display = 'block'; currentSeries = item;
-                const sel = document.getElementById('season-select'); sel.innerHTML = '';
-                if(item.seasons && item.seasons.length > 0) {
-                    item.seasons.forEach((s, idx) => { let opt = document.createElement('option'); opt.value = idx; opt.innerText = `Temporada ${s.number}`; sel.appendChild(opt); });
-                    sel.onchange = () => renderEpisodes(item, sel.value); sel.value = 0; renderEpisodes(item, 0);
-                    playBtn.onclick = () => loadEpisode(0, 0);
-                } else document.getElementById('episodes-list').innerHTML = '<p>No hay temporadas disponibles.</p>';
+                btnPlay.innerText = "Reproducir T1 E1";
+                btnPlay.onclick = () => playEpisode(0,0);
+                seriesC.style.display = 'block';
+                renderSeasons(item);
             } else {
-                seriesArea.style.display = 'none'; currentSeries = null; playBtn.onclick = () => playContent(item);
+                btnPlay.innerHTML = '<span class="material-icons-round">play_arrow</span> Reproducir';
+                const p = getProgress(item.id);
+                if(p.pct > 1 && p.pct < 98) btnPlay.innerHTML += " (Reanudar)";
+                btnPlay.onclick = () => startPlayer(item.mpd, item.drm, item.title);
+                seriesC.style.display = 'none';
             }
-            modal.style.display = 'flex'; setTimeout(() => playBtn.focus(), 100);
+            
+            setTimeout(() => btnPlay.focus(), 100);
         }
-        function renderEpisodes(item, seasonIdx) {
-            const list = document.getElementById('episodes-list'); list.innerHTML = '';
-            const season = item.seasons[seasonIdx]; if(!season) return;
-            season.episodes.forEach((ep, idx) => {
-                const row = document.createElement('div'); row.className = 'ep-row focusable'; row.tabIndex = 0;
-                row.innerHTML = `<span style="color:#777; width:25px; text-align:center">${idx + 1}</span><img src="${ep.img || item.poster}" class="ep-thumb" onerror="this.src='${DEFAULT_IMG}'"><div style="flex:1"><h4 style="margin:0; font-size:0.95rem; color:white;">${ep.title || 'Episodio '+(idx+1)}</h4><small style="color:#aaa">${ep.duración || ep.duration || ''}</small></div><span class="material-icons-round">play_circle_outline</span>`;
-                row.onclick = () => loadEpisode(seasonIdx, idx); list.appendChild(row);
+
+        function closeDetails() {
+            currentView = 'home'; // O la vista que tuviera antes
+            document.getElementById('details-view').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('main-header').style.display = 'flex';
+            // Enfocar la tarjeta del item actual
+            /* (Lógica simple: enfocar primera carta visible) */
+            setTimeout(() => document.querySelector('.card')?.focus(), 100);
+        }
+
+        function renderSeasons(item) {
+            const sel = document.getElementById('season-select');
+            sel.innerHTML = '';
+            if(!item.seasons.length) return;
+            item.seasons.forEach((s, idx) => {
+                sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
+            });
+            sel.onchange = () => renderEpisodes(item, sel.value);
+            sel.value = 0;
+            renderEpisodes(item, 0);
+        }
+
+        function renderEpisodes(item, sIdx) {
+            const list = document.getElementById('episodes-list');
+            list.innerHTML = '';
+            const s = item.seasons[sIdx];
+            if(!s) return;
+            s.episodes.forEach((ep, idx) => {
+                const row = document.createElement('div');
+                row.className = 'episode-item focusable';
+                row.tabIndex = 0;
+                row.innerHTML = `<span style="font-size:1.5rem; color:#777; font-weight:bold">${idx+1}</span>
+                                 <img src="${ep.img||item.poster}" class="ep-thumb" onerror="this.src='${DEFAULT_IMG}'">
+                                 <div><h4 style="margin:0">${ep.title||'Episodio '+(idx+1)}</h4><small style="color:#aaa">${ep.duration||''}</small></div>`;
+                row.onclick = () => playEpisode(sIdx, idx);
+                list.appendChild(row);
             });
         }
-        function closeModal(e) {
-            if(!e || e.target.id === 'modal' || e.target.classList.contains('close-btn') || e.type === 'keydown') {
-                document.getElementById('modal').style.display = 'none'; document.body.classList.remove('modal-open');
-                if(lastFocus) { lastFocus.focus(); lastFocus.scrollIntoView({block:'center'}); }
+
+        // --- PLAYER ---
+        function initShaka() {
+            shaka.polyfill.installAll();
+            if(shaka.Player.isBrowserSupported()) {
+                player = new shaka.Player(document.getElementById('video'));
+                player.addEventListener('error', onError);
+                const vid = document.getElementById('video');
+                vid.addEventListener('timeupdate', () => {
+                    if(!vid.paused && currentItem && currentItem.type === 'movie') saveProgress(currentItem.id, vid.currentTime, vid.duration);
+                });
+                vid.addEventListener('play', resetUiTimer);
+                vid.addEventListener('pause', () => clearTimeout(uiTimer));
+                document.getElementById('player-container').addEventListener('mousemove', resetUiTimer);
+                document.getElementById('player-container').addEventListener('keydown', resetUiTimer);
             }
         }
-        function initShaka() {
-            const video = document.getElementById('video');
-            const playerInstance = new shaka.Player(video);
-            const ui = new shaka.ui.Overlay(playerInstance, document.getElementById('player-ui'), video);
-            playerInstance.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
-            player = playerInstance;
-            video.addEventListener('timeupdate', () => { if (!video.paused && activeContentId) saveProgress(activeContentId, video.currentTime, video.duration); });
-            video.addEventListener('ended', () => { if(activeContentId) localStorage.setItem('streamnet_prog_' + activeContentId, JSON.stringify({time:0, pct:100})); if(currentSeries) changeEpisode(1); else stopPlayer(); });
-            video.addEventListener('play', resetInactivityTimer);
-            video.addEventListener('pause', () => { document.getElementById('player-ui').classList.remove('ui-fade-out'); clearTimeout(uiTimer); });
-            setupActivityListeners();
-        }
-        async function playContent(item) {
-            activeContentId = item.id; 
-            document.getElementById('player-ui').style.display = 'block'; document.getElementById('series-controls').style.display = 'none';
-            document.getElementById('p-title').innerText = item.title; document.getElementById('p-sub').innerText = "Película";
+
+        async function startPlayer(mpd, drm, title) {
+            if(!mpd) return showToast("No hay URL de video disponible.");
+            if(window.location.protocol === 'file:') return showToast("ERROR (Shaka 7000): No se puede reproducir desde 'file://'. Usa un servidor local o GitHub Pages.");
+
+            document.getElementById('player-container').style.display = 'block';
+            document.getElementById('p-title').innerText = title;
+            currentView = 'player';
+
+            let config = {};
+            if(drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
+            player.configure(config);
+
             try {
-                player.configure({ drm: item.drm && item.drm.clearKeys ? { clearKeys: item.drm.clearKeys } : {} });
-                await player.load(item.mpd);
-                const saved = getProgress(item.id); if (saved.pct > 1 && saved.pct < 98) document.getElementById('video').currentTime = saved.time;
-                document.getElementById('video').play(); document.querySelector('.back-arrow').focus(); resetInactivityTimer();
-            } catch(e) { alert("Error reproduciendo: " + e.message); stopPlayer(); }
+                await player.load(mpd);
+                const vid = document.getElementById('video');
+                if(currentItem.type === 'movie') {
+                    const saved = getProgress(currentItem.id);
+                    if(saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
+                }
+                vid.play();
+                resetUiTimer();
+            } catch(e) { onError(e); }
         }
-        async function loadEpisode(seasonIdx, episodeIdx) {
-            currentSeasonIdx = parseInt(seasonIdx); currentEpisodeIdx = parseInt(episodeIdx);
-            const season = currentSeries.seasons[currentSeasonIdx]; const episode = season.episodes[currentEpisodeIdx]; if(!episode) return;
-            activeContentId = currentSeries.id; 
-            document.getElementById('player-ui').style.display = 'block'; document.getElementById('series-controls').style.display = 'flex';
-            document.getElementById('btn-prev').style.visibility = (currentSeasonIdx===0 && currentEpisodeIdx===0) ? 'hidden':'visible';
-            document.getElementById('p-title').innerText = currentSeries.title; document.getElementById('p-sub').innerText = `T${season.number} E${currentEpisodeIdx+1}: ${episode.title || ''}`;
-            try {
-                player.configure({ drm: episode.drm && episode.drm.clearKeys ? { clearKeys: episode.drm.clearKeys } : {} });
-                await player.load(episode.mpd);
-                document.getElementById('video').play(); setTimeout(() => document.getElementById('btn-next').focus(), 500); resetInactivityTimer();
-            } catch(e) { console.error(e); }
+
+        async function playEpisode(sIdx, eIdx) {
+            currentSeasonIdx = parseInt(sIdx);
+            currentEpIdx = parseInt(eIdx);
+            const ep = currentItem.seasons[currentSeasonIdx].episodes[currentEpIdx];
+            if(ep) startPlayer(ep.mpd, ep.drm, `${currentItem.title} - T${currentItem.seasons[currentSeasonIdx].num} E${currentEpIdx+1}`);
         }
-        function changeEpisode(dir) {
-            let newEp = currentEpisodeIdx + dir; let newSe = currentSeasonIdx;
-            const sData = currentSeries.seasons[currentSeasonIdx];
-            if (dir === 1 && newEp >= sData.episodes.length) { newSe++; newEp = 0; }
-            else if (dir === -1 && newEp < 0) { newSe--; if(newSe >= 0) newEp = currentSeries.seasons[newSe].episodes.length - 1; else return; }
-            if(newSe >= 0 && newSe < currentSeries.seasons.length) loadEpisode(newSe, newEp); else stopPlayer();
+
+        function exitPlayer() {
+            player.unload();
+            document.getElementById('player-container').style.display = 'none';
+            // Volver a detalles
+            currentView = 'details';
+            document.getElementById('btn-play-hero').focus();
         }
-        function stopPlayer() {
-            clearTimeout(uiTimer); document.getElementById('player-ui').classList.remove('ui-fade-out');
-            document.getElementById('player-ui').style.display = 'none'; document.getElementById('video').pause(); player.unload();
-            currentSeries = null; activeContentId = null;
-            if(document.body.classList.contains('modal-open')) document.getElementById('m-play-btn').focus(); else renderView('home');
+
+        function onError(e) {
+            const err = e.detail || e;
+            console.error(err);
+            let msg = "Error desconocido.";
+            if(err.code === 7000) msg = "Error de Red (CORS) o Enlace Roto. Si estás en PC abriendo el archivo HTML directamente, esto fallará. Súbelo a un servidor.";
+            if(err.code === 6007) msg = "Error de Licencia DRM.";
+            showToast(msg);
         }
+
+        function showToast(msg) {
+            const t = document.getElementById('error-toast');
+            document.getElementById('error-text').innerText = msg;
+            t.style.display = 'block';
+            t.querySelector('button').focus();
+        }
+
+        function resetUiTimer() {
+            const ui = document.getElementById('player-ui');
+            ui.classList.remove('fade-out');
+            clearTimeout(uiTimer);
+            if(!document.getElementById('video').paused) {
+                uiTimer = setTimeout(() => ui.classList.add('fade-out'), 3000);
+            }
+        }
+
+        // Helpers
+        function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
+        function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : {time:0, pct:0}; }
+
     </script>
 </body>
 </html>
