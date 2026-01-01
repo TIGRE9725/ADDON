@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamNet - TV Edition</title>
+    <title>StreamNet - TV Pro</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
@@ -15,7 +15,6 @@
             --primary: #E50914;
             --bg: #141414;
             --dark: #181818;
-            --focus-border: 4px solid white;
         }
 
         body, html { 
@@ -24,10 +23,20 @@
             font-family: 'Roboto', sans-serif; 
             overflow-x: hidden;
             overscroll-behavior-y: none;
-            user-select: none; /* Importante para TV */
+            user-select: none; /* Vital para TV */
         }
 
         body.modal-open { overflow: hidden; }
+
+        /* --- FOCO PARA TV (Highlight) --- */
+        .focusable:focus, .card:focus, .season-select:focus, .ep-row:focus, .btn-play:focus, .close-btn:focus, .ctrl-btn:focus, input:focus, .back-arrow:focus {
+            outline: none; 
+            border: 3px solid white; 
+            background: rgba(255,255,255,0.15); 
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            z-index: 100;
+        }
 
         /* HEADER */
         header {
@@ -41,32 +50,21 @@
         .logo { color: var(--primary); font-size: 20px; font-weight: bold; text-decoration: none; margin-right: 10px; }
         
         .nav-link { 
-            background: transparent; border: 2px solid transparent; color: #e5e5e5; 
+            background: transparent; border: 3px solid transparent; color: #e5e5e5; 
             font-size: 14px; padding: 5px 10px; border-radius: 4px; cursor: pointer; transition: 0.2s; 
         }
-
-        /* ESTILO DE FOCO PARA TV - CRÍTICO */
-        .focusable:focus, .card:focus, .season-select:focus, .ep-row:focus, .btn-play:focus, .close-btn:focus, .ctrl-btn:focus, input:focus {
-            outline: none; 
-            border: 2px solid white; 
-            background: rgba(255,255,255,0.1); 
-            transform: scale(1.05);
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            z-index: 100;
-        }
-
         .nav-link.active { font-weight: bold; color: white; }
 
         /* BUSCADOR */
         .search-box { display: flex; align-items: center; background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 5px 10px; border-radius: 4px; }
         .search-box input { background: transparent; border: none; color: white; outline: none; width: 120px; font-size: 14px; }
         
-        /* CONTENIDO */
+        /* CONTENIDO PRINCIPAL */
         #app { padding-top: 70px; min-height: 100vh; padding-bottom: 50px; }
         .section-title { margin-left: 4%; font-size: 1.2rem; color: #e5e5e5; margin-bottom: 10px; text-shadow: 1px 1px 2px black;}
         
         .horizontal-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 10px 4%; scroll-behavior: smooth; }
-        .horizontal-scroll::-webkit-scrollbar { height: 0px; } /* Ocultar scrollbar en TV */
+        .horizontal-scroll::-webkit-scrollbar { height: 0px; } 
 
         .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 20px 4%; }
 
@@ -74,11 +72,12 @@
         .card {
             min-width: 140px; height: 210px; background: #222; border-radius: 6px;
             cursor: pointer; position: relative; overflow: hidden; transition: transform 0.2s;
-            border: 2px solid transparent;
+            border: 3px solid transparent;
             display: flex; align-items: center; justify-content: center;
         }
         .card img { width: 100%; height: 100%; object-fit: cover; background: #333; }
         
+        /* BARRA DE PROGRESO (Home) */
         .progress-track {
             position: absolute; bottom: 0; left: 0; right: 0;
             height: 4px; background: rgba(255,255,255,0.3); z-index: 5;
@@ -86,77 +85,101 @@
         }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
-        /* MODAL */
+        /* MODAL DE DETALLES */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
             display: none; justify-content: center; align-items: center;
             padding: 20px;
         }
-        
         .modal-content {
-            background: #181818; 
-            width: 100%; max-width: 550px; max-height: 90vh;
-            border-radius: 8px; position: relative; 
-            overflow-y: auto; 
+            background: #181818; width: 100%; max-width: 550px; max-height: 90vh;
+            border-radius: 8px; position: relative; overflow-y: auto; 
             box-shadow: 0 0 50px rgba(0,0,0,0.9);
             display: flex; flex-direction: column;
         }
-        
         .close-btn { 
             position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); 
-            border: 2px solid transparent; color: white; border-radius: 50%; width: 35px; height: 35px;
+            border: 3px solid transparent; color: white; border-radius: 50%; width: 35px; height: 35px;
             display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 20; 
         }
-        
         .modal-hero { 
-            height: 250px; 
+            height: 250px; flex-shrink: 0;
             background-size: cover; background-position: center; position: relative; background-color: #333; 
-            flex-shrink: 0;
         }
         .modal-gradient { position:absolute; inset:0; background:linear-gradient(to top, #181818 5%, transparent 100%); }
         .modal-info { padding: 15px 25px; position: relative; }
         
         .btn-play { 
-            background: white; color: black; border: 2px solid transparent; padding: 10px 25px; 
+            background: white; color: black; border: 3px solid transparent; padding: 10px 25px; 
             font-weight: bold; font-size: 1.1rem; border-radius: 4px; cursor: pointer; 
             display: flex; align-items: center; gap: 8px; margin-top: 15px; width: fit-content;
         }
         
-        /* EPISODIOS */
+        /* LISTA DE EPISODIOS */
         .season-select { background: #333; color: white; border: 2px solid #555; padding: 10px; margin-top: 20px; font-size: 1rem; border-radius: 4px; width: 100%; max-width: 250px; }
         .episode-list { margin-top: 15px; padding-bottom: 20px;}
-        .ep-row { display: flex; align-items: center; gap: 10px; padding: 10px 5px; border-bottom: 1px solid #333; cursor: pointer; border: 2px solid transparent; border-radius: 4px; }
+        .ep-row { display: flex; align-items: center; gap: 10px; padding: 10px 5px; border-bottom: 1px solid #333; cursor: pointer; border: 3px solid transparent; border-radius: 4px; }
         .ep-row:hover { background: #252525; }
         .ep-thumb { width: 100px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #333; }
 
-        /* REPRODUCTOR */
+        /* --- REPRODUCTOR (PLAYER UI) --- */
         #player-ui { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
         
+        /* CABECERA DEL PLAYER (Título y Subtítulo) */
         .player-header {
             position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            z-index: 5004; pointer-events: none;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            z-index: 5004; pointer-events: none; /* Click-through */
             display: flex; align-items: flex-start;
+            /* Transición para desvanecer */
+            transition: opacity 0.5s ease, visibility 0.5s;
+            opacity: 1; visibility: visible;
         }
         .player-title {
-            color: white; font-size: 1.3rem; font-weight: bold; margin-left: 50px;
-            text-shadow: 1px 1px 4px black;
+            color: white; font-size: 1.5rem; font-weight: bold; margin-left: 60px;
+            text-shadow: 2px 2px 4px black;
         }
-        .player-subtitle { color: #ddd; font-size: 0.9rem; margin-left: 50px; display: block; }
+        .player-subtitle { color: #ddd; font-size: 1rem; margin-left: 60px; display: block; text-shadow: 1px 1px 2px black;}
 
+        /* BOTÓN ATRÁS */
         .back-arrow { 
-            position: absolute; top: 20px; left: 20px; z-index: 5005; 
-            background: rgba(0,0,0,0.5); color: white; border: none; padding: 8px; border-radius: 50%; cursor: pointer; pointer-events: auto;
+            position: absolute; top: 25px; left: 25px; z-index: 5005; 
+            background: rgba(0,0,0,0.5); color: white; border: 3px solid transparent; 
+            padding: 8px; border-radius: 50%; cursor: pointer; pointer-events: auto;
+            /* Transición para desvanecer */
+            transition: opacity 0.5s ease, visibility 0.5s;
+            opacity: 1; visibility: visible;
         }
 
+        /* CONTROLES LATERALES (Prev/Next) */
         .player-controls-layer {
-            position: absolute; top: 50%; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; pointer-events: none; z-index: 5002;
+            position: absolute; top: 50%; width: 100%; display: flex; justify-content: space-between; 
+            padding: 0 40px; box-sizing: border-box; pointer-events: none; z-index: 5002;
+            /* Transición para desvanecer */
+            transition: opacity 0.5s ease, visibility 0.5s;
+            opacity: 1; visibility: visible;
         }
         .ctrl-btn {
-            background: rgba(0,0,0,0.6); color: white; border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%; width: 50px; height: 50px; cursor: pointer; pointer-events: auto;
+            background: rgba(0,0,0,0.6); color: white; border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%; width: 55px; height: 55px; cursor: pointer; pointer-events: auto;
             display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+
+        /* CLASE MÁGICA PARA OCULTAR LA UI */
+        .ui-fade-out .player-header,
+        .ui-fade-out .player-controls-layer,
+        .ui-fade-out .back-arrow {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none; /* Desactivar clicks cuando está oculto */
+        }
+
+        /* MEDIA QUERY MÓVIL */
+        @media (max-width: 768px) {
+            .modal-content { width: 95%; max-height: 85vh; }
+            .player-title { font-size: 1rem; margin-left: 45px; }
+            .player-controls-layer { padding: 0 10px; }
         }
     </style>
 </head>
@@ -223,37 +246,41 @@
                 <span class="material-icons-round">skip_next</span>
             </button>
         </div>
+        
         <video id="video" autoplay></video>
     </div>
 
     <script>
-        const DATA_URL = 'https://gist.githubusercontent.com/TIGRE9725/aa7608e651939a2eacf409a57fbc8fda/raw/7eb964f13ee292ebddff2556e73301becffcce02/data.json';
+        // CONFIGURACIÓN
+        const DATA_URL = 'https://dl.dropboxusercontent.com/s/115z9i1be2q5t8la2ffw6/data.json?rlkey=vhte4xh8sknj2cfbjq73auomp&dl=0';
         const OMDB_KEY = 'de0627d2'; 
         const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=StreamNet";
 
+        // ESTADO GLOBAL
         let fullCatalog = [];
         let player = null;
         let currentSeries = null;
         let activeContentId = null; 
-        let lastFocus = null; // Para recordar dónde estaba el foco
+        let lastFocus = null; 
+        let uiTimer = null; // Timer para ocultar interfaz
 
-        // Series state
+        // ESTADO DE SERIE
         let currentSeasonIdx = 0;
         let currentEpisodeIdx = 0;
 
-        // TECLAS TV
+        // CÓDIGOS DE TECLAS (MANDO TV)
         const KEYS = {
             LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40,
             ENTER: 13, BACK: 8, ESC: 27,
-            TIZEN_BACK: 10009, // Samsung Tizen Return
-            WEBOS_BACK: 461    // LG WebOS Back
+            TIZEN_BACK: 10009, 
+            WEBOS_BACK: 461    
         };
 
         window.onload = async () => {
             initShaka();
             document.addEventListener('keydown', handleRemoteControl);
             
-            // Auto-focus en el primer elemento al cargar
+            // Foco inicial
             setTimeout(() => {
                 const first = document.querySelector('.focusable');
                 if(first) first.focus();
@@ -262,7 +289,45 @@
             await loadData();
         };
 
-        // --- GESTIÓN DE PROGRESO (LocalStorage) ---
+        // --- LÓGICA DE INTERFAZ FANTASMA (FADE OUT) ---
+        function resetInactivityTimer() {
+            const uiContainer = document.getElementById('player-ui');
+            const video = document.getElementById('video');
+
+            // 1. Mostrar todo
+            uiContainer.classList.remove('ui-fade-out');
+
+            // 2. Limpiar timer anterior
+            clearTimeout(uiTimer);
+
+            // 3. Si está pausado, NO ocultar (salir)
+            if (video.paused) return;
+
+            // 4. Si está reproduciendo, ocultar en 3 seg
+            uiTimer = setTimeout(() => {
+                if (!video.paused) {
+                    uiContainer.classList.add('ui-fade-out');
+                }
+            }, 3000);
+        }
+
+        function setupActivityListeners() {
+            const ui = document.getElementById('player-ui');
+            // Cualquier interacción resetea el timer
+            ui.onmousemove = resetInactivityTimer;
+            ui.onmousedown = resetInactivityTimer;
+            ui.onkeydown = resetInactivityTimer;
+            ui.ontouchstart = resetInactivityTimer;
+            
+            // Teclado global (para el mando)
+            document.addEventListener('keydown', (e) => {
+                if(document.getElementById('player-ui').style.display === 'block') {
+                    resetInactivityTimer();
+                }
+            });
+        }
+
+        // --- GESTIÓN DE DATOS Y CARGA ---
         function saveProgress(id, currentTime, duration) {
             if (!id || duration === 0) return;
             const percentage = (currentTime / duration) * 100;
@@ -295,15 +360,10 @@
             if (!fallbackImg) fallbackImg = DEFAULT_IMG;
 
             return {
-                id: rawItem.id,
-                imdbID: rawItem.imdbID,
-                type: type,
+                id: rawItem.id, imdbID: rawItem.imdbID, type: type,
                 title: rawItem.id.toUpperCase(),
                 desc: rawItem.sinopsis || "Sin descripción disponible.", 
-                poster: fallbackImg,
-                seasons: seasons,
-                mpd: rawItem.mpd,
-                drm: rawItem.drm
+                poster: fallbackImg, seasons: seasons, mpd: rawItem.mpd, drm: rawItem.drm
             };
         }
 
@@ -319,12 +379,11 @@
                             const api = await fetch(`https://www.omdbapi.com/?i=${item.imdbID}&apikey=${OMDB_KEY}&language=es`);
                             const meta = await api.json();
                             if(meta.Response === 'True') {
-                                item.title = meta.Title;
-                                item.year = meta.Year;
+                                item.title = meta.Title; item.year = meta.Year;
                                 if(meta.Poster && meta.Poster !== 'N/A') item.poster = meta.Poster;
                                 if(meta.Plot && meta.Plot !== 'N/A') item.desc = meta.Plot;
                             }
-                        } catch(e){ console.log("Fallo API OMDb", item.id); }
+                        } catch(e){}
                     }
                     return item;
                 }));
@@ -342,16 +401,12 @@
             
             if(viewName === 'home') {
                 navs[0].classList.add('active');
-                
                 const watching = fullCatalog.filter(item => {
                     const p = getProgress(item.id);
                     return p.pct > 1 && p.pct < 95; 
                 });
-
-                if (watching.length > 0) {
-                    createRow("Continuar Viendo", watching);
-                }
-                createRow("Series Recomendadas", fullCatalog.filter(i => i.type === 'series'));
+                if (watching.length > 0) createRow("Continuar Viendo", watching);
+                createRow("Series", fullCatalog.filter(i => i.type === 'series'));
                 createRow("Películas", fullCatalog.filter(i => i.type === 'movie'));
             } else if (viewName === 'series') {
                 navs[1].classList.add('active');
@@ -364,8 +419,7 @@
 
         function createRow(title, items) {
             if(items.length === 0) return;
-            const app = document.getElementById('app');
-            app.insertAdjacentHTML('beforeend', `
+            document.getElementById('app').insertAdjacentHTML('beforeend', `
                 <div style="margin-bottom:10px;">
                     <h3 class="section-title">${title}</h3>
                     <div class="horizontal-scroll">${items.map(i => cardHTML(i)).join('')}</div>
@@ -373,31 +427,24 @@
         }
 
         function createGrid(items) {
-            const app = document.getElementById('app');
-            app.insertAdjacentHTML('beforeend', `<div class="grid-view">${items.map(i => cardHTML(i)).join('')}</div>`);
+            document.getElementById('app').insertAdjacentHTML('beforeend', `<div class="grid-view">${items.map(i => cardHTML(i)).join('')}</div>`);
         }
 
         function cardHTML(item) {
             const prog = getProgress(item.id);
             let progressBar = '';
             if (prog.pct > 0) {
-                progressBar = `
-                <div class="progress-track" style="display:block">
-                    <div class="progress-fill" style="width: ${prog.pct}%"></div>
-                </div>`;
+                progressBar = `<div class="progress-track" style="display:block"><div class="progress-fill" style="width: ${prog.pct}%"></div></div>`;
             }
-
             return `<div class="card focusable" tabindex="0" onclick="openModal('${item.id}')" data-id="${item.id}">
                         <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
                         ${progressBar}
                     </div>`;
         }
 
-        // --- SISTEMA DE NAVEGACIÓN TV (SPATIAL NAVIGATION) ---
+        // --- NAVEGACIÓN ESPACIAL (MANDO TV) ---
         function handleRemoteControl(e) {
             const k = e.keyCode;
-            
-            // Bloquear scroll por defecto de flechas
             if([KEYS.UP, KEYS.DOWN, KEYS.LEFT, KEYS.RIGHT].includes(k)) e.preventDefault();
 
             if (k === KEYS.BACK || k === KEYS.ESC || k === KEYS.TIZEN_BACK || k === KEYS.WEBOS_BACK) {
@@ -413,58 +460,41 @@
                 if(document.activeElement) document.activeElement.click();
                 return;
             }
-
-            // Mover foco
             moveFocus(k);
         }
 
         function moveFocus(dir) {
-            // Recoger todos los elementos visibles que se pueden enfocar
-            const allFocusable = Array.from(document.querySelectorAll('.focusable'));
-            const visibleFocusable = allFocusable.filter(el => {
+            const visibleFocusable = Array.from(document.querySelectorAll('.focusable')).filter(el => {
                 return el.offsetParent !== null && !el.disabled && el.style.display !== 'none';
             });
-
             if (visibleFocusable.length === 0) return;
 
             const current = document.activeElement;
             const index = visibleFocusable.indexOf(current);
-            
-            // Si no hay nada enfocado, enfocar el primero
-            if (index === -1) {
-                visibleFocusable[0].focus();
-                return;
-            }
+            if (index === -1) { visibleFocusable[0].focus(); return; }
 
-            // Lógica simple de rejilla/lista basada en posición visual
             const currentRect = current.getBoundingClientRect();
             const curX = currentRect.left + currentRect.width / 2;
             const curY = currentRect.top + currentRect.height / 2;
-
+            
             let bestCandidate = null;
             let minDist = Infinity;
 
             visibleFocusable.forEach(el => {
                 if (el === current) return;
-
                 const rect = el.getBoundingClientRect();
                 const elX = rect.left + rect.width / 2;
                 const elY = rect.top + rect.height / 2;
                 
-                // Filtros direccionales
                 let isValid = false;
                 if (dir === KEYS.RIGHT) isValid = elX > curX && Math.abs(elY - curY) < currentRect.height;
                 if (dir === KEYS.LEFT) isValid = elX < curX && Math.abs(elY - curY) < currentRect.height;
-                if (dir === KEYS.DOWN) isValid = elY > curY; // Priorizar vertical puro
+                if (dir === KEYS.DOWN) isValid = elY > curY;
                 if (dir === KEYS.UP) isValid = elY < curY;
 
                 if (isValid) {
-                    // Distancia Euclidiana
                     const dist = Math.sqrt(Math.pow(elX - curX, 2) + Math.pow(elY - curY, 2));
-                    if (dist < minDist) {
-                        minDist = dist;
-                        bestCandidate = el;
-                    }
+                    if (dist < minDist) { minDist = dist; bestCandidate = el; }
                 }
             });
 
@@ -474,31 +504,26 @@
             }
         }
 
+        // --- GESTIÓN DE MODAL ---
         function openModal(id) {
-            lastFocus = document.activeElement; // Guardar foco anterior
+            lastFocus = document.activeElement;
             const item = fullCatalog.find(i => i.id === id);
             if(!item) return;
             document.body.classList.add('modal-open');
 
             const modal = document.getElementById('modal');
-            const bg = item.poster;
-            
-            document.getElementById('m-bg').style.backgroundImage = `url('${bg}')`;
+            document.getElementById('m-bg').style.backgroundImage = `url('${item.poster}')`;
             document.getElementById('m-title').innerText = item.title;
             document.getElementById('m-desc').innerText = item.desc;
             document.getElementById('m-meta').innerText = `${item.year || ''} | ${item.type === 'series' ? 'Serie' : 'Película'}`;
 
             const playBtn = document.getElementById('m-play-btn');
-            
             const prog = getProgress(item.id);
-            if(prog.pct > 1 && prog.pct < 98) {
-                playBtn.innerHTML = '<span class="material-icons-round">play_arrow</span> Reanudar';
-            } else {
-                playBtn.innerHTML = '<span class="material-icons-round">play_arrow</span> Reproducir';
-            }
+            
+            if(prog.pct > 1 && prog.pct < 98) playBtn.innerHTML = '<span class="material-icons-round">play_arrow</span> Reanudar';
+            else playBtn.innerHTML = '<span class="material-icons-round">play_arrow</span> Reproducir';
 
             const seriesArea = document.getElementById('series-area');
-
             if(item.type === 'series') {
                 seriesArea.style.display = 'block';
                 currentSeries = item;
@@ -524,8 +549,6 @@
                 playBtn.onclick = () => playContent(item);
             }
             modal.style.display = 'flex';
-            
-            // Enfocar botón reproducir al abrir
             setTimeout(() => playBtn.focus(), 100);
         }
 
@@ -537,8 +560,7 @@
 
             season.episodes.forEach((ep, idx) => {
                 const row = document.createElement('div');
-                row.className = 'ep-row focusable'; 
-                row.tabIndex = 0;
+                row.className = 'ep-row focusable'; row.tabIndex = 0;
                 let img = ep.img || item.poster;
                 
                 row.innerHTML = `
@@ -559,16 +581,11 @@
             if(!e || e.target.id === 'modal' || e.target.classList.contains('close-btn') || e.type === 'keydown') {
                 document.getElementById('modal').style.display = 'none';
                 document.body.classList.remove('modal-open');
-                
-                // Devolver foco a la tarjeta anterior
-                if(lastFocus) {
-                    lastFocus.focus();
-                    lastFocus.scrollIntoView({block:'center'});
-                }
+                if(lastFocus) { lastFocus.focus(); lastFocus.scrollIntoView({block:'center'}); }
             }
         }
 
-        // --- PLAYER LOGIC ---
+        // --- REPRODUCTOR (SHAKA) ---
         function initShaka() {
             const video = document.getElementById('video');
             const uiContainer = document.getElementById('player-ui');
@@ -577,12 +594,12 @@
             playerInstance.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
             player = playerInstance;
             
+            // Guardar progreso
             video.addEventListener('timeupdate', () => {
-                if (!video.paused && activeContentId) {
-                    saveProgress(activeContentId, video.currentTime, video.duration);
-                }
+                if (!video.paused && activeContentId) saveProgress(activeContentId, video.currentTime, video.duration);
             });
 
+            // Al terminar
             video.addEventListener('ended', () => {
                 if(activeContentId) {
                     const data = { time: 0, pct: 100, lastUpdate: Date.now() };
@@ -590,6 +607,14 @@
                 }
                 if(currentSeries) changeEpisode(1); else stopPlayer();
             });
+
+            // LISTENERS PARA FADE OUT (Ocultar UI)
+            video.addEventListener('play', resetInactivityTimer);
+            video.addEventListener('pause', () => {
+                document.getElementById('player-ui').classList.remove('ui-fade-out');
+                clearTimeout(uiTimer);
+            });
+            setupActivityListeners();
         }
 
         function setPlayerTitle(mainTitle, subTitle) {
@@ -608,15 +633,13 @@
                 else player.configure({ drm: {} });
                 
                 await player.load(item.mpd);
-                
                 const saved = getProgress(item.id);
-                if (saved.pct > 1 && saved.pct < 98) {
-                    document.getElementById('video').currentTime = saved.time;
-                }
+                if (saved.pct > 1 && saved.pct < 98) document.getElementById('video').currentTime = saved.time;
 
                 document.getElementById('video').play();
-                // Enfocar el botón de ir atrás por defecto en el player
                 document.querySelector('.back-arrow').focus();
+                
+                resetInactivityTimer(); // Iniciar fade out
 
             } catch(e) { alert("Error reproduciendo."); stopPlayer(); }
         }
@@ -629,7 +652,6 @@
             if(!episode) return;
             
             activeContentId = currentSeries.id; 
-
             document.getElementById('player-ui').style.display = 'block';
             document.getElementById('series-controls').style.display = 'flex';
             document.getElementById('btn-prev').style.visibility = (currentSeasonIdx === 0 && currentEpisodeIdx === 0) ? 'hidden' : 'visible';
@@ -643,8 +665,13 @@
                 await player.load(episode.mpd);
                 document.getElementById('video').play();
                 
-                // Enfocar botón "Siguiente" para facilidad
-                setTimeout(() => document.getElementById('btn-next').focus(), 500);
+                // Enfocar botón siguiente tras cargar
+                setTimeout(() => {
+                    const nextBtn = document.getElementById('btn-next');
+                    if(nextBtn) nextBtn.focus();
+                }, 500);
+
+                resetInactivityTimer(); // Iniciar fade out
 
             } catch(e) { console.error(e); }
         }
@@ -667,13 +694,14 @@
         }
 
         function stopPlayer() {
+            clearTimeout(uiTimer); // Limpiar timer
+            document.getElementById('player-ui').classList.remove('ui-fade-out'); // Restaurar opacidad
             document.getElementById('player-ui').style.display = 'none';
             document.getElementById('video').pause();
             player.unload();
             currentSeries = null;
             activeContentId = null;
             
-            // Reabrir modal si veníamos de una serie/peli
             if(document.body.classList.contains('modal-open')) {
                  document.getElementById('m-play-btn').focus();
             } else {
