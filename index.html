@@ -350,7 +350,7 @@
                     createRow("Continuar Viendo", watching);
                 }
 
-                createRow("Series Recomendadas", fullCatalog.filter(i => i.type === 'series'));
+                createRow("Series", fullCatalog.filter(i => i.type === 'series'));
                 createRow("Películas", fullCatalog.filter(i => i.type === 'movie'));
             } else if (viewName === 'series') {
                 navs[1].classList.add('active');
