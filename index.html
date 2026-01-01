@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamNet - Dual Database</title>
+    <title>StreamNet - Versión Rápida</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
@@ -11,12 +11,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        /* ESTILOS (Idénticos a la versión anterior) */
+        /* ESTILOS DE LA INTERFAZ */
         :root { --primary: #E50914; --bg: #141414; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow-x: hidden; overscroll-behavior-y: none; user-select: none; }
         body.modal-open { overflow: hidden; }
 
-        /* FOCO TV */
+        /* FOCO Y NAVEGACIÓN TV */
         .focusable:focus, .card:focus, .season-select:focus, .ep-row:focus, .btn-play:focus, .close-btn:focus, .ctrl-btn:focus, input:focus, .back-arrow:focus {
             outline: none; border: 3px solid white; background: rgba(255,255,255,0.15); transform: scale(1.05); box-shadow: 0 0 15px rgba(0,0,0,0.8); z-index: 100;
         }
@@ -30,20 +30,20 @@
         .search-box { display: flex; align-items: center; background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 5px 10px; border-radius: 4px; }
         .search-box input { background: transparent; border: none; color: white; outline: none; width: 120px; font-size: 14px; }
         
-        /* APP */
+        /* CONTENEDOR PRINCIPAL */
         #app { padding-top: 70px; min-height: 100vh; padding-bottom: 50px; }
         .section-title { margin-left: 4%; font-size: 1.2rem; color: #e5e5e5; margin-bottom: 10px; text-shadow: 1px 1px 2px black;}
         .horizontal-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 10px 4%; scroll-behavior: smooth; }
         .horizontal-scroll::-webkit-scrollbar { height: 0px; } 
         .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 20px 4%; }
         
-        /* CARDS */
+        /* TARJETAS (CARDS) */
         .card { min-width: 140px; height: 210px; background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.2s; border: 3px solid transparent; display: flex; align-items: center; justify-content: center; }
         .card img { width: 100%; height: 100%; object-fit: cover; background: #333; }
         .progress-track { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.3); z-index: 5; display: none; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
-        /* MODAL */
+        /* MODAL DE DETALLES */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal-content { background: #181818; width: 100%; max-width: 550px; max-height: 90vh; border-radius: 8px; position: relative; overflow-y: auto; box-shadow: 0 0 50px rgba(0,0,0,0.9); display: flex; flex-direction: column; }
         .close-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: 3px solid transparent; color: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 20; }
@@ -57,7 +57,7 @@
         .ep-row:hover { background: #252525; }
         .ep-thumb { width: 100px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: #333; }
 
-        /* PLAYER UI */
+        /* INTERFAZ DEL REPRODUCTOR */
         #player-ui { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
         .player-header { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 5004; pointer-events: none; display: flex; align-items: flex-start; transition: opacity 0.5s ease, visibility 0.5s; opacity: 1; visibility: visible; }
@@ -119,12 +119,8 @@
     </div>
 
     <script>
-        // --- AQUÍ PON TUS DOS URLs ---
-        const URL_PELICULAS = 'https://gist.githubusercontent.com/TU_USUARIO/ID_GIST/raw/peliculas.json'; 
-        const URL_SERIES = 'https://gist.githubusercontent.com/TU_USUARIO/ID_GIST/raw/series.json';
-        
-        const OMDB_KEY = 'de0627d2'; 
-        const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=StreamNet";
+        // CONFIGURACIÓN E IMÁGENES POR DEFECTO
+        const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
 
         let fullCatalog = [];
         let player = null;
@@ -135,60 +131,47 @@
         let currentSeasonIdx = 0;
         let currentEpisodeIdx = 0;
 
+        // CÓDIGOS DE TECLAS (MANDO TV Y TECLADO)
         const KEYS = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 8, ESC: 27, TIZEN_BACK: 10009, WEBOS_BACK: 461 };
 
         window.onload = async () => {
             initShaka();
             document.addEventListener('keydown', handleRemoteControl);
+            // Enfocar el primer elemento después de un momento
             setTimeout(() => { const first = document.querySelector('.focusable'); if(first) first.focus(); }, 1000);
-            await loadData(); // Esta función ahora carga los dos JSON
+            await loadData();
         };
 
-        // --- CARGA DE DATOS MULTIPLE ---
+        // --- CARGA DE DATOS OPTIMIZADA (SIN API EXTERNA) ---
         async function loadData() {
             try {
-                // Descargar ambos archivos en paralelo
+                // Descargar ambos archivos en paralelo (URLs corregidas con comillas)
                 const [resMovies, resSeries] = await Promise.all([
-                    fetch(https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=0),
-                    fetch(https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=0)
+                    fetch('https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=0'),
+                    fetch('https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=0')
                 ]);
 
-                // Convertir a JSON
-                // Si alguno falla, el catch capturará el error
                 const moviesRaw = await resMovies.json();
                 const seriesRaw = await resSeries.json();
 
-                // Unir las dos listas en una sola variable "raw"
+                // Combinar listas
                 const combinedRaw = [...moviesRaw, ...seriesRaw];
 
-                // Procesar todo junto (API OMDb y Normalización)
-                fullCatalog = await Promise.all(combinedRaw.map(async rawItem => {
-                    let item = normalizeData(rawItem);
-                    if(item.imdbID) {
-                        try {
-                            const api = await fetch(`https://www.omdbapi.com/?i=${item.imdbID}&apikey=${OMDB_KEY}&language=es`);
-                            const meta = await api.json();
-                            if(meta.Response === 'True') {
-                                item.title = meta.Title; item.year = meta.Year;
-                                if(meta.Poster && meta.Poster !== 'N/A') item.poster = meta.Poster;
-                                if(meta.Plot && meta.Plot !== 'N/A') item.desc = meta.Plot;
-                            }
-                        } catch(e){}
-                    }
-                    return item;
-                }));
+                // Procesar datos localmente (sin esperar a OMDb)
+                fullCatalog = combinedRaw.map(rawItem => normalizeData(rawItem));
                 
                 renderView('home');
 
             } catch(e) {
                 console.error(e);
-                document.getElementById('app').innerHTML = `<h3 style="text-align:center;">Error cargando bases de datos.<br><small>Revisa las URLs de los JSON</small></h3>`;
+                document.getElementById('app').innerHTML = `<h3 style="text-align:center; padding:20px;">Error al cargar catálogo.<br><small style="color:#aaa">${e.message}</small></h3>`;
             }
         }
 
+        // --- NORMALIZACIÓN DE DATOS ---
         function normalizeData(rawItem) {
             let type = 'movie';
-            // Detectar tipo basado en el JSON o forzarlo si quisieras
+            // Detección automática de tipo
             if (rawItem.tipo && rawItem.tipo.toLowerCase().includes('serie')) type = 'series';
             else if (rawItem.tipo && rawItem.tipo.toLowerCase().includes('película')) type = 'movie';
             
@@ -200,6 +183,7 @@
                 }));
             }
 
+            // Lógica para encontrar imagen: usa img del item, poster, o la imagen del primer episodio
             let fallbackImg = rawItem.img || rawItem.poster;
             if (!fallbackImg && seasons.length > 0 && seasons[0].episodes.length > 0) {
                 fallbackImg = seasons[0].episodes[0].img;
@@ -207,10 +191,17 @@
             if (!fallbackImg) fallbackImg = DEFAULT_IMG;
 
             return {
-                id: rawItem.id, imdbID: rawItem.imdbID, type: type,
-                title: rawItem.id.toUpperCase(),
+                id: rawItem.id,
+                imdbID: rawItem.imdbID, // Se guarda pero no se usa para fetch
+                type: type,
+                // Si no hay título explícito, usamos el ID formateado
+                title: rawItem.titulo || rawItem.title || rawItem.id.toUpperCase().replace(/_/g, ' '), 
                 desc: rawItem.sinopsis || "Sin descripción disponible.", 
-                poster: fallbackImg, seasons: seasons, mpd: rawItem.mpd, drm: rawItem.drm
+                year: rawItem.year || '',
+                poster: fallbackImg,
+                seasons: seasons,
+                mpd: rawItem.mpd,
+                drm: rawItem.drm
             };
         }
 
@@ -312,7 +303,7 @@
             document.getElementById('m-bg').style.backgroundImage = `url('${item.poster}')`;
             document.getElementById('m-title').innerText = item.title;
             document.getElementById('m-desc').innerText = item.desc;
-            document.getElementById('m-meta').innerText = `${item.year || ''} | ${item.type === 'series' ? 'Serie' : 'Película'}`;
+            document.getElementById('m-meta').innerText = `${item.year ? item.year + ' | ' : ''}${item.type === 'series' ? 'Serie' : 'Película'}`;
             const playBtn = document.getElementById('m-play-btn');
             const prog = getProgress(item.id);
             playBtn.innerHTML = (prog.pct > 1 && prog.pct < 98) ? '<span class="material-icons-round">play_arrow</span> Reanudar' : '<span class="material-icons-round">play_arrow</span> Reproducir';
@@ -324,7 +315,7 @@
                     item.seasons.forEach((s, idx) => { let opt = document.createElement('option'); opt.value = idx; opt.innerText = `Temporada ${s.number}`; sel.appendChild(opt); });
                     sel.onchange = () => renderEpisodes(item, sel.value); sel.value = 0; renderEpisodes(item, 0);
                     playBtn.onclick = () => loadEpisode(0, 0);
-                } else document.getElementById('episodes-list').innerHTML = '<p>No hay temporadas.</p>';
+                } else document.getElementById('episodes-list').innerHTML = '<p>No hay temporadas disponibles.</p>';
             } else {
                 seriesArea.style.display = 'none'; currentSeries = null; playBtn.onclick = () => playContent(item);
             }
@@ -366,7 +357,7 @@
                 await player.load(item.mpd);
                 const saved = getProgress(item.id); if (saved.pct > 1 && saved.pct < 98) document.getElementById('video').currentTime = saved.time;
                 document.getElementById('video').play(); document.querySelector('.back-arrow').focus(); resetInactivityTimer();
-            } catch(e) { alert("Error reproduciendo."); stopPlayer(); }
+            } catch(e) { alert("Error reproduciendo: " + e.message); stopPlayer(); }
         }
         async function loadEpisode(seasonIdx, episodeIdx) {
             currentSeasonIdx = parseInt(seasonIdx); currentEpisodeIdx = parseInt(episodeIdx);
@@ -374,7 +365,7 @@
             activeContentId = currentSeries.id; 
             document.getElementById('player-ui').style.display = 'block'; document.getElementById('series-controls').style.display = 'flex';
             document.getElementById('btn-prev').style.visibility = (currentSeasonIdx===0 && currentEpisodeIdx===0) ? 'hidden':'visible';
-            document.getElementById('p-title').innerText = currentSeries.title; document.getElementById('p-sub').innerText = `T${season.number} E${currentEpisodeIdx+1}: ${episode.title}`;
+            document.getElementById('p-title').innerText = currentSeries.title; document.getElementById('p-sub').innerText = `T${season.number} E${currentEpisodeIdx+1}: ${episode.title || ''}`;
             try {
                 player.configure({ drm: episode.drm && episode.drm.clearKeys ? { clearKeys: episode.drm.clearKeys } : {} });
                 await player.load(episode.mpd);
