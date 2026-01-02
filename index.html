@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamNet - Ultimate Experience</title>
+    <title>StreamNet - Ultimate TV Experience</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
@@ -13,12 +13,12 @@
     
     <style>
         /* =========================================
-           ESTILOS GENERALES Y VARIABLES
+           ESTILOS GENERALES (BASE & PREMIUM)
            ========================================= */
         :root { --primary: #E50914; --bg: #000000; --overlay: rgba(0,0,0,0.8); }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* SISTEMA DE FOCO (TV) */
+        /* FOCO TV - Borde blanco y escala (CRÍTICO PARA TV) */
         .focusable:focus {
             outline: none; border: 3px solid white; transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 100;
@@ -29,12 +29,12 @@
         header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
-        .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; padding: 5px 10px; border-radius: 4px; transition: 0.2s; }
+        .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; padding: 5px 10px; border-radius: 4px; }
         .nav-btn.active { color: white; background: rgba(255,255,255,0.1); border-bottom: 2px solid var(--primary); }
         .search-box { display: flex; align-items: center; background: rgba(255,255,255,0.1); border: 1px solid #333; padding: 5px 10px; border-radius: 4px; }
         .search-box input { background: transparent; border: none; color: white; outline: none; width: 150px; font-size: 14px; }
 
-        /* CONTENEDOR PRINCIPAL */
+        /* CONTENEDOR PRINCIPAL (GRID Y CARROUSEL) */
         #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
         .section-title { margin-left: 4%; font-size: 1.4rem; color: #e5e5e5; margin-bottom: 10px; margin-top: 20px; text-shadow: 1px 1px 2px black; font-weight: bold;}
         
@@ -48,61 +48,57 @@
             transition: transform 0.2s; border: 3px solid transparent; display: flex; align-items: center; justify-content: center;
         }
         .card img { width: 100%; height: 100%; object-fit: cover; }
+        /* Barra de progreso en la tarjeta */
         .progress-track { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.3); z-index: 5; display: none; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           VISTA DE DETALLES (CORREGIDA)
+           VISTA DE DETALLES (HERO)
            ========================================= */
-        #details-view { 
-            position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; 
-            overflow-x: hidden; overflow-y: auto; 
-        }
+        #details-view { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; overflow: hidden; }
         
-        /* CORRECCIÓN SOMBREADO DERECHO: Se eliminó el degradado lateral (to right) */
         .details-hero { 
             position: absolute; inset: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center top; 
-            /* Solo degradado hacia abajo para integrar con el fondo negro */
-            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 30%, transparent 95%);
         }
-        
-        /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
-        .hero-gradient { 
-            position: absolute; inset: 0; 
-        }
+        .hero-gradient { position: absolute; inset: 0; background: radial-gradient(circle at 30% 50%, rgba(0,0,0,0.4) 0%, #000000 90%); }
 
         /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
         .details-content { 
-            position: absolute; top: 15%; left: 5%; width: 45%; z-index: 10; 
-            display: flex; flex-direction: column; 
+            position: absolute; 
+            top: 1%; 
+            left: 5%; 
+            width: 90%; /* Ancho limitado para horizontal */
+            z-index: 10; 
+            display: flex; 
+            flex-direction: column; 
+            /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
+            bottom: 240px; 
+            justify-content: flex-star; /* Alinea contenido hacia arriba de su caja */
         }
-
-        .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
-        .details-meta { font-size: 1.1rem; color: #ccc; margin-bottom: 10px; font-weight: bold; display: flex; gap: 15px; align-items: center;}
+        .details-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; text-shadow: 2px 2px 10px black; line-height: 1; }
+        .details-meta { font-size: 1.2rem; color: #ccc; margin-bottom: 20px; font-weight: bold; display: flex; gap: 15px; align-items: center;}
         .tag { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 0.9rem; }
-        
-        .details-desc { 
-            font-size: 1rem; line-height: 1.4; color: #ddd; margin-bottom: 20px; 
-            overflow: hidden; text-overflow: ellipsis; 
-            display: -webkit-box; -webkit-line-clamp: 3; /* Limitado a 3 líneas en horizontal */
-            -webkit-box-orient: vertical; 
-            text-shadow: 1px 1px 2px black;
-        }
+        .details-desc { font-size: 1.1rem; line-height: 1.5; color: #ddd; margin-bottom: 30px; max-height: 120px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; text-shadow: 1px 1px 2px black;}
 
-        .action-row { display: flex; gap: 15px; margin-bottom: 5px; flex-wrap: wrap; }
-        .btn-large { padding: 10px 25px; font-size: 1rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s;}
+        .action-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .btn-large { padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s;}
         .btn-primary { background: white; color: black; border: 3px solid transparent; }
         .btn-secondary { background: rgba(100, 100, 100, 0.6); color: white; border: 3px solid transparent; }
         
+        /* Contenedor de Episodios */
         #series-container { 
-            position: absolute; bottom: 20px; left: 5%; right: 5%; z-index: 20; background: transparent;
+            position: absolute; bottom: 30px; left: 5%; right: 5%; z-index: 20; 
+            background: transparent;
         }
         .season-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
         .season-selector { background: #333; color: white; border: 1px solid #555; padding: 5px 15px; border-radius: 4px; font-size: 1rem; }
         
-        .episode-scroller { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; scroll-behavior: smooth; }
+        .episode-scroller { 
+            display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; scroll-behavior: smooth;
+        }
         .episode-scroller::-webkit-scrollbar { height: 0; }
 
         .episode-card {
@@ -129,55 +125,55 @@
         }
         .ui-fade-out { opacity: 0 !important; pointer-events: none; }
 
-        .p-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; position: relative; }
-        .btn-back-p { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.1); color: white; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
-        .p-clock { font-size: 1.5rem; font-weight: bold; color: #ccc; text-shadow: 2px 2px 4px black; position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 1; pointer-events: none; }
+        /* Header Player - Con reloj centrado */
+        .p-header { 
+            display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; 
+            position: relative; 
+        }
+        .btn-back-p { 
+            width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.1); color: white; 
+            border: 2px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; 
+            z-index: 2;
+        }
+        .p-clock { 
+            font-size: 1.5rem; font-weight: bold; color: #ccc; text-shadow: 2px 2px 4px black; 
+            position: absolute; left: 50%; top: 40px; transform: translateX(-50%);
+            z-index: 1; pointer-events: none;
+        }
+        
         .p-meta { text-align: right; text-shadow: 1px 1px 3px black; max-width: 40%; z-index: 2; }
         .p-meta h2 { margin: 0; font-size: 1.5rem; }
         .p-meta span { color: #aaa; font-size: 1rem; }
 
-        .p-controls-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 40px; align-items: center; }
-        .ctrl-btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: 3px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        /* Controles Centro */
+        .p-controls-center { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            display: flex; gap: 40px; align-items: center; 
+        }
+        .ctrl-btn { 
+            width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; 
+            border: 3px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: 0.2s; 
+        }
         .ctrl-btn:focus, .ctrl-btn:hover { background: var(--primary); border-color: white; transform: scale(1.15); }
         .ctrl-btn .material-icons-round { font-size: 40px; }
         .ctrl-btn.mini { width: 55px; height: 55px; } 
 
         .shaka-bottom-controls { padding-bottom: 20px; padding-left: 20px; padding-right: 20px; }
+
+        /* Media Queries para Móviles */
+        @media (orientation: portrait) {
+            .details-hero { height: 40vh; -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%); }
+            .details-content { top: 35%; width: 90%; left: 5%; }
+            .details-title { font-size: 2.5rem; }
+            #series-container { position: relative; bottom: auto; margin-top: 45vh; padding-bottom: 50px; }
+            .episode-scroller { flex-direction: column; }
+            .episode-card { max-width: 100%; min-width: 100%; flex-direction: row; height: 80px; align-items: center; }
+            .ep-thumb { width: 120px; height: 100%; }
+        }
+
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
 
-        /* =========================================
-           MEDIA QUERIES (MÓVIL / PORTRAIT)
-           ========================================= */
-        @media (orientation: portrait) {
-            .details-hero { 
-                height: 50vh; width: 100%; top: 0;
-                /* Sin degradado a la derecha, solo abajo */
-                -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-                mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-            }
-            .hero-gradient { height: 50vh; background: linear-gradient(to top, black 10%, transparent); }
-            
-            .details-content { 
-                position: relative; top: auto; margin-top: 35vh; 
-                width: 90%; left: 5%; margin-bottom: 20px;
-                max-height: none; /* Reseteamos la altura máxima en vertical */
-                justify-content: flex-start;
-            }
-            .details-title { font-size: 2.5rem; }
-            .details-desc { -webkit-line-clamp: 6; }
-            
-            #series-container { 
-                position: relative; bottom: auto; margin-top: 0; padding-bottom: 50px;
-                background: transparent;
-            }
-            .episode-scroller { flex-direction: column; overflow-x: hidden; }
-            .episode-card { 
-                max-width: 100%; min-width: 100%; flex-direction: row; height: 90px; 
-                align-items: center; margin-bottom: 10px; background: rgba(40,40,40,0.9);
-            }
-            .ep-thumb { width: 140px; height: 100%; }
-            .ep-info { flex: 1; padding-left: 15px; }
-        }
     </style>
 </head>
 <body>
@@ -296,7 +292,9 @@
             FF: [417], RW: [412]
         };
 
-        function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
+        function isKey(e, keyName) {
+            return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode);
+        }
 
         // ================= INICIALIZACIÓN =================
         window.onload = async () => {
@@ -319,7 +317,8 @@
             if (isKey(e, 'BACK')) {
                 e.preventDefault();
                 if(document.getElementById('error-modal').style.display === 'block') {
-                    document.getElementById('error-modal').style.display = 'none'; return;
+                    document.getElementById('error-modal').style.display = 'none';
+                    return;
                 }
                 if (currentView === 'player') exitPlayer();
                 else if (currentView === 'details') closeDetails();
@@ -382,7 +381,7 @@
         // ================= CARGA DE DATOS =================
         async function loadData() {
             try {
-                // URLs JSON
+                // URLs JSON (Recuerda actualizar si estos enlaces caen)
                 const [r1, r2] = await Promise.all([
                     fetch('https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=1'),
                     fetch('https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1')
@@ -439,14 +438,14 @@
             if(view === 'home') {
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
                 
-                // Continuar Viendo
+                // Continuar Viendo (Lógica combinada: busca progreso > 1%)
                 const watching = catalog.filter(x => { 
                     const p = getProgress(x.id); 
                     return p.pct > 1 && p.pct < 95; 
                 });
                 if(watching.length > 0) createRow("Continuar Viendo", watching);
                 
-                createRow("Series", catalog.filter(x => x.type === 'series'));
+                createRow("Series Agregadas", catalog.filter(x => x.type === 'series'));
                 createRow("Películas", catalog.filter(x => x.type === 'movie'));
                 
             } else if(view === 'series') {
@@ -504,7 +503,7 @@
             document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
             document.getElementById('det-title').innerText = item.title;
             document.getElementById('det-desc').innerText = item.desc;
-            document.getElementById('det-year').innerText = item.year;
+            document.getElementById('det-year').innerText = item.year || '2024';
             document.getElementById('det-type').innerText = item.type === 'series' ? 'Serie' : 'Película';
 
             const btnPlay = document.getElementById('btn-play-hero');
@@ -520,12 +519,12 @@
                 let btnLabel = `Reproducir T${item.seasons[0].num} E1`;
                 let found = false;
 
-                // Buscamos donde se quedó
+                // Recorremos todos los episodios para ver dónde se quedó
                 for(let s=0; s<item.seasons.length; s++) {
                     for(let e=0; e<item.seasons[s].episodes.length; e++) {
                         const epId = getEpId(item.id, s, e);
                         const prog = getProgress(epId);
-                        
+                        // Si no está terminado (< 95%), este es el siguiente
                         if(prog.pct < 95) {
                             nextS = s; nextE = e;
                             if(prog.pct > 2) btnLabel = `Reanudar T${item.seasons[s].num} E${e+1}`;
@@ -570,6 +569,7 @@
             if(!s) return;
             
             s.episodes.forEach((ep, idx) => {
+                // Progreso individual por episodio
                 const epId = getEpId(item.id, sIdx, idx);
                 const p = getProgress(epId);
                 const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
@@ -605,7 +605,7 @@
                 const video = document.getElementById('video');
                 player = new shaka.Player(video);
                 
-                // Configuración de idioma
+                // Configuración de idioma preferido
                 player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
 
                 // UI Overlay
@@ -620,7 +620,9 @@
                 video.addEventListener('timeupdate', () => {
                     if (!video.paused && currentItem) {
                         let saveId = currentItem.id;
+                        // Si es serie, usamos ID único: serieID_s0e1
                         if(currentItem.type === 'series') saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
+                        
                         saveProgress(saveId, video.currentTime, video.duration);
                     }
                 });
@@ -646,8 +648,7 @@
 
         async function startPlayer(mpd, drm, title, isSeries) {
             if (!mpd) return showError("Sin URL de video.");
-            
-            // NOTA: Se ha eliminado la restricción de protocolo file: para compatibilidad APK
+            if (window.location.protocol === 'file:') return showError("Error 7000: No uses archivo local. Sube a un servidor.");
 
             document.getElementById('player-container').style.display = 'block';
             currentView = 'player';
@@ -728,7 +729,7 @@
             clearInterval(clockInterval);
             document.getElementById('player-container').style.display = 'none';
             currentView = 'details';
-            // Refrescar detalles
+            // Refrescar detalles para actualizar barra de progreso y texto del botón
             openDetails(currentItem.id);
         }
 
@@ -750,10 +751,6 @@
         }
 
         function showError(msg) {
-            // FIX: Detener reproducción para que no suene de fondo
-            const v = document.getElementById('video');
-            if (v) v.pause();
-
             const m = document.getElementById('error-modal');
             document.getElementById('error-msg').innerText = msg;
             m.style.display = 'block';
@@ -761,7 +758,9 @@
         }
 
         // --- UTILIDADES ---
+        // Genera ID único para progreso de episodio: "IDSerie_s0e1"
         function getEpId(itemId, sIdx, eIdx) { return `${itemId}_s${sIdx}e${eIdx}`; }
+        
         function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
         function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : {pct:0, time:0}; }
 
