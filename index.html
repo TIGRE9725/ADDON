@@ -52,40 +52,39 @@
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           VISTA DE DETALLES (CORREGIDA)
+           VISTA DE DETALLES (CORREGIDA - FIX IMAGEN BIEN)
            ========================================= */
         #details-view { 
             position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; 
-            overflow-x: hidden; overflow-y: auto; 
+            overflow: hidden; /* Evita doble scroll */
         }
         
-        /* CORRECCIÓN SOMBREADO DERECHO: Se eliminó el degradado lateral (to right) */
+        /* FIX FONDO: Imagen ocupa todo, pero con mascara para el texto */
         .details-hero { 
             position: absolute; inset: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center top; 
-            /* Solo degradado hacia abajo para integrar con el fondo negro */
-            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            /* Mascara para que se oscurezca hacia abajo donde van los episodios */
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
         }
         
-        /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
+        /* FIX GRADIENTE: Fondo negro detrás del texto para legibilidad */
         .hero-gradient { 
             position: absolute; inset: 0; 
-            background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.5) 50%, transparent 100%); 
+            background: linear-gradient(to top, #000 20%, rgba(0,0,0,0.8) 50%, transparent 100%); 
         }
 
-        /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
         .details-content { 
             position: absolute; 
             top: 10%; 
             left: 5%; 
-            width: 50%; /* Ancho limitado para horizontal */
+            width: 50%; 
             z-index: 10; 
             display: flex; 
             flex-direction: column; 
-            /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
-            max-height: calc(100vh - 260px); 
-            justify-content: flex-end; /* Alinea contenido hacia abajo de su caja */
+            /* Se detiene antes de chocar con la lista negra de abajo */
+            bottom: 240px; 
+            justify-content: flex-end; 
         }
 
         .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
@@ -95,7 +94,7 @@
         .details-desc { 
             font-size: 1rem; line-height: 1.4; color: #ddd; margin-bottom: 20px; 
             overflow: hidden; text-overflow: ellipsis; 
-            display: -webkit-box; -webkit-line-clamp: 3; /* Limitado a 3 líneas en horizontal */
+            display: -webkit-box; -webkit-line-clamp: 3; 
             -webkit-box-orient: vertical; 
             text-shadow: 1px 1px 2px black;
         }
@@ -105,9 +104,20 @@
         .btn-primary { background: white; color: black; border: 3px solid transparent; }
         .btn-secondary { background: rgba(100, 100, 100, 0.6); color: white; border: 3px solid transparent; }
         
+        /* !!! FIX CLAVE PARA IMAGEN BIEN !!!
+           Fondo Negro solido, pegado abajo, ancho completo
+        */
         #series-container { 
-            position: absolute; bottom: 20px; left: 5%; right: 5%; z-index: 20; background: transparent;
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; /* Ancho completo */
+            padding: 20px 5%; /* Relleno interno */
+            box-sizing: border-box; /* Para que el padding no rompa el ancho */
+            z-index: 20; 
+            background-color: #000000; /* FONDO NEGRO SOLIDO */
         }
+
         .season-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
         .season-selector { background: #333; color: white; border: 1px solid #555; padding: 5px 15px; border-radius: 4px; font-size: 1rem; }
         
@@ -160,7 +170,6 @@
         @media (orientation: portrait) {
             .details-hero { 
                 height: 50vh; width: 100%; top: 0;
-                /* Sin degradado a la derecha, solo abajo */
                 -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
                 mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             }
@@ -169,7 +178,7 @@
             .details-content { 
                 position: relative; top: auto; margin-top: 35vh; 
                 width: 90%; left: 5%; margin-bottom: 20px;
-                max-height: none; /* Reseteamos la altura máxima en vertical */
+                bottom: auto; /* Resetear bottom para movil */
                 justify-content: flex-start;
             }
             .details-title { font-size: 2.5rem; }
@@ -177,7 +186,7 @@
             
             #series-container { 
                 position: relative; bottom: auto; margin-top: 0; padding-bottom: 50px;
-                background: transparent;
+                background: transparent; /* En movil se ve mejor transparente */
             }
             .episode-scroller { flex-direction: column; overflow-x: hidden; }
             .episode-card { 
