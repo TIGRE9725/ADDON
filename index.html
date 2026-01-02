@@ -26,7 +26,7 @@
         }
 
         /* HEADER DE NAVEGACIÓN */
-        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
+        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-c[...]
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
         .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; padding: 5px 10px; border-radius: 4px; transition: 0.2s; }
@@ -52,39 +52,40 @@
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           VISTA DE DETALLES (CORREGIDA - FIX IMAGEN BIEN)
+           VISTA DE DETALLES (CORREGIDA)
            ========================================= */
         #details-view { 
             position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; 
-            overflow: hidden; /* Evita doble scroll */
+            overflow-x: hidden; overflow-y: auto; 
         }
         
-        /* FIX FONDO: Imagen ocupa todo, pero con mascara para el texto */
+        /* CORRECCIÓN SOMBREADO DERECHO: Se eliminó el degradado lateral (to right) */
         .details-hero { 
             position: absolute; inset: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center top; 
-            /* Mascara para que se oscurezca hacia abajo donde van los episodios */
-            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            /* Solo degradado hacia abajo para integrar con el fondo negro */
+            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
         }
         
-        /* FIX GRADIENTE: Fondo negro detrás del texto para legibilidad */
+        /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
         .hero-gradient { 
             position: absolute; inset: 0; 
-            background: linear-gradient(to top, #000 20%, rgba(0,0,0,0.8) 50%, transparent 100%); 
+            background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.5) 50%, transparent 100%); 
         }
 
+        /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
         .details-content { 
             position: absolute; 
             top: 10%; 
             left: 5%; 
-            width: 50%; 
+            width: 50%; /* Ancho limitado para horizontal */
             z-index: 10; 
             display: flex; 
             flex-direction: column; 
-            /* Se detiene antes de chocar con la lista negra de abajo */
-            bottom: 240px; 
-            justify-content: flex-end; 
+            /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
+            max-height: calc(100vh - 260px); 
+            justify-content: flex-end; /* Alinea contenido hacia abajo de su caja */
         }
 
         .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
@@ -94,7 +95,7 @@
         .details-desc { 
             font-size: 1rem; line-height: 1.4; color: #ddd; margin-bottom: 20px; 
             overflow: hidden; text-overflow: ellipsis; 
-            display: -webkit-box; -webkit-line-clamp: 3; 
+            display: -webkit-box; -webkit-line-clamp: 3; /* Limitado a 3 líneas en horizontal */
             -webkit-box-orient: vertical; 
             text-shadow: 1px 1px 2px black;
         }
@@ -104,20 +105,9 @@
         .btn-primary { background: white; color: black; border: 3px solid transparent; }
         .btn-secondary { background: rgba(100, 100, 100, 0.6); color: white; border: 3px solid transparent; }
         
-        /* !!! FIX CLAVE PARA IMAGEN BIEN !!!
-           Fondo Negro solido, pegado abajo, ancho completo
-        */
         #series-container { 
-            position: absolute; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; /* Ancho completo */
-            padding: 20px 5%; /* Relleno interno */
-            box-sizing: border-box; /* Para que el padding no rompa el ancho */
-            z-index: 20; 
-            background-color: #000000; /* FONDO NEGRO SOLIDO */
+            position: absolute; bottom: 20px; left: 5%; right: 5%; z-index: 20; background: transparent;
         }
-
         .season-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
         .season-selector { background: #333; color: white; border: 1px solid #555; padding: 5px 15px; border-radius: 4px; font-size: 1rem; }
         
@@ -149,20 +139,20 @@
         .ui-fade-out { opacity: 0 !important; pointer-events: none; }
 
         .p-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; position: relative; }
-        .btn-back-p { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.1); color: white; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
-        .p-clock { font-size: 1.5rem; font-weight: bold; color: #ccc; text-shadow: 2px 2px 4px black; position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 1; pointer-events: none; }
+        .btn-back-p { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.1); color: white; border: 2px solid transparent; display: flex; align-items: center; justify-content[...]
+        .p-clock { font-size: 1.5rem; font-weight: bold; color: #ccc; text-shadow: 2px 2px 4px black; position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 1; pointer-events:[...]
         .p-meta { text-align: right; text-shadow: 1px 1px 3px black; max-width: 40%; z-index: 2; }
         .p-meta h2 { margin: 0; font-size: 1.5rem; }
         .p-meta span { color: #aaa; font-size: 1rem; }
 
         .p-controls-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 40px; align-items: center; }
-        .ctrl-btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: 3px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .ctrl-btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: 3px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-conte[...]
         .ctrl-btn:focus, .ctrl-btn:hover { background: var(--primary); border-color: white; transform: scale(1.15); }
         .ctrl-btn .material-icons-round { font-size: 40px; }
         .ctrl-btn.mini { width: 55px; height: 55px; } 
 
         .shaka-bottom-controls { padding-bottom: 20px; padding-left: 20px; padding-right: 20px; }
-        .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
+        .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center[...]
 
         /* =========================================
            MEDIA QUERIES (MÓVIL / PORTRAIT)
@@ -170,6 +160,7 @@
         @media (orientation: portrait) {
             .details-hero { 
                 height: 50vh; width: 100%; top: 0;
+                /* Sin degradado a la derecha, solo abajo */
                 -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
                 mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             }
@@ -178,7 +169,7 @@
             .details-content { 
                 position: relative; top: auto; margin-top: 35vh; 
                 width: 90%; left: 5%; margin-bottom: 20px;
-                bottom: auto; /* Resetear bottom para movil */
+                max-height: none; /* Reseteamos la altura máxima en vertical */
                 justify-content: flex-start;
             }
             .details-title { font-size: 2.5rem; }
@@ -186,7 +177,7 @@
             
             #series-container { 
                 position: relative; bottom: auto; margin-top: 0; padding-bottom: 50px;
-                background: transparent; /* En movil se ve mejor transparente */
+                background: transparent;
             }
             .episode-scroller { flex-direction: column; overflow-x: hidden; }
             .episode-card { 
@@ -416,11 +407,23 @@
             }
         }
 
+        // ================= UTILIDAD de imagen (reemplaza mal.jpg -> bien.jpg) =================
+        function fixImg(url) {
+            if (!url) return DEFAULT_IMG;
+            try {
+                // Reemplaza todas las apariciones de "mal.jpg" por "bien.jpg"
+                return url.replace(/mal\.jpg/g, 'bien.jpg');
+            } catch (e) {
+                return url;
+            }
+        }
+
         function processItem(item) {
             let type = 'movie';
             if (item.tipo && item.tipo.toLowerCase().includes('serie')) type = 'series';
             
-            let img = item.poster || item.img || DEFAULT_IMG;
+            // Usar fixImg para asegurar que mal.jpg sea bien.jpg
+            let img = fixImg(item.poster || item.img || DEFAULT_IMG);
             let seasons = [];
             
             if (item.estaciones) {
@@ -429,7 +432,7 @@
                     episodes: s.episodios || s.episodes
                 }));
                 // Si no hay poster, usar thumb del ep 1
-                if(!item.poster && seasons[0]?.episodes[0]?.img) img = seasons[0].episodes[0].img;
+                if(!item.poster && seasons[0]?.episodes[0]?.img) img = fixImg(seasons[0].episodes[0].img);
             }
 
             return {
@@ -498,8 +501,9 @@
         function cardHtml(item) {
             const p = getProgress(item.id);
             const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
+            // aplicar fixImg al poster
             return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')">
-                <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
+                <img src="${fixImg(item.poster)}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
                 ${bar}
             </div>`;
         }
@@ -518,8 +522,8 @@
             view.style.display = 'block';
             view.scrollTop = 0;
 
-            // Datos visuales
-            document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
+            // Datos visuales (usar fixImg)
+            document.getElementById('det-hero').style.backgroundImage = `url('${fixImg(item.hero)}')`;
             document.getElementById('det-title').innerText = item.title;
             document.getElementById('det-desc').innerText = item.desc;
             document.getElementById('det-year').innerText = item.year;
@@ -596,8 +600,9 @@
                 div.className = 'episode-card focusable';
                 div.tabIndex = 0;
                 div.onclick = () => playEpisode(sIdx, idx);
+                // aplicar fixImg a la miniatura del episodio (o al poster si no existe)
                 div.innerHTML = `
-                    <img src="${ep.img || item.poster}" class="ep-thumb" onerror="this.src='${DEFAULT_IMG}'">
+                    <img src="${fixImg(ep.img || item.poster)}" class="ep-thumb" onerror="this.src='${DEFAULT_IMG}'">
                     ${bar}
                     <div class="ep-info">
                         <div class="ep-title">${idx+1}. ${ep.title || 'Episodio '+(idx+1)}</div>
