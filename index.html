@@ -803,14 +803,14 @@
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        function onError(e) {
-            const err = e.detail || e;
-            console.error(err);
-            let msg = "Error desconocido.";
-            if (err.code === 7000) msg = "Error de Carga: Enlace roto o bloqueo de red.";
-            if (err.code === 6007) msg = "Error de Licencia DRM.";
-            showError(msg);
-        }
+      function onError(e) {
+    // Solo registramos el error en la consola (F12), pero no mostramos la ventana al usuario
+    const err = e.detail || e;
+    console.error("Error capturado y silenciado:", err);
+    
+    // Comentamos o eliminamos la línea que abre el modal:
+    // showError(msg); 
+   }
 
         function showError(msg) {
             const v = document.getElementById('video');
