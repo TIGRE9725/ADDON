@@ -455,7 +455,7 @@
                 });
                 if(watching.length > 0) createRow("Continuar Viendo", watching);
                 
-                createRow("Series Agregadas", catalog.filter(x => x.type === 'series'));
+                createRow("Series", catalog.filter(x => x.type === 'series'));
                 createRow("Películas", catalog.filter(x => x.type === 'movie'));
                 
             } else if(view === 'series') {
@@ -513,7 +513,7 @@
             document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
             document.getElementById('det-title').innerText = item.title;
             document.getElementById('det-desc').innerText = item.desc;
-            document.getElementById('det-year').innerText = item.year || '2024';
+            document.getElementById('det-year').innerText = item.year;
             document.getElementById('det-type').innerText = item.type === 'series' ? 'Serie' : 'Película';
 
             const btnPlay = document.getElementById('btn-play-hero');
