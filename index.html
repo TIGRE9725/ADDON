@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamNet Fixed Final</title>
+    <title>StreamNet - Ultimate Experience</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
@@ -409,7 +409,7 @@
             return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')"><img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">${bar}</div>`;
         }
 
-        // --- DETALLES ---
+        // --- DETALLES E INTELIGENCIA DE REPRODUCCIÓN ---
         function openDetails(id) {
             const item = catalog.find(x => x.id === id);
             if(!item) return;
@@ -434,10 +434,12 @@
                 sCont.style.display = 'block';
                 renderSeasons(item);
                 
+                // LÓGICA INTELIGENTE: Buscar último episodio visto
                 let nextS = 0, nextE = 0;
                 let btnLabel = `Reproducir T${item.seasons[0].num} E1`;
                 let found = false;
                 
+                // Primero buscamos si hay alguno a medias
                 for(let s=0; s<item.seasons.length; s++) {
                     for(let e=0; e<item.seasons[s].episodes.length; e++) {
                         const epId = getEpId(item.id, s, e);
