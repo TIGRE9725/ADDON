@@ -756,12 +756,6 @@
         }
 
         function onError(e) {
-            const err = e.detail || e;
-            console.error(err);
-            let msg = "Error desconocido.";
-            if (err.code === 7000) msg = "Error de Carga (7000): Enlace roto o bloqueo CORS.";
-            if (err.code === 6007) msg = "Error de Licencia DRM.";
-            showError(msg);
         }
 
         function showError(msg) {
