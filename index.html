@@ -71,7 +71,6 @@
         /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
         .hero-gradient { 
             position: absolute; inset: 0; 
-            background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.5) 50%, transparent 100%); 
         }
 
         /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
@@ -84,8 +83,8 @@
             display: flex; 
             flex-direction: column; 
             /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
-            max-height: calc(100vh - 200px); 
-            justify-content: flex-end; /* Alinea contenido hacia abajo de su caja */
+            max-height: calc(100vh - 260px); 
+            justify-content: flex-start; /* Alinea contenido hacia abajo de su caja */
         }
 
         .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
