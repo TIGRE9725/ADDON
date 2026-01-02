@@ -16,12 +16,11 @@
            ESTILOS GENERALES Y VARIABLES
            ========================================= */
         :root { --primary: #E50914; --bg: #000000; --overlay: rgba(0,0,0,0.8); }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; height: 100%; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
         /* SISTEMA DE FOCO (TV) */
-        .focusable { outline: none; border: 3px solid transparent; transition: all 0.2s; box-sizing: border-box; }
         .focusable:focus {
-            border-color: white; transform: scale(1.05);
+            outline: none; border: 3px solid white; transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 100;
             background-color: rgba(255,255,255,0.1);
         }
@@ -53,30 +52,40 @@
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           VISTA DE DETALLES
+           VISTA DE DETALLES (CORREGIDA)
            ========================================= */
         #details-view { 
             position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; 
             overflow-x: hidden; overflow-y: auto; 
         }
         
+        /* CORRECCIÓN SOMBREADO DERECHO: Se eliminó el degradado lateral (to right) */
         .details-hero { 
             position: absolute; inset: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center top; 
+            /* Solo degradado hacia abajo para integrar con el fondo negro */
             mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
         }
         
+        /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
         .hero-gradient { 
             position: absolute; inset: 0; 
             background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.5) 50%, transparent 100%); 
         }
 
+        /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
         .details-content { 
-            position: absolute; top: 10%; left: 5%; width: 50%; z-index: 10; 
-            display: flex; flex-direction: column; 
+            position: absolute; 
+            top: 10%; 
+            left: 5%; 
+            width: 50%; /* Ancho limitado para horizontal */
+            z-index: 10; 
+            display: flex; 
+            flex-direction: column; 
+            /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
             max-height: calc(100vh - 260px); 
-            justify-content: flex-end; 
+            justify-content: flex-end; /* Alinea contenido hacia abajo de su caja */
         }
 
         .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
@@ -86,7 +95,7 @@
         .details-desc { 
             font-size: 1rem; line-height: 1.4; color: #ddd; margin-bottom: 20px; 
             overflow: hidden; text-overflow: ellipsis; 
-            display: -webkit-box; -webkit-line-clamp: 3; 
+            display: -webkit-box; -webkit-line-clamp: 3; /* Limitado a 3 líneas en horizontal */
             -webkit-box-orient: vertical; 
             text-shadow: 1px 1px 2px black;
         }
@@ -126,12 +135,8 @@
             position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; 
             background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.9) 100%);
             transition: opacity 0.5s ease;
-            pointer-events: none; /* Dejar pasar clicks al video si es necesario */
         }
-        /* Habilitar puntero en controles */
-        .player-ui > * { pointer-events: auto; }
-        
-        .ui-fade-out { opacity: 0 !important; }
+        .ui-fade-out { opacity: 0 !important; pointer-events: none; }
 
         .p-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; position: relative; }
         .btn-back-p { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.1); color: white; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
@@ -147,7 +152,7 @@
         .ctrl-btn.mini { width: 55px; height: 55px; } 
 
         .shaka-bottom-controls { padding-bottom: 20px; padding-left: 20px; padding-right: 20px; }
-        .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; width: 80%; max-width: 400px; }
+        .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
 
         /* =========================================
            MEDIA QUERIES (MÓVIL / PORTRAIT)
@@ -155,6 +160,7 @@
         @media (orientation: portrait) {
             .details-hero { 
                 height: 50vh; width: 100%; top: 0;
+                /* Sin degradado a la derecha, solo abajo */
                 -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
                 mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             }
@@ -163,7 +169,7 @@
             .details-content { 
                 position: relative; top: auto; margin-top: 35vh; 
                 width: 90%; left: 5%; margin-bottom: 20px;
-                max-height: none; 
+                max-height: none; /* Reseteamos la altura máxima en vertical */
                 justify-content: flex-start;
             }
             .details-title { font-size: 2.5rem; }
@@ -199,7 +205,7 @@
     </header>
 
     <div id="app">
-        <h2 style="text-align:center; margin-top:100px; color:#777;" id="loading-msg">Iniciando aplicación...</h2>
+        <h2 style="text-align:center; margin-top:100px; color:#777;" id="loading-msg">Cargando contenido...</h2>
     </div>
 
     <div id="details-view">
@@ -235,7 +241,7 @@
     </div>
 
     <div id="player-container">
-        <video id="video" autoplay playsinline></video>
+        <video id="video" autoplay></video>
         
         <div id="player-ui" class="player-ui">
             
@@ -244,7 +250,7 @@
                     <span class="material-icons-round">arrow_back</span>
                 </button>
                 
-                <div class="p-clock" id="p-clock">00:00</div>
+                <div class="p-clock" id="p-clock">12:00</div>
 
                 <div class="p-meta">
                     <h2 id="p-title">Título</h2>
@@ -271,9 +277,9 @@
     </div>
 
     <div id="error-modal" class="error-modal">
-        <h3 style="color:#ff5555; margin-top:0">Aviso</h3>
-        <p id="error-msg">Error details...</p>
-        <button class="btn-primary focusable" style="padding:10px 20px" onclick="document.getElementById('error-modal').style.display='none';">Cerrar</button>
+        <h3 style="color:#ff5555; margin-top:0">Error de Reproducción</h3>
+        <p id="error-msg">Detalles del error...</p>
+        <button class="btn-primary focusable" style="padding:10px 20px" onclick="document.getElementById('error-modal').style.display='none'; exitPlayer()">Cerrar</button>
     </div>
 
     <script>
@@ -295,7 +301,8 @@
             BACK: [8, 461, 10009, 27], // Backspace, WebOS, Tizen, Esc
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
-            PLAY: [415, 19], PAUSE: [19], STOP: [413]
+            PLAY: [415, 19], PAUSE: [19], STOP: [413],
+            FF: [417], RW: [412]
         };
 
         function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
@@ -310,105 +317,10 @@
             pCont.addEventListener('mousemove', resetUiTimer);
             pCont.addEventListener('click', resetUiTimer);
             
-            await loadDataRobust();
+            await loadData();
         };
 
-        // ================= CARGA DE DATOS ROBUSTA (Anticrash) =================
-        async function loadDataRobust() {
-            const loadingMsg = document.getElementById('loading-msg');
-            loadingMsg.innerText = "Cargando catálogo...";
-
-            // URLs: Usamos dl=1 para forzar descarga directa JSON y evitar página HTML de Dropbox
-            const sources = [
-                {
-                    movies: 'https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=1',
-                    series: 'https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1'
-                }
-                // Aquí podrías añadir más fuentes de respaldo si las tuvieras
-            ];
-
-            let d1 = null, d2 = null;
-
-            // Intento de descarga
-            try {
-                const src = sources[0];
-                const [r1, r2] = await Promise.allSettled([
-                    fetch(src.movies), 
-                    fetch(src.series)
-                ]);
-
-                if(r1.status === 'fulfilled' && r1.value.ok) d1 = await r1.value.json();
-                if(r2.status === 'fulfilled' && r2.value.ok) d2 = await r2.value.json();
-
-            } catch (e) {
-                console.warn("Error de red cargando JSONs remotos", e);
-            }
-
-            // Procesar lo que haya llegado
-            const rawMovies = d1 || [];
-            const rawSeries = d2 || [];
-            
-            if (rawMovies.length === 0 && rawSeries.length === 0) {
-                // FALLBACK: Si todo falla, cargar datos DEMO para que la app no quede en blanco
-                showError("Modo Offline: No se pudo conectar al servidor. Mostrando contenido de prueba.");
-                catalog = getDemoData().map(processItem);
-            } else {
-                // Normalizar datos
-                catalog = [...rawMovies, ...rawSeries].map(processItem);
-            }
-
-            loadingMsg.style.display = 'none';
-            renderView('home');
-        }
-
-        function processItem(item) {
-            // Normalizar propiedades (inglés/español/variaciones)
-            let type = 'movie';
-            const rawType = (item.tipo || item.type || '').toLowerCase();
-            if (rawType.includes('serie') || item.estaciones || item.seasons) type = 'series';
-            
-            let img = item.poster || item.img || DEFAULT_IMG;
-            let seasons = [];
-            
-            // Procesar temporadas con seguridad
-            const rawSeasons = item.estaciones || item.seasons || [];
-            if (Array.isArray(rawSeasons)) {
-                seasons = rawSeasons.map((s, i) => ({
-                    num: s.número || s.number || (i + 1),
-                    episodes: (s.episodios || s.episodes || []).map(ep => ({
-                        title: ep.titulo || ep.title || 'Episodio',
-                        img: ep.img || ep.poster || null,
-                        duration: ep.duracion || ep.duration || '',
-                        mpd: ep.mpd || ep.url || '',
-                        drm: ep.drm || null
-                    }))
-                }));
-                // Si la serie no tiene poster principal, usar thumb del primer ep
-                if(!item.poster && seasons[0]?.episodes[0]?.img) img = seasons[0].episodes[0].img;
-            }
-
-            return {
-                id: item.id || Math.random().toString(36).substr(2,9),
-                title: item.titulo || item.title || "Sin Título",
-                desc: item.sinopsis || item.description || "Sin descripción disponible.",
-                poster: img,
-                hero: img, // Se podría usar otra imagen si existiera backdrop
-                type: type,
-                year: item.year || item.anio || '2024',
-                mpd: item.mpd || item.url || '',
-                drm: item.drm || null,
-                seasons: seasons
-            };
-        }
-
-        function getDemoData() {
-            return [
-                { titulo: "Error de Conexión", sinopsis: "Verifique su internet. Este es un elemento de prueba.", tipo: "peli" },
-                { titulo: "Serie Demo", tipo: "serie", estaciones: [{ número:1, episodios:[{titulo:"Episodio 1"}] }] }
-            ];
-        }
-
-        // ================= CONTROL REMOTO =================
+        // ================= CONTROL REMOTO / TECLADO =================
         function handleRemote(e) {
             const k = e.keyCode;
             
@@ -442,9 +354,8 @@
         }
 
         function moveFocus(k) {
-            // Solo elementos visibles
             const focusables = Array.from(document.querySelectorAll('.focusable'))
-                .filter(el => el.offsetParent !== null); 
+                .filter(el => el.offsetParent !== null); // Solo elementos visibles
             
             if (focusables.length === 0) return;
 
@@ -477,9 +388,58 @@
             }
         }
 
+        // ================= CARGA DE DATOS =================
+        async function loadData() {
+            try {
+                // URLs JSON
+                const [r1, r2] = await Promise.all([
+                    fetch('https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=0'),
+                    fetch('https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=0')
+                ]);
+                const d1 = await r1.json();
+                const d2 = await r2.json();
+                catalog = [...d1, ...d2].map(processItem);
+                
+                document.getElementById('loading-msg').style.display = 'none';
+                renderView('home');
+            } catch(e) {
+                document.getElementById('loading-msg').innerText = "Error de Red: " + e.message;
+            }
+        }
+
+        function processItem(item) {
+            let type = 'movie';
+            if (item.tipo && item.tipo.toLowerCase().includes('serie')) type = 'series';
+            
+            let img = item.poster || item.img || DEFAULT_IMG;
+            let seasons = [];
+            
+            if (item.estaciones) {
+                seasons = item.estaciones.map(s => ({
+                    num: s.número || s.number,
+                    episodes: s.episodios || s.episodes
+                }));
+                // Si no hay poster, usar thumb del ep 1
+                if(!item.poster && seasons[0]?.episodes[0]?.img) img = seasons[0].episodes[0].img;
+            }
+
+            return {
+                id: item.id,
+                title: item.titulo || item.title || item.id,
+                desc: item.sinopsis || "Sin descripción.",
+                poster: img,
+                hero: img,
+                type: type,
+                year: item.year || '',
+                mpd: item.mpd,
+                drm: item.drm,
+                seasons: seasons
+            };
+        }
+
         // ================= VISTAS Y RENDERIZADO =================
         function renderView(view) {
-            currentView = view;
+            currentView = 'home';
             const app = document.getElementById('app');
             app.innerHTML = '';
             
@@ -506,11 +466,7 @@
                 createGrid(catalog.filter(x => x.type === 'movie'));
             }
             
-            // Foco automático al primer elemento
-            setTimeout(() => {
-                const first = document.querySelector('.card');
-                if(first) first.focus();
-            }, 200);
+            setTimeout(() => document.querySelector('.card')?.focus(), 200);
         }
 
         function createRow(title, list) {
@@ -539,7 +495,7 @@
             </div>`;
         }
 
-        // ================= DETALLES =================
+        // ================= DETALLES E INTELIGENCIA =================
         function openDetails(id) {
             const item = catalog.find(x => x.id === id);
             if(!item) return;
@@ -557,7 +513,7 @@
             document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
             document.getElementById('det-title').innerText = item.title;
             document.getElementById('det-desc').innerText = item.desc;
-            document.getElementById('det-year').innerText = item.year;
+            document.getElementById('det-year').innerText = item.year || '2024';
             document.getElementById('det-type').innerText = item.type === 'series' ? 'Serie' : 'Película';
 
             const btnPlay = document.getElementById('btn-play-hero');
@@ -568,18 +524,17 @@
                 sCont.style.display = 'block';
                 renderSeasons(item);
 
-                // Lógica inteligente: Reanudar episodio
+                // --- LÓGICA DE BOTÓN INTELIGENTE (Resume el siguiente episodio) ---
                 let nextS = 0, nextE = 0;
-                let btnLabel = "Reproducir";
+                let btnLabel = `Reproducir T${item.seasons[0].num} E1`;
                 let found = false;
 
-                // Buscar primer episodio sin terminar
+                // Buscamos donde se quedó
                 for(let s=0; s<item.seasons.length; s++) {
                     for(let e=0; e<item.seasons[s].episodes.length; e++) {
                         const epId = getEpId(item.id, s, e);
                         const prog = getProgress(epId);
                         
-                        // Si está empezado y no terminado, o es el primero sin ver
                         if(prog.pct < 95) {
                             nextS = s; nextE = e;
                             if(prog.pct > 2) btnLabel = `Reanudar T${item.seasons[s].num} E${e+1}`;
@@ -636,8 +591,8 @@
                     <img src="${ep.img || item.poster}" class="ep-thumb" onerror="this.src='${DEFAULT_IMG}'">
                     ${bar}
                     <div class="ep-info">
-                        <div class="ep-title">${idx+1}. ${ep.title}</div>
-                        <div class="ep-num">${ep.duration}</div>
+                        <div class="ep-title">${idx+1}. ${ep.title || 'Episodio '+(idx+1)}</div>
+                        <div class="ep-num">${ep.duration || ''}</div>
                     </div>
                 `;
                 list.appendChild(div);
@@ -649,19 +604,17 @@
             document.getElementById('details-view').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             document.getElementById('main-header').style.display = 'flex';
-            setTimeout(() => {
-                const first = document.querySelector('.card');
-                if(first) first.focus();
-            }, 100);
+            setTimeout(() => document.querySelector('.card')?.focus(), 100);
         }
 
-        // ================= PLAYER =================
+        // ================= SHAKA PLAYER & LÓGICA VIDEO =================
         function initShaka() {
             shaka.polyfill.installAll();
             if (shaka.Player.isBrowserSupported()) {
                 const video = document.getElementById('video');
                 player = new shaka.Player(video);
                 
+                // Configuración de idioma
                 player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
 
                 // UI Overlay
@@ -672,24 +625,22 @@
 
                 player.addEventListener('error', onError);
                 
-                // Guardado de progreso
+                // --- GUARDADO DE PROGRESO ---
                 video.addEventListener('timeupdate', () => {
                     if (!video.paused && currentItem) {
                         let saveId = currentItem.id;
                         if(currentItem.type === 'series') saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
-                        
-                        // Solo guardar si hay duración válida
-                        if(video.duration > 0) {
-                            saveProgress(saveId, video.currentTime, video.duration);
-                        }
+                        saveProgress(saveId, video.currentTime, video.duration);
                     }
                 });
 
+                // Auto siguiente
                 video.addEventListener('ended', () => {
                     if (currentItem.type === 'series') changeEpisode(1);
                     else exitPlayer();
                 });
 
+                // Control visual de Play/Pause
                 video.addEventListener('play', () => {
                     document.getElementById('icon-play').innerText = 'pause';
                     resetUiTimer();
@@ -703,25 +654,27 @@
         }
 
         async function startPlayer(mpd, drm, title, isSeries) {
-            if (!mpd) {
-                showError("Este contenido no tiene un enlace de video válido.");
-                return;
-            }
+            if (!mpd) return showError("Sin URL de video.");
+            
+            // NOTA: Se ha eliminado la restricción de protocolo file: para compatibilidad APK
 
             document.getElementById('player-container').style.display = 'block';
             currentView = 'player';
             
-            // Controles de serie
+            // Botones Anterior/Siguiente
             const disp = isSeries ? 'flex' : 'none';
             document.getElementById('btn-prev').style.display = disp;
             document.getElementById('btn-next').style.display = disp;
             
+            // Textos
             document.getElementById('p-title').innerText = currentItem.title;
             document.getElementById('p-sub').innerText = isSeries ? title : "Película";
 
+            // Reloj
             updateClock();
             clockInterval = setInterval(updateClock, 60000);
 
+            // DRM
             let config = {};
             if (drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
             player.configure(config);
@@ -737,7 +690,7 @@
 
                 if (saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
                 
-                vid.play().catch(e => console.log("Autoplay bloqueado, usuario debe interactuar", e));
+                vid.play();
                 document.getElementById('btn-play-center').focus();
                 resetUiTimer();
             } catch (e) { onError(e); }
@@ -747,11 +700,9 @@
             currentSeasonIdx = parseInt(sIdx);
             currentEpIdx = parseInt(eIdx);
             const season = currentItem.seasons[currentSeasonIdx];
-            if(!season) return;
-
             const ep = season.episodes[currentEpIdx];
             if (ep) {
-                const title = `T${season.num} E${currentEpIdx+1}: ${ep.title}`;
+                const title = `T${season.num} E${currentEpIdx+1}: ${ep.title||''}`;
                 startPlayer(ep.mpd, ep.drm, title, true);
             }
         }
@@ -786,6 +737,7 @@
             clearInterval(clockInterval);
             document.getElementById('player-container').style.display = 'none';
             currentView = 'details';
+            // Refrescar detalles
             openDetails(currentItem.id);
         }
 
@@ -803,20 +755,24 @@
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-      function onError(e) {
-    // Solo registramos el error en la consola (F12), pero no mostramos la ventana al usuario
-    const err = e.detail || e;
-    console.error("Error capturado y silenciado:", err);
-    
-    // Comentamos o eliminamos la línea que abre el modal:
-    // showError(msg); 
-   }
+        function onError(e) {
+            const err = e.detail || e;
+            console.error(err);
+            let msg = "Error desconocido.";
+            if (err.code === 7000) msg = "Error de Carga (7000): Enlace roto o bloqueo CORS.";
+            if (err.code === 6007) msg = "Error de Licencia DRM.";
+            showError(msg);
+        }
 
         function showError(msg) {
+            // FIX: Detener reproducción para que no suene de fondo
             const v = document.getElementById('video');
             if (v) v.pause();
+
+            const m = document.getElementById('error-modal');
             document.getElementById('error-msg').innerText = msg;
-            document.getElementById('error-modal').style.display = 'block';
+            m.style.display = 'block';
+            m.querySelector('button').focus();
         }
 
         // --- UTILIDADES ---
