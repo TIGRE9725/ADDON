@@ -138,6 +138,20 @@
         .shaka-bottom-controls { padding-bottom: 20px; padding-left: 20px; padding-right: 20px; }
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
         
+        /* INTEGRACIÓN SHAKA CONTROLS */
+        .shaka-controls-container .focusable:focus {
+            outline: none !important;
+            border: 2px solid var(--primary) !important;
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 10px black;
+        }
+        .shaka-seek-bar-container input[type=range]:focus::-webkit-slider-thumb {
+            box-shadow: 0 0 0 4px white;
+            transform: scale(1.2);
+            background: white;
+        }
+
         /* MEDIA QUERIES */
         @media (orientation: portrait) {
             .details-hero { 
@@ -272,16 +286,13 @@
         let uiTimer = null;
         let clockInterval = null;
         
-        // --- VARIABLE CLAVE PARA EL FOCO ---
-        let lastFocusedId = null;
-        
         // Variables de Serie
         let currentSeasonIdx = 0;
         let currentEpIdx = 0;
 
-        // MAPA DE TECLAS
+        // MAPA DE TECLAS (Mando TV / Teclado)
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27],
+            BACK: [8, 461, 10009, 27], // Backspace, WebOS, Tizen, Esc
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
             PLAY: [415, 19], PAUSE: [19], STOP: [413],
@@ -297,20 +308,25 @@
             if (shaka.Player.isBrowserSupported()) {
                 const video = document.getElementById('video');
                 player = new shaka.Player(video);
+                
                 player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
 
                 const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
                 ui.configure({
                     controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
-                    seekBarColors: { base: 'rgba(255, 255, 255, 0.3)', buffered: 'rgba(255, 255, 255, 0.5)', played: 'var(--primary)' }
+                    seekBarColors: {
+                        base: 'rgba(255, 255, 255, 0.3)',
+                        buffered: 'rgba(255, 255, 255, 0.5)',
+                        played: 'var(--primary)' 
+                    }
                 });
 
                 player.addEventListener('error', onError);
-                
-                // Esperar a que Shaka dibuje para inyectar foco
+
+                // Esperar a Shaka para inyectar foco
                 setTimeout(() => { integrateShakaControls(); }, 500); 
 
-                // Guardado de progreso
+                // GUARDADO DE PROGRESO
                 video.addEventListener('timeupdate', () => {
                     if (!video.paused && currentItem) {
                         let saveId = currentItem.id;
@@ -347,12 +363,13 @@
             const k = e.keyCode;
             const current = document.activeElement;
 
-            // Gestión de Shaka Controls
+            // 1. GESTIÓN DE FOCO EN SHAKA PLAYER (Barras de tiempo/volumen)
             if (current && current.tagName === 'INPUT' && current.type === 'range') {
+                // Si estamos en la barra, flechas izq/der ajustan el valor, no el foco
                 if (k === 37 || k === 39) return;
             }
 
-            // Botón Atrás
+            // 2. BOTÓN ATRÁS
             if (isKey(e, 'BACK')) {
                 e.preventDefault();
                 if (document.getElementById('error-modal').style.display === 'block') {
@@ -364,29 +381,35 @@
                 return;
             }
 
-            // Enter Inteligente
+            // 3. ENTER (LOGICA INTELIGENTE)
             if (isKey(e, 'ENTER')) {
                 if (current) {
+                    // Caso especial: Barras de Shaka
                     if (current.tagName === 'INPUT' && current.type === 'range') {
                         e.preventDefault();
                         if (current.getAttribute('aria-label') === 'Seek' || current.classList.contains('shaka-seek-bar')) {
-                            togglePlay(); return;
+                            togglePlay();
+                            return;
                         }
                         if (current.getAttribute('aria-label') === 'Volume' || current.classList.contains('shaka-volume-bar')) {
-                            const v = document.getElementById('video'); v.muted = !v.muted; return;
+                            const v = document.getElementById('video');
+                            v.muted = !v.muted;
+                            return;
                         }
                     }
-                    current.click(); return; 
+                    // Comportamiento normal (Click)
+                    current.click();
+                    return; 
                 }
             }
             
-            // Teclas Multimedia
+            // 4. TECLAS DE REPRODUCCIÓN
             if (currentView === 'player') {
                 resetUiTimer();
                 if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) { togglePlay(); return; }
             }
 
-            // Navegación
+            // 5. NAVEGACIÓN (FLECHAS)
             if ([37, 38, 39, 40].includes(k)) {
                 e.preventDefault();
                 moveFocus(k);
@@ -397,12 +420,13 @@
             const shakaControls = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input[type="range"]');
             shakaControls.forEach(el => {
                 el.classList.add('focusable');
+                el.classList.add('shaka-integrated'); 
             });
         }
 
         function moveFocus(k) {
             const focusables = Array.from(document.querySelectorAll('.focusable'))
-                .filter(el => el.offsetParent !== null);
+                .filter(el => el.offsetParent !== null); // Solo elementos visibles
             
             if (focusables.length === 0) return;
 
@@ -412,15 +436,16 @@
             if (index === -1) { focusables[0].focus(); return; }
 
             let next = null;
-            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1];
-            if (k === 37 && index > 0) next = focusables[index - 1];
             
-            if (k === 40) { 
+            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1]; // Derecha
+            if (k === 37 && index > 0) next = focusables[index - 1]; // Izquierda
+            
+            if (k === 40) { // Abajo
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1; 
                 next = focusables[Math.min(index + jump, focusables.length - 1)];
             }
-            if (k === 38) { 
+            if (k === 38) { // Arriba
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1;
                 next = focusables[Math.max(index - jump, 0)];
@@ -507,23 +532,7 @@
                 createGrid(catalog.filter(x => x.type === 'movie'));
             }
             
-            // === RECUPERACIÓN DE FOCO MEJORADA (USANDO DATA-ID) ===
-            setTimeout(() => {
-                let elementToFocus = null;
-
-                if (lastFocusedId) {
-                    // Ahora buscamos por el atributo data-id, es infalible
-                    elementToFocus = document.querySelector(`.card[data-id="${lastFocusedId}"]`);
-                }
-
-                if (elementToFocus) {
-                    elementToFocus.focus();
-                    elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
-                } else {
-                    const firstCard = document.querySelector('.card');
-                    if(firstCard) firstCard.focus();
-                }
-            }, 200);
+            setTimeout(() => document.querySelector('.card')?.focus(), 200);
         }
 
         function createRow(title, list) {
@@ -546,8 +555,7 @@
         function cardHtml(item) {
             const p = getProgress(item.id);
             const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
-            // AQUÍ AGREGAMOS EL data-id="${item.id}"
-            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')" data-id="${item.id}">
+            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')">
                 <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
                 ${bar}
             </div>`;
@@ -555,9 +563,6 @@
 
         // ================= DETALLES E INTELIGENCIA =================
         function openDetails(id) {
-            // Guardamos el ID que acabamos de clickear
-            lastFocusedId = id;
-
             const item = catalog.find(x => x.id === id);
             if(!item) return;
             currentItem = item;
@@ -584,7 +589,9 @@
                 sCont.style.display = 'block';
                 renderSeasons(item);
 
+                // LÓGICA DE BOTÓN INTELIGENTE (RECUPERAR ÚLTIMO VISTO)
                 let nextS = 0, nextE = 0;
+                
                 const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
                 if (lastSeenJson) {
                     const lastSeen = JSON.parse(lastSeenJson);
@@ -599,7 +606,8 @@
                         if (nextE + 1 < currentSeasonLen) {
                             nextE++; 
                         } else if (nextS + 1 < item.seasons.length) {
-                            nextS++; nextE = 0;
+                            nextS++;
+                            nextE = 0;
                         }
                     }
                 }
@@ -633,17 +641,23 @@
             item.seasons.forEach((s, idx) => {
                 sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
             });
+            
             sel.onchange = () => renderEpisodes(item, sel.value);
 
+            // AUTO-SELECCIÓN DE TEMPORADA
             let defaultIdx = 0;
             const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
             if (lastSeenJson) {
                 const last = JSON.parse(lastSeenJson);
                 defaultIdx = parseInt(last.s); 
+
                 const epId = getEpId(item.id, last.s, last.e);
                 const prog = getProgress(epId);
+                
                 if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
-                    if (item.seasons[last.s + 1]) defaultIdx++; 
+                    if (item.seasons[last.s + 1]) {
+                        defaultIdx++; 
+                    }
                 }
             }
             sel.value = defaultIdx;
@@ -683,9 +697,6 @@
             document.getElementById('app').style.display = 'block';
             document.getElementById('main-header').style.display = 'flex';
             setTimeout(() => document.querySelector('.card')?.focus(), 100);
-            
-            // Volver a cargar la vista dispara el "restore focus"
-            renderView(currentView);
         }
 
         async function playEpisode(sIdx, eIdx) {
