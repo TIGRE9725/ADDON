@@ -290,6 +290,7 @@
         let player = null;
         let uiTimer = null;
         let clockInterval = null;
+        let lastFocusedId = null;
         
         // Variables de Serie
         let currentSeasonIdx = 0;
@@ -438,35 +439,61 @@
 
         // ================= VISTAS Y RENDERIZADO =================
         function renderView(view) {
-            currentView = 'home';
-            const app = document.getElementById('app');
-            app.innerHTML = '';
-            
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            if(view === 'home') {
-                document.querySelectorAll('.nav-btn')[0].classList.add('active');
-                
-                // Continuar Viendo
-                const watching = catalog.filter(x => { 
-                    const p = getProgress(x.id); 
-                    return p.pct > 1 && p.pct < 95; 
-                });
-                if(watching.length > 0) createRow("Continuar Viendo", watching);
-                
-                createRow("Series", catalog.filter(x => x.type === 'series'));
-                createRow("Películas", catalog.filter(x => x.type === 'movie'));
-                
-            } else if(view === 'series') {
-                document.querySelectorAll('.nav-btn')[1].classList.add('active');
-                createGrid(catalog.filter(x => x.type === 'series'));
-            } else {
-                document.querySelectorAll('.nav-btn')[2].classList.add('active');
-                createGrid(catalog.filter(x => x.type === 'movie'));
-            }
-            
-            setTimeout(() => document.querySelector('.card')?.focus(), 200);
+    currentView = 'home';
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+    
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    if(view === 'home') {
+        document.querySelectorAll('.nav-btn')[0].classList.add('active');
+        
+        const watching = catalog.filter(x => { 
+            const p = getProgress(x.id); 
+            return p.pct > 1 && p.pct < 95; 
+        });
+        if(watching.length > 0) createRow("Continuar Viendo", watching);
+        
+        createRow("Series", catalog.filter(x => x.type === 'series'));
+        createRow("Películas", catalog.filter(x => x.type === 'movie'));
+        
+    } else if(view === 'series') {
+        document.querySelectorAll('.nav-btn')[1].classList.add('active');
+        createGrid(catalog.filter(x => x.type === 'series'));
+    } else {
+        document.querySelectorAll('.nav-btn')[2].classList.add('active');
+        createGrid(catalog.filter(x => x.type === 'movie'));
+    }
+    
+    // --- LÓGICA DE RESTAURACIÓN DE FOCO ---
+    setTimeout(() => {
+        let elementToFocus = null;
+
+        // 1. Si tenemos un ID guardado, intentamos buscar ese elemento específico
+        if (lastFocusedId) {
+            // Buscamos el elemento que tenga onclick="openDetails('EL_ID')"
+            // Nota: Es una búsqueda un poco "sucia" pero efectiva dado tu HTML actual
+            const selector = `.card[onclick*="'${lastFocusedId}'"]`;
+            elementToFocus = document.querySelector(selector);
         }
+
+        // 2. Si encontramos el elemento anterior, le damos foco
+        if (elementToFocus) {
+            elementToFocus.focus();
+            elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+        } 
+        // 3. Si no (es la primera carga), damos foco al primer elemento disponible
+        else {
+            const firstCard = document.querySelector('.card');
+            if(firstCard) firstCard.focus();
+        }
+        
+        // Opcional: Limpiar la variable si cambias entre secciones principales (Home -> Series)
+        // Si quieres que recuerde la posición entre pestañas, borra la siguiente línea.
+        // lastFocusedId = null; 
+
+    }, 200);
+}
 
         function createRow(title, list) {
             if(!list.length) return;
@@ -496,6 +523,7 @@
 
         // ================= DETALLES E INTELIGENCIA =================
 function openDetails(id) {
+    lastFocusedId = id;
     const item = catalog.find(x => x.id === id);
     if(!item) return;
     currentItem = item;
@@ -580,17 +608,49 @@ function openDetails(id) {
     setTimeout(() => btnPlay.focus(), 100);
 }
 
-        function renderSeasons(item) {
-            const sel = document.getElementById('season-select');
-            sel.innerHTML = '';
-            if(!item.seasons.length) return;
-            item.seasons.forEach((s, idx) => {
-                sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
-            });
-            sel.onchange = () => renderEpisodes(item, sel.value);
-            sel.value = 0;
-            renderEpisodes(item, 0);
+    function renderSeasons(item) {
+    const sel = document.getElementById('season-select');
+    sel.innerHTML = '';
+    if(!item.seasons.length) return;
+
+    // 1. Generar las opciones del Select
+    item.seasons.forEach((s, idx) => {
+        sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
+    });
+    
+    // Evento al cambiar manualmente
+    sel.onchange = () => renderEpisodes(item, sel.value);
+
+    // ======================================================
+    // LOGICA INTELIGENTE DE SELECCIÓN DE TEMPORADA
+    // ======================================================
+    let defaultIdx = 0;
+    
+    // Recuperamos lo último que vio el usuario
+    const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
+    
+    if (lastSeenJson) {
+        const last = JSON.parse(lastSeenJson);
+        defaultIdx = parseInt(last.s); // Seleccionamos la temporada donde se quedó
+
+        // Lógica Extra: Si terminó el ÚLTIMO episodio de esa temporada, 
+        // mostrar automáticamente la SIGUIENTE temporada en la lista.
+        const epId = getEpId(item.id, last.s, last.e);
+        const prog = getProgress(epId);
+        
+        // Si el episodio está terminado (>95%) Y era el último de la lista...
+        if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
+            // ... y existe una temporada siguiente
+            if (item.seasons[last.s + 1]) {
+                defaultIdx++; 
+            }
         }
+    }
+
+    // Aplicar selección y renderizar episodios
+    sel.value = defaultIdx;
+    renderEpisodes(item, defaultIdx);
+}
 
         function renderEpisodes(item, sIdx) {
             const list = document.getElementById('episodes-list');
