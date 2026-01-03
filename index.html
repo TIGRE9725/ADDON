@@ -372,15 +372,18 @@
                 if (k === 37 || k === 39) return;
             }
 
-            // 2. Botón Atrás
+            // 2. Botón Atrás (FIX para que no regrese la película)
             if (isKey(e, 'BACK')) {
                 e.preventDefault();
                 if (document.getElementById('error-modal').style.display === 'block') {
                     document.getElementById('error-modal').style.display = 'none';
                     return;
                 }
-                if (currentView === 'player') exitPlayer();
-                else if (currentView === 'details') closeDetails();
+                if (currentView === 'player') {
+                    exitPlayer();
+                } else if (currentView === 'details') {
+                    closeDetails();
+                }
                 return;
             }
 
@@ -500,19 +503,26 @@
         }
 
         // ================= VISTAS Y RENDERIZADO =================
-        function renderView(view) {
-            // Si la vista es una de las principales, actualizamos activeSection
+        function renderView(view, query = '') {
+            // Actualizar activeSection solo si es una sección principal
             if (['home', 'series', 'movies'].includes(view)) {
                 activeSection = view;
             }
             
-            currentView = activeSection; // Usamos la sección activa
+            currentView = (view === 'search') ? 'search' : activeSection;
             const app = document.getElementById('app');
             app.innerHTML = '';
             
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
-            if(activeSection === 'home') {
+            // Lógica de Renderizado
+            if(view === 'search') {
+                // Modo Búsqueda
+                const results = catalog.filter(item => item.title.toLowerCase().includes(query));
+                if(results.length > 0) createGrid(results);
+                else app.innerHTML = '<h3 style="text-align:center;color:#777;margin-top:50px;">Sin resultados</h3>';
+            
+            } else if(activeSection === 'home') {
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
                 
                 const watching = catalog.filter(x => { 
@@ -786,12 +796,17 @@
         }
 
         function exitPlayer() {
+            // FIX: Detener video inmediatamente
+            const v = document.getElementById('video');
+            v.pause();
+            v.src = ""; // Liberar buffer
+            
             player.unload();
             clearInterval(clockInterval);
             document.getElementById('player-container').style.display = 'none';
             currentView = 'details';
-            // Al salir del player, volvemos a detalles
-            // No necesitamos llamar a openDetails completo, solo restaurar vista
+            
+            // Regresar a la vista de detalles
             document.getElementById('details-view').style.display = 'block';
             document.getElementById('app').style.display = 'none';
             document.getElementById('main-header').style.display = 'none';
@@ -812,7 +827,12 @@
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        function onError(e) { }
+        function onError(e) { 
+            // FIX: Ignorar Error 7000 (Load Interrupted)
+            if (e.code === 7000) return;
+            console.error('Shaka Error', e); 
+            showError("Error: " + e.code); 
+        }
 
         function showError(msg) {
             const v = document.getElementById('video');
@@ -838,6 +858,13 @@
                 pCont.addEventListener('mousemove', resetUiTimer);
                 pCont.addEventListener('click', resetUiTimer);
             }
+            
+            // Evento Buscador
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                if(query.length > 2) renderView('search', query);
+                else if (query.length === 0) renderView(activeSection);
+            });
             
             await loadData();
         };
