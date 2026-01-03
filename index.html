@@ -278,6 +278,8 @@
 
     <script>
         // ================= CONFIGURACIÓN GLOBAL =================
+        // Agrega esta variable al inicio junto con las otras
+        let activeCategory = 'home'; // Para recordar si estabas en Home, Series o Peliculas
         const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
         let catalog = [];
         let currentView = 'home';
@@ -307,21 +309,29 @@
         function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
 
         // ================= INICIALIZACIÓN =================
-        async function initShaka() {
-            shaka.polyfill.installAll();
+        function initShaka() {
+    shaka.polyfill.installAll();
+    if (shaka.Player.isBrowserSupported()) {
+        const video = document.getElementById('video');
+        player = new shaka.Player(video);
+        player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
 
-            if (shaka.Player.isBrowserSupported()) {
-                const video = document.getElementById('video');
-                // IMPORTANTE: Instanciar player aquí
-                player = new shaka.Player(video);
-                
-                player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
+        const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
+        
+        // Configuración UI
+        ui.configure({
+            controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
+            addSeekBar: true // Asegura que la barra de progreso aparezca
+        });
 
-                const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
-                ui.configure({
-                    controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
-                    seekBarColors: { base: 'rgba(255, 255, 255, 0.3)', buffered: 'rgba(255, 255, 255, 0.5)', played: 'var(--primary)' }
-                });
+        // CORRECCIÓN ERROR 7000: Filtramos errores de carga interrumpida
+        player.addEventListener('error', (e) => {
+            if (e.detail && e.detail.code === 7000) {
+                console.warn("Carga interrumpida (ignorado).");
+                return; // No mostramos el modal
+            }
+            onError(e);
+        });
 
                 player.addEventListener('error', onError);
                 
@@ -503,6 +513,64 @@
         }
 
         // ================= VISTAS Y RENDERIZADO =================
+        function renderView(view) {
+    // CORRECCIÓN: Guardamos la categoría actual, NO la reseteamos siempre a 'home'
+    activeCategory = view; 
+    currentView = view;
+    
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+    
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    // Botones del menú superior
+    const navBtns = document.querySelectorAll('.nav-btn');
+    if(view === 'home') {
+        navBtns[0].classList.add('active');
+        const watching = catalog.filter(x => { 
+            const p = getProgress(x.id); 
+            return p.pct > 1 && p.pct < 95; 
+        });
+        if(watching.length > 0) createRow("Continuar Viendo", watching);
+        createRow("Series", catalog.filter(x => x.type === 'series'));
+        createRow("Películas", catalog.filter(x => x.type === 'movie'));
+        
+    } else if(view === 'series') {
+        navBtns[1].classList.add('active');
+        createGrid(catalog.filter(x => x.type === 'series'));
+    } else if (view === 'movies') {
+        navBtns[2].classList.add('active');
+        createGrid(catalog.filter(x => x.type === 'movie'));
+    }
+    
+    // RESTAURACIÓN DE FOCO MEJORADA
+    setTimeout(() => {
+        if (lastFocusedId) {
+            // Buscamos específicamente el elemento que tiene el onclick con ese ID
+            const el = document.querySelector(`.card[onclick*="'${lastFocusedId}'"]`);
+            if (el) {
+                el.focus();
+                el.scrollIntoView({behavior: 'auto', block: 'center'});
+                return;
+            }
+        }
+        // Si no encuentra el último, enfoca el primero
+        const first = document.querySelector('.card');
+        if(first) first.focus();
+    }, 100);
+}
+
+function closeDetails() {
+    // CORRECCIÓN: Restauramos la vista que teníamos antes (Home, Series o Movies)
+    currentView = activeCategory; 
+    
+    document.getElementById('details-view').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('main-header').style.display = 'flex';
+    
+    // Forzamos el renderizado de nuevo para asegurar que el scroll y el foco se calculen bien
+    renderView(activeCategory);
+}
         function renderView(view, query = '') {
             // Actualizar activeSection solo si es una sección principal
             if (['home', 'series', 'movies'].includes(view)) {
@@ -751,44 +819,76 @@
             }
         }
 
-        async function startPlayer(mpd, drm, title, isSeries) {
-            if (!mpd) return showError("Sin URL de video.");
-            
-            // Asegurar que player existe
-            if (!player) await initShaka();
+       async function startPlayer(mpd, drm, title, isSeries) {
+    if (!mpd) return showError("Sin URL de video.");
+    
+    document.getElementById('player-container').style.display = 'block';
+    currentView = 'player';
+    
+    // Configuración UI Custom
+    const disp = isSeries ? 'flex' : 'none';
+    document.getElementById('btn-prev').style.display = disp;
+    document.getElementById('btn-next').style.display = disp;
+    document.getElementById('p-title').innerText = currentItem.title;
+    document.getElementById('p-sub').innerText = isSeries ? title : "Película";
 
-            document.getElementById('player-container').style.display = 'block';
-            currentView = 'player';
-            
-            const disp = isSeries ? 'flex' : 'none';
-            document.getElementById('btn-prev').style.display = disp;
-            document.getElementById('btn-next').style.display = disp;
-            
-            document.getElementById('p-title').innerText = currentItem.title;
-            document.getElementById('p-sub').innerText = isSeries ? title : "Película";
+    updateClock();
+    clockInterval = setInterval(updateClock, 60000);
 
-            updateClock();
-            clockInterval = setInterval(updateClock, 60000);
+    // DRM config
+    let config = {};
+    if (drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
+    player.configure(config);
 
-            let config = {};
-            if (drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
-            player.configure(config);
+    try {
+        await player.load(mpd);
+        const vid = document.getElementById('video');
+        
+        // Recuperar progreso
+        let loadId = currentItem.id;
+        if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
+        const saved = getProgress(loadId);
+        if (saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
+        
+        vid.play().catch(e => console.log("Autoplay bloqueado por navegador", e));
+        
+        // Foco inicial al botón central
+        document.getElementById('btn-play-center').focus();
+        resetUiTimer();
+        
+        // === LA SOLUCIÓN DEL CUADRO VERDE ===
+        // Ejecutamos esto un poco después para dar tiempo a Shaka a crear los botones
+        setTimeout(makeShakaControlsFocusable, 1000);
+        
+    } catch (e) { 
+        // Si el error es 7000 aquí, lo atrapamos silenciosamente
+        if(e.code === 7000) return;
+        onError(e); 
+    }
+}
 
-            try {
-                await player.load(mpd);
-                const vid = document.getElementById('video');
-                
-                let loadId = currentItem.id;
-                if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
-                const saved = getProgress(loadId);
-
-                if (saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
-                
-                vid.play().catch(e => console.log("Autoplay prevenido por navegador", e));
-                document.getElementById('btn-play-center').focus();
-                resetUiTimer();
-            } catch (e) { onError(e); }
-        }
+// NUEVA FUNCIÓN: Hace que los controles de Shaka se puedan usar con el control remoto
+function makeShakaControlsFocusable() {
+    // Buscamos los botones generados por Shaka
+    const shakaBtns = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input');
+    
+    shakaBtns.forEach(btn => {
+        // Les agregamos tu clase .focusable
+        btn.classList.add('focusable');
+        
+        // Opcional: Estilo visual para cuando tengan foco (ya que Shaka tiene sus propios estilos)
+        btn.style.border = "2px solid transparent"; 
+        
+        // Manejamos el foco para que se vea tu borde blanco
+        btn.addEventListener('focus', () => {
+            btn.style.border = "2px solid white";
+            resetUiTimer(); // Mantener UI visible mientras se navega abajo
+        });
+        btn.addEventListener('blur', () => {
+            btn.style.border = "2px solid transparent";
+        });
+    });
+}
 
         function togglePlay() {
             const v = document.getElementById('video');
@@ -850,24 +950,42 @@
 
         // ================= ARRANQUE DE LA APLICACIÓN =================
         window.onload = async () => {
-            await initShaka();
-            document.addEventListener('keydown', handleRemote);
-            
-            const pCont = document.getElementById('player-container');
-            if (pCont) {
-                pCont.addEventListener('mousemove', resetUiTimer);
-                pCont.addEventListener('click', resetUiTimer);
-            }
-            
-            // Evento Buscador
-            document.getElementById('searchInput').addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                if(query.length > 2) renderView('search', query);
-                else if (query.length === 0) renderView(activeSection);
-            });
-            
-            await loadData();
-        };
+    initShaka();
+    document.addEventListener('keydown', handleRemote);
+    
+    // Mouse/Touch
+    const pCont = document.getElementById('player-container');
+    pCont.addEventListener('mousemove', resetUiTimer);
+    pCont.addEventListener('click', resetUiTimer);
+
+    // --- LÓGICA DE BÚSQUEDA CORREGIDA ---
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('keyup', (e) => {
+        const term = e.target.value.toLowerCase();
+        if(term.length < 2) {
+             // Si borra, regresa a la vista actual
+            renderView(activeCategory); 
+            return;
+        }
+        
+        // Filtramos todo el catálogo
+        const filtered = catalog.filter(item => item.title.toLowerCase().includes(term));
+        
+        const app = document.getElementById('app');
+        app.innerHTML = `<h3 class="section-title">Resultados de: "${term}"</h3>`;
+        
+        if(filtered.length > 0) {
+            app.insertAdjacentHTML('beforeend', `<div class="grid-view">${filtered.map(i => cardHtml(i)).join('')}</div>`);
+        } else {
+            app.insertAdjacentHTML('beforeend', `<p style="margin-left:4%; color:#777;">No se encontraron resultados.</p>`);
+        }
+        // Resetear foco al primer resultado
+        const first = document.querySelector('.card');
+        if(first) first.focus();
+    });
+    
+    await loadData();
+};
     </script>
 </body>
 </html>
