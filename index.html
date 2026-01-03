@@ -52,39 +52,25 @@
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           VISTA DE DETALLES (CORREGIDA)
+           VISTA DE DETALLES
            ========================================= */
         #details-view { 
             position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; 
             overflow-x: hidden; overflow-y: auto; 
         }
         
-        /* CORRECCIÓN SOMBREADO DERECHO: Se eliminó el degradado lateral (to right) */
         .details-hero { 
             position: absolute; inset: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center top; 
-            /* Solo degradado hacia abajo para integrar con el fondo negro */
             mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
         }
         
-        /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
-        .hero-gradient { 
-            position: absolute; inset: 0; 
-        }
+        .hero-gradient { position: absolute; inset: 0; }
 
-        /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
         .details-content { 
-            position: absolute; 
-            top: 1%; 
-            left: 5%; 
-            width: 90%; /* Ancho limitado para horizontal */
-            z-index: 10; 
-            display: flex; 
-            flex-direction: column; 
-            /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
-            bottom: 240px; 
-            justify-content: flex-star; /* Alinea contenido hacia arriba de su caja */
+            position: absolute; top: 1%; left: 5%; width: 90%; z-index: 10; 
+            display: flex; flex-direction: column; bottom: 240px; justify-content: flex-start; 
         }
 
         .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
@@ -94,8 +80,7 @@
         .details-desc { 
             font-size: 1rem; line-height: 1.4; color: #ddd; margin-bottom: 20px; 
             overflow: hidden; text-overflow: ellipsis; 
-            display: -webkit-box; -webkit-line-clamp: 3; /* Limitado a 3 líneas en horizontal */
-            -webkit-box-orient: vertical; 
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; 
             text-shadow: 1px 1px 2px black;
         }
 
@@ -152,14 +137,11 @@
 
         .shaka-bottom-controls { padding-bottom: 20px; padding-left: 20px; padding-right: 20px; }
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
-
-        /* =========================================
-           MEDIA QUERIES (MÓVIL / PORTRAIT)
-           ========================================= */
+        
+        /* MEDIA QUERIES */
         @media (orientation: portrait) {
             .details-hero { 
                 height: 50vh; width: 100%; top: 0;
-                /* Sin degradado a la derecha, solo abajo */
                 -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
                 mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             }
@@ -168,8 +150,7 @@
             .details-content { 
                 position: relative; top: auto; margin-top: 35vh; 
                 width: 90%; left: 5%; margin-bottom: 20px;
-                max-height: none; /* Reseteamos la altura máxima en vertical */
-                justify-content: flex-start;
+                max-height: none; justify-content: flex-start;
             }
             .details-title { font-size: 2.5rem; }
             .details-desc { -webkit-line-clamp: 6; }
@@ -290,15 +271,17 @@
         let player = null;
         let uiTimer = null;
         let clockInterval = null;
+        
+        // --- VARIABLE CLAVE PARA EL FOCO ---
         let lastFocusedId = null;
         
         // Variables de Serie
         let currentSeasonIdx = 0;
         let currentEpIdx = 0;
 
-        // MAPA DE TECLAS (Mando TV / Teclado)
+        // MAPA DE TECLAS
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27], // Backspace, WebOS, Tizen, Esc
+            BACK: [8, 461, 10009, 27],
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
             PLAY: [415, 19], PAUSE: [19], STOP: [413],
@@ -308,54 +291,118 @@
         function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
 
         // ================= INICIALIZACIÓN =================
-        window.onload = async () => {
-            initShaka();
-            document.addEventListener('keydown', handleRemote);
-            
-            // Mouse/Touch para mostrar interfaz
-            const pCont = document.getElementById('player-container');
-            pCont.addEventListener('mousemove', resetUiTimer);
-            pCont.addEventListener('click', resetUiTimer);
-            
-            await loadData();
-        };
+        async function initShaka() {
+            shaka.polyfill.installAll();
+
+            if (shaka.Player.isBrowserSupported()) {
+                const video = document.getElementById('video');
+                player = new shaka.Player(video);
+                player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
+
+                const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
+                ui.configure({
+                    controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
+                    seekBarColors: { base: 'rgba(255, 255, 255, 0.3)', buffered: 'rgba(255, 255, 255, 0.5)', played: 'var(--primary)' }
+                });
+
+                player.addEventListener('error', onError);
+                
+                // Esperar a que Shaka dibuje para inyectar foco
+                setTimeout(() => { integrateShakaControls(); }, 500); 
+
+                // Guardado de progreso
+                video.addEventListener('timeupdate', () => {
+                    if (!video.paused && currentItem) {
+                        let saveId = currentItem.id;
+                        if(currentItem.type === 'series') {
+                            saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
+                            localStorage.setItem('last_seen_' + currentItem.id, JSON.stringify({
+                                s: currentSeasonIdx,
+                                e: currentEpIdx
+                            }));
+                        }
+                        saveProgress(saveId, video.currentTime, video.duration);
+                    }
+                });
+
+                video.addEventListener('ended', () => {
+                    if (currentItem.type === 'series') changeEpisode(1);
+                    else exitPlayer();
+                });
+
+                video.addEventListener('play', () => {
+                    document.getElementById('icon-play').innerText = 'pause';
+                    resetUiTimer();
+                });
+                video.addEventListener('pause', () => {
+                    document.getElementById('icon-play').innerText = 'play_arrow';
+                    clearTimeout(uiTimer);
+                    document.getElementById('player-ui').classList.remove('ui-fade-out');
+                });
+            }
+        }
 
         // ================= CONTROL REMOTO / TECLADO =================
         function handleRemote(e) {
             const k = e.keyCode;
-            
+            const current = document.activeElement;
+
+            // Gestión de Shaka Controls
+            if (current && current.tagName === 'INPUT' && current.type === 'range') {
+                if (k === 37 || k === 39) return;
+            }
+
             // Botón Atrás
             if (isKey(e, 'BACK')) {
                 e.preventDefault();
-                if(document.getElementById('error-modal').style.display === 'block') {
-                    document.getElementById('error-modal').style.display = 'none'; return;
+                if (document.getElementById('error-modal').style.display === 'block') {
+                    document.getElementById('error-modal').style.display = 'none';
+                    return;
                 }
                 if (currentView === 'player') exitPlayer();
                 else if (currentView === 'details') closeDetails();
                 return;
             }
 
+            // Enter Inteligente
+            if (isKey(e, 'ENTER')) {
+                if (current) {
+                    if (current.tagName === 'INPUT' && current.type === 'range') {
+                        e.preventDefault();
+                        if (current.getAttribute('aria-label') === 'Seek' || current.classList.contains('shaka-seek-bar')) {
+                            togglePlay(); return;
+                        }
+                        if (current.getAttribute('aria-label') === 'Volume' || current.classList.contains('shaka-volume-bar')) {
+                            const v = document.getElementById('video'); v.muted = !v.muted; return;
+                        }
+                    }
+                    current.click(); return; 
+                }
+            }
+            
             // Teclas Multimedia
             if (currentView === 'player') {
                 resetUiTimer();
-                if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) togglePlay();
+                if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) { togglePlay(); return; }
             }
 
-            // Navegación (Flechas)
+            // Navegación
             if ([37, 38, 39, 40].includes(k)) {
                 e.preventDefault();
                 moveFocus(k);
             }
+        }
 
-            // Enter
-            if (isKey(e, 'ENTER') && document.activeElement) {
-                document.activeElement.click();
-            }
+        function integrateShakaControls() {
+            const shakaControls = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input[type="range"]');
+            shakaControls.forEach(el => {
+                el.classList.add('focusable');
+            });
         }
 
         function moveFocus(k) {
             const focusables = Array.from(document.querySelectorAll('.focusable'))
-                .filter(el => el.offsetParent !== null); // Solo elementos visibles
+                .filter(el => el.offsetParent !== null);
             
             if (focusables.length === 0) return;
 
@@ -365,18 +412,15 @@
             if (index === -1) { focusables[0].focus(); return; }
 
             let next = null;
+            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1];
+            if (k === 37 && index > 0) next = focusables[index - 1];
             
-            // Lógica de saltos
-            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1]; // Derecha
-            if (k === 37 && index > 0) next = focusables[index - 1]; // Izquierda
-            
-            // Arriba/Abajo (Saltos más grandes en grids)
-            if (k === 40) { // Abajo
+            if (k === 40) { 
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1; 
                 next = focusables[Math.min(index + jump, focusables.length - 1)];
             }
-            if (k === 38) { // Arriba
+            if (k === 38) { 
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1;
                 next = focusables[Math.max(index - jump, 0)];
@@ -391,7 +435,6 @@
         // ================= CARGA DE DATOS =================
         async function loadData() {
             try {
-                // URLs JSON
                 const [r1, r2] = await Promise.all([
                     fetch('https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=1'),
                     fetch('https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1')
@@ -419,7 +462,6 @@
                     num: s.número || s.number,
                     episodes: s.episodios || s.episodes
                 }));
-                // Si no hay poster, usar thumb del ep 1
                 if(!item.poster && seasons[0]?.episodes[0]?.img) img = seasons[0].episodes[0].img;
             }
 
@@ -439,61 +481,50 @@
 
         // ================= VISTAS Y RENDERIZADO =================
         function renderView(view) {
-    currentView = 'home';
-    const app = document.getElementById('app');
-    app.innerHTML = '';
-    
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    
-    if(view === 'home') {
-        document.querySelectorAll('.nav-btn')[0].classList.add('active');
-        
-        const watching = catalog.filter(x => { 
-            const p = getProgress(x.id); 
-            return p.pct > 1 && p.pct < 95; 
-        });
-        if(watching.length > 0) createRow("Continuar Viendo", watching);
-        
-        createRow("Series", catalog.filter(x => x.type === 'series'));
-        createRow("Películas", catalog.filter(x => x.type === 'movie'));
-        
-    } else if(view === 'series') {
-        document.querySelectorAll('.nav-btn')[1].classList.add('active');
-        createGrid(catalog.filter(x => x.type === 'series'));
-    } else {
-        document.querySelectorAll('.nav-btn')[2].classList.add('active');
-        createGrid(catalog.filter(x => x.type === 'movie'));
-    }
-    
-    // --- LÓGICA DE RESTAURACIÓN DE FOCO ---
-    setTimeout(() => {
-        let elementToFocus = null;
+            currentView = 'home';
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+            
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            if(view === 'home') {
+                document.querySelectorAll('.nav-btn')[0].classList.add('active');
+                
+                const watching = catalog.filter(x => { 
+                    const p = getProgress(x.id); 
+                    return p.pct > 1 && p.pct < 95; 
+                });
+                if(watching.length > 0) createRow("Continuar Viendo", watching);
+                
+                createRow("Series", catalog.filter(x => x.type === 'series'));
+                createRow("Películas", catalog.filter(x => x.type === 'movie'));
+                
+            } else if(view === 'series') {
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                createGrid(catalog.filter(x => x.type === 'series'));
+            } else {
+                document.querySelectorAll('.nav-btn')[2].classList.add('active');
+                createGrid(catalog.filter(x => x.type === 'movie'));
+            }
+            
+            // === RECUPERACIÓN DE FOCO MEJORADA (USANDO DATA-ID) ===
+            setTimeout(() => {
+                let elementToFocus = null;
 
-        // 1. Si tenemos un ID guardado, intentamos buscar ese elemento específico
-        if (lastFocusedId) {
-            // Buscamos el elemento que tenga onclick="openDetails('EL_ID')"
-            // Nota: Es una búsqueda un poco "sucia" pero efectiva dado tu HTML actual
-            const selector = `.card[onclick*="'${lastFocusedId}'"]`;
-            elementToFocus = document.querySelector(selector);
+                if (lastFocusedId) {
+                    // Ahora buscamos por el atributo data-id, es infalible
+                    elementToFocus = document.querySelector(`.card[data-id="${lastFocusedId}"]`);
+                }
+
+                if (elementToFocus) {
+                    elementToFocus.focus();
+                    elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+                } else {
+                    const firstCard = document.querySelector('.card');
+                    if(firstCard) firstCard.focus();
+                }
+            }, 200);
         }
-
-        // 2. Si encontramos el elemento anterior, le damos foco
-        if (elementToFocus) {
-            elementToFocus.focus();
-            elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
-        } 
-        // 3. Si no (es la primera carga), damos foco al primer elemento disponible
-        else {
-            const firstCard = document.querySelector('.card');
-            if(firstCard) firstCard.focus();
-        }
-        
-        // Opcional: Limpiar la variable si cambias entre secciones principales (Home -> Series)
-        // Si quieres que recuerde la posición entre pestañas, borra la siguiente línea.
-        // lastFocusedId = null; 
-
-    }, 200);
-}
 
         function createRow(title, list) {
             if(!list.length) return;
@@ -515,142 +546,109 @@
         function cardHtml(item) {
             const p = getProgress(item.id);
             const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
-            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')">
+            // AQUÍ AGREGAMOS EL data-id="${item.id}"
+            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')" data-id="${item.id}">
                 <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
                 ${bar}
             </div>`;
         }
 
         // ================= DETALLES E INTELIGENCIA =================
-function openDetails(id) {
-    lastFocusedId = id;
-    const item = catalog.find(x => x.id === id);
-    if(!item) return;
-    currentItem = item;
-    currentView = 'details';
+        function openDetails(id) {
+            // Guardamos el ID que acabamos de clickear
+            lastFocusedId = id;
 
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('main-header').style.display = 'none';
-    
-    const view = document.getElementById('details-view');
-    view.style.display = 'block';
-    view.scrollTop = 0;
+            const item = catalog.find(x => x.id === id);
+            if(!item) return;
+            currentItem = item;
+            currentView = 'details';
 
-    // Datos visuales
-    document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
-    document.getElementById('det-title').innerText = item.title;
-    document.getElementById('det-desc').innerText = item.desc;
-    document.getElementById('det-year').innerText = item.year;
-    document.getElementById('det-type').innerText = item.type === 'series' ? 'Serie' : 'Película';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('main-header').style.display = 'none';
+            
+            const view = document.getElementById('details-view');
+            view.style.display = 'block';
+            view.scrollTop = 0;
 
-    const btnPlay = document.getElementById('btn-play-hero');
-    const txtPlay = document.getElementById('play-text');
-    const sCont = document.getElementById('series-container');
+            document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
+            document.getElementById('det-title').innerText = item.title;
+            document.getElementById('det-desc').innerText = item.desc;
+            document.getElementById('det-year').innerText = item.year;
+            document.getElementById('det-type').innerText = item.type === 'series' ? 'Serie' : 'Película';
 
-    if(item.type === 'series') {
-        sCont.style.display = 'block';
-        renderSeasons(item);
+            const btnPlay = document.getElementById('btn-play-hero');
+            const txtPlay = document.getElementById('play-text');
+            const sCont = document.getElementById('series-container');
 
-        // --- LÓGICA DE BOTÓN INTELIGENTE CORREGIDA ---
-        let nextS = 0, nextE = 0;
-        
-        // 1. Intentamos recuperar el último episodio visto guardado explícitamente
-        const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
-        
-        if (lastSeenJson) {
-            const lastSeen = JSON.parse(lastSeenJson);
-            nextS = lastSeen.s;
-            nextE = lastSeen.e;
+            if(item.type === 'series') {
+                sCont.style.display = 'block';
+                renderSeasons(item);
 
-            // Verificamos si ese último episodio ya se terminó ( > 95% )
-            const epId = getEpId(item.id, nextS, nextE);
-            const prog = getProgress(epId);
+                let nextS = 0, nextE = 0;
+                const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
+                if (lastSeenJson) {
+                    const lastSeen = JSON.parse(lastSeenJson);
+                    nextS = lastSeen.s;
+                    nextE = lastSeen.e;
 
-            if (prog.pct >= 95) {
-                // Si se terminó, intentamos avanzar al siguiente episodio
-                const currentSeasonLen = item.seasons[nextS].episodes.length;
-                if (nextE + 1 < currentSeasonLen) {
-                    // Mover al siguiente episodio de la misma temporada
-                    nextE++; 
-                } else if (nextS + 1 < item.seasons.length) {
-                    // Mover a la siguiente temporada, primer episodio
-                    nextS++;
-                    nextE = 0;
+                    const epId = getEpId(item.id, nextS, nextE);
+                    const prog = getProgress(epId);
+
+                    if (prog.pct >= 95) {
+                        const currentSeasonLen = item.seasons[nextS].episodes.length;
+                        if (nextE + 1 < currentSeasonLen) {
+                            nextE++; 
+                        } else if (nextS + 1 < item.seasons.length) {
+                            nextS++; nextE = 0;
+                        }
+                    }
                 }
-                // Si era el último de la serie, se queda ahí (o podrías resetear a 0,0)
+
+                const finalEpId = getEpId(item.id, nextS, nextE);
+                const finalProg = getProgress(finalEpId);
+                
+                if(item.seasons[nextS] && item.seasons[nextS].episodes[nextE]) {
+                     const seasonNum = item.seasons[nextS].num;
+                     if(finalProg.pct > 1 && finalProg.pct < 95) {
+                         txtPlay.innerText = `Reanudar T${seasonNum} E${nextE+1}`;
+                     } else {
+                         txtPlay.innerText = `Reproducir T${seasonNum} E${nextE+1}`;
+                     }
+                     btnPlay.onclick = () => playEpisode(nextS, nextE);
+                }
+            } else {
+                const p = getProgress(item.id);
+                txtPlay.innerText = (p.pct > 1 && p.pct < 98) ? "Reanudar" : "Reproducir";
+                btnPlay.onclick = () => startPlayer(item.mpd, item.drm, item.title, false);
+                sCont.style.display = 'none';
             }
+            setTimeout(() => btnPlay.focus(), 100);
         }
 
-        // Definir etiqueta del botón
-        const finalEpId = getEpId(item.id, nextS, nextE);
-        const finalProg = getProgress(finalEpId);
-        
-        // Asegurarse de que los índices existen (por si cambiaron el JSON de datos)
-        if(item.seasons[nextS] && item.seasons[nextS].episodes[nextE]) {
-             const seasonNum = item.seasons[nextS].num;
-             // Nota: idx+1 para mostrar al usuario, pero internamente usamos índice 0
-             if(finalProg.pct > 1 && finalProg.pct < 95) {
-                 txtPlay.innerText = `Reanudar T${seasonNum} E${nextE+1}`;
-             } else {
-                 txtPlay.innerText = `Reproducir T${seasonNum} E${nextE+1}`;
-             }
-             btnPlay.onclick = () => playEpisode(nextS, nextE);
-        }
+        function renderSeasons(item) {
+            const sel = document.getElementById('season-select');
+            sel.innerHTML = '';
+            if(!item.seasons.length) return;
 
-    } else {
-        // Película (Lógica original, funciona bien)
-        const p = getProgress(item.id);
-        txtPlay.innerText = (p.pct > 1 && p.pct < 98) ? "Reanudar" : "Reproducir";
-        btnPlay.onclick = () => startPlayer(item.mpd, item.drm, item.title, false);
-        sCont.style.display = 'none';
-    }
-    
-    setTimeout(() => btnPlay.focus(), 100);
-}
+            item.seasons.forEach((s, idx) => {
+                sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
+            });
+            sel.onchange = () => renderEpisodes(item, sel.value);
 
-    function renderSeasons(item) {
-    const sel = document.getElementById('season-select');
-    sel.innerHTML = '';
-    if(!item.seasons.length) return;
-
-    // 1. Generar las opciones del Select
-    item.seasons.forEach((s, idx) => {
-        sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
-    });
-    
-    // Evento al cambiar manualmente
-    sel.onchange = () => renderEpisodes(item, sel.value);
-
-    // ======================================================
-    // LOGICA INTELIGENTE DE SELECCIÓN DE TEMPORADA
-    // ======================================================
-    let defaultIdx = 0;
-    
-    // Recuperamos lo último que vio el usuario
-    const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
-    
-    if (lastSeenJson) {
-        const last = JSON.parse(lastSeenJson);
-        defaultIdx = parseInt(last.s); // Seleccionamos la temporada donde se quedó
-
-        // Lógica Extra: Si terminó el ÚLTIMO episodio de esa temporada, 
-        // mostrar automáticamente la SIGUIENTE temporada en la lista.
-        const epId = getEpId(item.id, last.s, last.e);
-        const prog = getProgress(epId);
-        
-        // Si el episodio está terminado (>95%) Y era el último de la lista...
-        if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
-            // ... y existe una temporada siguiente
-            if (item.seasons[last.s + 1]) {
-                defaultIdx++; 
+            let defaultIdx = 0;
+            const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
+            if (lastSeenJson) {
+                const last = JSON.parse(lastSeenJson);
+                defaultIdx = parseInt(last.s); 
+                const epId = getEpId(item.id, last.s, last.e);
+                const prog = getProgress(epId);
+                if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
+                    if (item.seasons[last.s + 1]) defaultIdx++; 
+                }
             }
+            sel.value = defaultIdx;
+            renderEpisodes(item, defaultIdx);
         }
-    }
-
-    // Aplicar selección y renderizar episodios
-    sel.value = defaultIdx;
-    renderEpisodes(item, defaultIdx);
-}
 
         function renderEpisodes(item, sIdx) {
             const list = document.getElementById('episodes-list');
@@ -685,105 +683,9 @@ function openDetails(id) {
             document.getElementById('app').style.display = 'block';
             document.getElementById('main-header').style.display = 'flex';
             setTimeout(() => document.querySelector('.card')?.focus(), 100);
-        }
-
-        // ================= SHAKA PLAYER & LÓGICA VIDEO =================
-        function initShaka() {
-            shaka.polyfill.installAll();
-            if (shaka.Player.isBrowserSupported()) {
-                const video = document.getElementById('video');
-                player = new shaka.Player(video);
-                
-                // Configuración de idioma
-                player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
-
-                // UI Overlay
-                const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
-                ui.configure({
-                    controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu']
-                });
-
-                player.addEventListener('error', onError);
-                
-                // --- GUARDADO DE PROGRESO Y PUNTERO DE SERIE ---
-                video.addEventListener('timeupdate', () => {
-                    if (!video.paused && currentItem) {
-                        // 1. Guardar progreso del video actual (tiempo)
-                        let saveId = currentItem.id;
-                        if(currentItem.type === 'series') {
-                            saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
             
-                           // 2. NUEVO: Guardar el "Puntero" del último episodio visto para esta serie
-                           // Esto le dice al sistema: "Lo último que vio el usuario de esta serie fue la Temp X, Ep Y"
-                          localStorage.setItem('last_seen_' + currentItem.id, JSON.stringify({
-                              s: currentSeasonIdx,
-                              e: currentEpIdx
-                          }));
-                        }
-                        saveProgress(saveId, video.currentTime, video.duration);
-                    }
-                 });
-
-                // Auto siguiente
-                video.addEventListener('ended', () => {
-                    if (currentItem.type === 'series') changeEpisode(1);
-                    else exitPlayer();
-                });
-
-                // Control visual de Play/Pause
-                video.addEventListener('play', () => {
-                    document.getElementById('icon-play').innerText = 'pause';
-                    resetUiTimer();
-                });
-                video.addEventListener('pause', () => {
-                    document.getElementById('icon-play').innerText = 'play_arrow';
-                    clearTimeout(uiTimer);
-                    document.getElementById('player-ui').classList.remove('ui-fade-out');
-                });
-            }
-        }
-
-        async function startPlayer(mpd, drm, title, isSeries) {
-            if (!mpd) return showError("Sin URL de video.");
-            
-            // NOTA: Se ha eliminado la restricción de protocolo file: para compatibilidad APK
-
-            document.getElementById('player-container').style.display = 'block';
-            currentView = 'player';
-            
-            // Botones Anterior/Siguiente
-            const disp = isSeries ? 'flex' : 'none';
-            document.getElementById('btn-prev').style.display = disp;
-            document.getElementById('btn-next').style.display = disp;
-            
-            // Textos
-            document.getElementById('p-title').innerText = currentItem.title;
-            document.getElementById('p-sub').innerText = isSeries ? title : "Película";
-
-            // Reloj
-            updateClock();
-            clockInterval = setInterval(updateClock, 60000);
-
-            // DRM
-            let config = {};
-            if (drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
-            player.configure(config);
-
-            try {
-                await player.load(mpd);
-                const vid = document.getElementById('video');
-                
-                // Recuperar progreso
-                let loadId = currentItem.id;
-                if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
-                const saved = getProgress(loadId);
-
-                if (saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
-                
-                vid.play();
-                document.getElementById('btn-play-center').focus();
-                resetUiTimer();
-            } catch (e) { onError(e); }
+            // Volver a cargar la vista dispara el "restore focus"
+            renderView(currentView);
         }
 
         async function playEpisode(sIdx, eIdx) {
@@ -827,7 +729,6 @@ function openDetails(id) {
             clearInterval(clockInterval);
             document.getElementById('player-container').style.display = 'none';
             currentView = 'details';
-            // Refrescar detalles
             openDetails(currentItem.id);
         }
 
@@ -845,14 +746,11 @@ function openDetails(id) {
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        function onError(e) {
-        }
+        function onError(e) { console.error(e); }
 
         function showError(msg) {
-            // FIX: Detener reproducción para que no suene de fondo
             const v = document.getElementById('video');
             if (v) v.pause();
-
             const m = document.getElementById('error-modal');
             document.getElementById('error-msg').innerText = msg;
             m.style.display = 'block';
@@ -864,6 +762,19 @@ function openDetails(id) {
         function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
         function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : {pct:0, time:0}; }
 
+        // ================= ARRANQUE DE LA APLICACIÓN =================
+        window.onload = async () => {
+            initShaka();
+            document.addEventListener('keydown', handleRemote);
+            
+            const pCont = document.getElementById('player-container');
+            if (pCont) {
+                pCont.addEventListener('mousemove', resetUiTimer);
+                pCont.addEventListener('click', resetUiTimer);
+            }
+            
+            await loadData();
+        };
     </script>
 </body>
 </html>
