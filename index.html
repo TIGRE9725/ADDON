@@ -146,7 +146,6 @@
             transform: scale(1.1);
             box-shadow: 0 0 10px black;
         }
-        /* Estilo para la bolita de la barra de tiempo */
         .shaka-seek-bar-container input[type=range]:focus::-webkit-slider-thumb {
             box-shadow: 0 0 0 4px white;
             transform: scale(1.3);
@@ -282,6 +281,8 @@
         const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
         let catalog = [];
         let currentView = 'home';
+        // Variable para saber en qué sección estábamos (home, series, movies)
+        let activeSection = 'home'; 
         let currentItem = null;
         let player = null;
         let uiTimer = null;
@@ -296,7 +297,7 @@
 
         // MAPA DE TECLAS (Mando TV / Teclado)
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27], // Backspace, WebOS, Tizen, Esc
+            BACK: [8, 461, 10009, 27],
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
             PLAY: [415, 19], PAUSE: [19], STOP: [413],
@@ -311,6 +312,7 @@
 
             if (shaka.Player.isBrowserSupported()) {
                 const video = document.getElementById('video');
+                // IMPORTANTE: Instanciar player aquí
                 player = new shaka.Player(video);
                 
                 player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
@@ -332,7 +334,6 @@
                         let saveId = currentItem.id;
                         if(currentItem.type === 'series') {
                             saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
-                            // Guardar puntero: Qué episodio se vio por última vez
                             localStorage.setItem('last_seen_' + currentItem.id, JSON.stringify({
                                 s: currentSeasonIdx,
                                 e: currentEpIdx
@@ -356,6 +357,8 @@
                     clearTimeout(uiTimer);
                     document.getElementById('player-ui').classList.remove('ui-fade-out');
                 });
+            } else {
+                console.error('Navegador no soporta Shaka Player');
             }
         }
 
@@ -366,7 +369,6 @@
 
             // 1. Manejo de Barras de Shaka (Seek/Volumen)
             if (current && current.tagName === 'INPUT' && current.type === 'range') {
-                // Si estoy en la barra, las flechas cambian el valor, no el foco
                 if (k === 37 || k === 39) return;
             }
 
@@ -385,19 +387,15 @@
             // 3. Enter Inteligente
             if (isKey(e, 'ENTER')) {
                 if (current) {
-                    // Si es una barra de Shaka
                     if (current.tagName === 'INPUT' && current.type === 'range') {
                         e.preventDefault();
-                        // Barra de tiempo: Play/Pause
                         if (current.getAttribute('aria-label') === 'Seek' || current.classList.contains('shaka-seek-bar')) {
                             togglePlay(); return;
                         }
-                        // Barra de volumen: Mute
                         if (current.getAttribute('aria-label') === 'Volume' || current.classList.contains('shaka-volume-bar')) {
                             const v = document.getElementById('video'); v.muted = !v.muted; return;
                         }
                     }
-                    // Comportamiento normal
                     current.click(); return; 
                 }
             }
@@ -416,7 +414,6 @@
         }
 
         function integrateShakaControls() {
-            // Busca los controles de Shaka y los hace navegables
             const shakaControls = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input[type="range"]');
             shakaControls.forEach(el => {
                 el.classList.add('focusable');
@@ -435,11 +432,9 @@
             if (index === -1) { focusables[0].focus(); return; }
 
             let next = null;
-            // Derecha / Izquierda
             if (k === 39 && index < focusables.length - 1) next = focusables[index + 1];
             if (k === 37 && index > 0) next = focusables[index - 1];
             
-            // Arriba / Abajo (Saltos en Grid)
             if (k === 40) { 
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1; 
@@ -506,13 +501,18 @@
 
         // ================= VISTAS Y RENDERIZADO =================
         function renderView(view) {
-            currentView = 'home';
+            // Si la vista es una de las principales, actualizamos activeSection
+            if (['home', 'series', 'movies'].includes(view)) {
+                activeSection = view;
+            }
+            
+            currentView = activeSection; // Usamos la sección activa
             const app = document.getElementById('app');
             app.innerHTML = '';
             
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
-            if(view === 'home') {
+            if(activeSection === 'home') {
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
                 
                 const watching = catalog.filter(x => { 
@@ -524,7 +524,7 @@
                 createRow("Series", catalog.filter(x => x.type === 'series'));
                 createRow("Películas", catalog.filter(x => x.type === 'movie'));
                 
-            } else if(view === 'series') {
+            } else if(activeSection === 'series') {
                 document.querySelectorAll('.nav-btn')[1].classList.add('active');
                 createGrid(catalog.filter(x => x.type === 'series'));
             } else {
@@ -532,12 +532,10 @@
                 createGrid(catalog.filter(x => x.type === 'movie'));
             }
             
-            // === LÓGICA DE RESTAURACIÓN DE FOCO (USANDO DATA-ID) ===
+            // === RESTAURACIÓN DE FOCO ===
             setTimeout(() => {
                 let elementToFocus = null;
-
                 if (lastFocusedId) {
-                    // Buscamos el elemento exacto usando el atributo data-id
                     elementToFocus = document.querySelector(`.card[data-id="${lastFocusedId}"]`);
                 }
 
@@ -545,7 +543,6 @@
                     elementToFocus.focus();
                     elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
                 } else {
-                    // Foco por defecto si no hay historial
                     const firstCard = document.querySelector('.card');
                     if(firstCard) firstCard.focus();
                 }
@@ -572,8 +569,6 @@
         function cardHtml(item) {
             const p = getProgress(item.id);
             const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
-            
-            // Importante: data-id="${item.id}" es lo que permite restaurar el foco
             return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')" data-id="${item.id}">
                 <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
                 ${bar}
@@ -582,8 +577,7 @@
 
         // ================= DETALLES E INTELIGENCIA =================
         function openDetails(id) {
-            // Guardamos el ID para restaurar foco después
-            lastFocusedId = id;
+            lastFocusedId = id; // Guardar ID para volver después
 
             const item = catalog.find(x => x.id === id);
             if(!item) return;
@@ -611,17 +605,15 @@
                 sCont.style.display = 'block';
                 renderSeasons(item);
 
-                // Lógica Inteligente: Calcular botón "Reproducir/Reanudar"
+                // Lógica Inteligente
                 let nextS = 0, nextE = 0;
                 
-                // 1. Intentar leer último visto
                 const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
                 if (lastSeenJson) {
                     const lastSeen = JSON.parse(lastSeenJson);
                     nextS = lastSeen.s;
                     nextE = lastSeen.e;
 
-                    // 2. Si ese ya terminó, intentar el siguiente
                     const epId = getEpId(item.id, nextS, nextE);
                     const prog = getProgress(epId);
 
@@ -635,7 +627,6 @@
                     }
                 }
 
-                // 3. Configurar botón
                 const finalEpId = getEpId(item.id, nextS, nextE);
                 const finalProg = getProgress(finalEpId);
                 
@@ -666,17 +657,13 @@
             item.seasons.forEach((s, idx) => {
                 sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
             });
-            
             sel.onchange = () => renderEpisodes(item, sel.value);
 
-            // Auto-Selección de Temporada basada en historial
             let defaultIdx = 0;
             const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
             if (lastSeenJson) {
                 const last = JSON.parse(lastSeenJson);
                 defaultIdx = parseInt(last.s); 
-                
-                // Si terminamos la temporada, saltar a la siguiente en la lista
                 const epId = getEpId(item.id, last.s, last.e);
                 const prog = getProgress(epId);
                 if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
@@ -715,14 +702,12 @@
         }
 
         function closeDetails() {
-            currentView = 'home';
+            // VOLVER A LA SECCIÓN ACTIVA (Home, Series o Películas)
             document.getElementById('details-view').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             document.getElementById('main-header').style.display = 'flex';
-            setTimeout(() => document.querySelector('.card')?.focus(), 100);
             
-            // Disparar renderView para ejecutar la lógica de restauración de foco
-            renderView(currentView);
+            renderView(activeSection); 
         }
 
         async function playEpisode(sIdx, eIdx) {
@@ -756,6 +741,45 @@
             }
         }
 
+        async function startPlayer(mpd, drm, title, isSeries) {
+            if (!mpd) return showError("Sin URL de video.");
+            
+            // Asegurar que player existe
+            if (!player) await initShaka();
+
+            document.getElementById('player-container').style.display = 'block';
+            currentView = 'player';
+            
+            const disp = isSeries ? 'flex' : 'none';
+            document.getElementById('btn-prev').style.display = disp;
+            document.getElementById('btn-next').style.display = disp;
+            
+            document.getElementById('p-title').innerText = currentItem.title;
+            document.getElementById('p-sub').innerText = isSeries ? title : "Película";
+
+            updateClock();
+            clockInterval = setInterval(updateClock, 60000);
+
+            let config = {};
+            if (drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
+            player.configure(config);
+
+            try {
+                await player.load(mpd);
+                const vid = document.getElementById('video');
+                
+                let loadId = currentItem.id;
+                if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
+                const saved = getProgress(loadId);
+
+                if (saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
+                
+                vid.play().catch(e => console.log("Autoplay prevenido por navegador", e));
+                document.getElementById('btn-play-center').focus();
+                resetUiTimer();
+            } catch (e) { onError(e); }
+        }
+
         function togglePlay() {
             const v = document.getElementById('video');
             v.paused ? v.play() : v.pause();
@@ -766,7 +790,12 @@
             clearInterval(clockInterval);
             document.getElementById('player-container').style.display = 'none';
             currentView = 'details';
-            openDetails(currentItem.id);
+            // Al salir del player, volvemos a detalles
+            // No necesitamos llamar a openDetails completo, solo restaurar vista
+            document.getElementById('details-view').style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('main-header').style.display = 'none';
+            document.getElementById('btn-play-hero').focus();
         }
 
         function resetUiTimer() {
@@ -783,7 +812,7 @@
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        function onError(e) { console.error(e); }
+        function onError(e) { console.error('Shaka Error', e); showError("Error: " + e.code); }
 
         function showError(msg) {
             const v = document.getElementById('video');
@@ -801,7 +830,7 @@
 
         // ================= ARRANQUE DE LA APLICACIÓN =================
         window.onload = async () => {
-            initShaka();
+            await initShaka();
             document.addEventListener('keydown', handleRemote);
             
             const pCont = document.getElementById('player-container');
