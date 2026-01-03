@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StreamNet - Universal Player</title>
+    <title>StreamNet - TV Edition</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
@@ -18,10 +18,14 @@
         :root { --primary: #E50914; --bg: #000000; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* FOCO UNIVERSAL (TV/TECLADO) */
+        /* FOCO VISUAL (TV) - Borde grueso y visible */
+        .focusable { transition: transform 0.2s, border 0.1s; box-sizing: border-box; }
         .focusable:focus {
-            outline: none; border: 3px solid white !important; transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999;
+            outline: none; 
+            border: 4px solid white !important; 
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); 
+            z-index: 9999;
             background-color: rgba(255,255,255,0.1);
         }
 
@@ -29,24 +33,28 @@
         header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
-        .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; padding: 5px 10px; border-radius: 4px; transition: 0.2s; }
-        .nav-btn.active { color: white; background: rgba(255,255,255,0.1); border-bottom: 2px solid var(--primary); }
+        .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 16px; cursor: pointer; font-weight: bold; padding: 5px 15px; border-radius: 4px; }
+        .nav-btn.active { color: white; background: rgba(255,255,255,0.2); border-bottom: 2px solid var(--primary); }
         .search-box { display: flex; align-items: center; background: rgba(255,255,255,0.1); border: 1px solid #333; padding: 5px 10px; border-radius: 4px; }
-        .search-box input { background: transparent; border: none; color: white; outline: none; width: 150px; font-size: 14px; }
+        .search-box input { background: transparent; border: none; color: white; outline: none; width: 150px; font-size: 16px; }
 
         /* APP CONTAINER */
-        #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
+        #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; scroll-behavior: smooth; }
         .section-title { margin-left: 4%; font-size: 1.4rem; color: #e5e5e5; margin-bottom: 10px; margin-top: 20px; text-shadow: 1px 1px 2px black; font-weight: bold;}
         
-        .horizontal-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 15px 4%; scroll-behavior: smooth; }
+        .horizontal-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 15px 4%; scroll-behavior: smooth; white-space: nowrap; }
         .horizontal-scroll::-webkit-scrollbar { height: 0px; }
         
-        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 20px 4%; }
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; padding: 20px 4%; }
         
         .card { 
-            min-width: 140px; height: 210px; background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
-            transition: transform 0.2s; border: 3px solid transparent; display: flex; align-items: center; justify-content: center;
+            display: inline-block; /* Para scroll horizontal */
+            vertical-align: top;
+            width: 150px; height: 225px; background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
+            border: 3px solid transparent; 
         }
+        .grid-view .card { width: auto; height: 225px; } /* En grid ocupa el espacio disponible */
+        
         .card img { width: 100%; height: 100%; object-fit: cover; }
         .progress-track { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.3); z-index: 5; display: none; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
@@ -54,7 +62,6 @@
         /* DETALLES */
         #details-view { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: none; overflow-x: hidden; overflow-y: auto; }
         .details-hero { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center top; mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); }
-        .hero-gradient { position: absolute; inset: 0; }
         .details-content { position: absolute; top: 1%; left: 5%; width: 90%; z-index: 10; display: flex; flex-direction: column; bottom: 240px; justify-content: flex-start; }
         .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
         .details-meta { font-size: 1.1rem; color: #ccc; margin-bottom: 10px; font-weight: bold; display: flex; gap: 15px; align-items: center;}
@@ -69,45 +76,37 @@
         .season-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
         .season-selector { background: #333; color: white; border: 1px solid #555; padding: 5px 15px; border-radius: 4px; font-size: 1rem; }
         .episode-scroller { display: flex; gap: 15px; overflow-x: auto; padding: 10px 0; scroll-behavior: smooth; }
-        .episode-scroller::-webkit-scrollbar { height: 0; }
         .episode-card { min-width: 220px; max-width: 220px; background: rgba(30,30,30,0.8); border-radius: 6px; overflow: hidden; cursor: pointer; border: 3px solid transparent; transition: transform 0.2s; display: flex; flex-direction: column; position: relative; }
         .episode-card:hover, .episode-card:focus { transform: scale(1.05); border-color: white; background: #333; z-index: 50; }
         .ep-thumb { width: 100%; height: 125px; object-fit: cover; }
         .ep-info { padding: 10px; }
-        .ep-title { font-size: 0.9rem; font-weight: bold; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ep-num { font-size: 0.8rem; color: #aaa; margin-top: 3px; }
 
         /* =========================================
-           REPRODUCTOR - FIX COMPATIBILIDAD EXTREMA
+           REPRODUCTOR - UI SUPERPUESTA
            ========================================= */
         #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
         
-        /* Capa UI por encima de TODO */
         .player-ui { 
             position: absolute; inset: 0; 
             display: flex; flex-direction: column; justify-content: space-between; 
             background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.9) 100%);
             transition: opacity 0.3s ease;
-            z-index: 99999 !important; /* Ganar a Shaka */
-            pointer-events: none; /* Permitir pasar clicks a Shaka en el vacío */
+            z-index: 99999 !important; 
+            pointer-events: none; 
         }
         .ui-fade-out { opacity: 0 !important; pointer-events: none; }
 
         .p-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; position: relative; }
         
-        /* BOTÓN VOLVER BLINDADO */
         .btn-back-p { 
-            width: 60px; height: 60px; border-radius: 50%; /* Más grande para Touch */
+            width: 60px; height: 60px; border-radius: 50%; 
             background: rgba(255,255,255,0.15); color: white; 
             border: 2px solid transparent; display: flex; align-items: center; justify-content: center; 
             cursor: pointer; z-index: 100000; 
-            pointer-events: auto !important; /* Clickable siempre */
+            pointer-events: auto !important; 
         }
-        .btn-back-p:active { background: rgba(255,0,0,0.5); transform: scale(0.95); } /* Feedback visual touch */
-
-        .p-clock { font-size: 1.5rem; font-weight: bold; color: #ccc; text-shadow: 2px 2px 4px black; position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 1; pointer-events: none; }
-        .p-meta { text-align: right; text-shadow: 1px 1px 3px black; max-width: 40%; z-index: 2; pointer-events: none; }
+        .btn-back-p:focus { border-color: white; background: var(--primary); }
 
         .p-controls-center { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -120,29 +119,19 @@
             pointer-events: auto !important; 
         }
         .ctrl-btn:focus, .ctrl-btn:hover { background: var(--primary); border-color: white; transform: scale(1.15); }
-        .ctrl-btn .material-icons-round { font-size: 40px; }
-        .ctrl-btn.mini { width: 55px; height: 55px; } 
 
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 999999; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
         
-        /* Shaka Custom Styling */
+        /* Ajuste para Shaka UI nativo */
         .shaka-controls-container .focusable:focus {
             outline: none !important; border: 2px solid var(--primary) !important;
             background-color: rgba(255, 255, 255, 0.2); transform: scale(1.1);
         }
 
-        /* MEDIA QUERIES (Vertical/Mobile) */
+        /* MEDIA QUERIES */
         @media (orientation: portrait) {
-            .details-hero { height: 50vh; width: 100%; top: 0; mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); }
-            .hero-gradient { height: 50vh; background: linear-gradient(to top, black 10%, transparent); }
-            .details-content { position: relative; top: auto; margin-top: 35vh; width: 90%; left: 5%; margin-bottom: 20px; max-height: none; justify-content: flex-start; }
-            .details-title { font-size: 2.5rem; }
-            .details-desc { -webkit-line-clamp: 6; }
-            #series-container { position: relative; bottom: auto; margin-top: 0; padding-bottom: 50px; background: transparent; }
-            .episode-scroller { flex-direction: column; overflow-x: hidden; }
-            .episode-card { max-width: 100%; min-width: 100%; flex-direction: row; height: 90px; align-items: center; margin-bottom: 10px; background: rgba(40,40,40,0.9); }
-            .ep-thumb { width: 140px; height: 100%; }
-            .ep-info { flex: 1; padding-left: 15px; }
+            .details-hero { height: 50vh; }
+            .details-content { margin-top: 35vh; }
         }
     </style>
 </head>
@@ -167,7 +156,6 @@
 
     <div id="details-view">
         <div class="details-hero" id="det-hero"></div>
-        <div class="hero-gradient"></div>
         
         <div class="details-content">
             <h1 class="details-title" id="det-title">TITULO</h1>
@@ -175,7 +163,7 @@
                 <span class="tag" id="det-year">2024</span>
                 <span class="tag" id="det-type">Película</span>
             </div>
-            <p class="details-desc" id="det-desc">Descripción del contenido...</p>
+            <p class="details-desc" id="det-desc">Descripción...</p>
             
             <div class="action-row">
                 <button id="btn-play-hero" class="btn-large btn-primary focusable">
@@ -197,29 +185,24 @@
     </div>
 
     <div id="player-container">
-        <video id="video" autoplay></video>
+        <video id="video" autoplay playsinline></video> 
         
         <div id="player-ui" class="player-ui">
             <div class="p-header">
                 <button id="btn-back-player" class="btn-back-p focusable">
                     <span class="material-icons-round">arrow_back</span>
                 </button>
-                
-                <div class="p-clock" id="p-clock">12:00</div>
-                <div class="p-meta">
-                    <h2 id="p-title">Título</h2>
-                    <span id="p-sub">Subtítulo</span>
-                </div>
+                <div style="color:#ccc; font-weight:bold; margin-top:10px;" id="p-clock">00:00</div>
             </div>
 
             <div class="p-controls-center">
-                <button id="btn-prev" class="ctrl-btn mini focusable" onclick="changeEpisode(-1)" style="display:none">
+                <button id="btn-prev" class="ctrl-btn focusable" onclick="changeEpisode(-1)" style="display:none">
                     <span class="material-icons-round">skip_previous</span>
                 </button>
                 <button id="btn-play-center" class="ctrl-btn focusable" onclick="togglePlay()">
                     <span class="material-icons-round" id="icon-play">pause</span>
                 </button>
-                <button id="btn-next" class="ctrl-btn mini focusable" onclick="changeEpisode(1)" style="display:none">
+                <button id="btn-next" class="ctrl-btn focusable" onclick="changeEpisode(1)" style="display:none">
                     <span class="material-icons-round">skip_next</span>
                 </button>
             </div>
@@ -229,7 +212,7 @@
 
     <div id="error-modal" class="error-modal">
         <h3 style="color:#ff5555; margin-top:0">Error de Reproducción</h3>
-        <p id="error-msg">Detalles del error...</p>
+        <p id="error-msg">Detalles...</p>
         <button class="btn-primary focusable" style="padding:10px 20px" onclick="document.getElementById('error-modal').style.display='none'; exitPlayer()">Cerrar</button>
     </div>
 
@@ -239,7 +222,6 @@
         const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
         let catalog = [];
         let currentView = 'home';
-        let activeSection = 'home'; 
         let currentItem = null;
         let player = null;
         let uiTimer = null;
@@ -248,111 +230,200 @@
         let currentSeasonIdx = 0;
         let currentEpIdx = 0;
 
-        // TECLAS CRÍTICAS (Smart TV / FireTV / Tizen / WebOS)
+        // TECLAS DE CONTROL REMOTO
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27, 27], // WebOS: 461, Tizen: 10009, PC: 8/27
+            BACK: [8, 461, 10009, 27], // 461 (WebOS), 10009 (Tizen), 8 (FireTV Backspace), 27 (Esc)
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
             PLAY: [415, 19], PAUSE: [19], STOP: [413]
         };
 
-        // ================= EVENT LISTENER UNIVERSAL (FASE DE CAPTURA) =================
-        // Usamos 'true' (Capture) para interceptar teclas antes que Shaka o el Navegador
-        window.addEventListener('keydown', handleRemote, true);
+        // ================= PREVENCIÓN DE SALIDA DE APP =================
+        // HACK: Inyectamos un estado falso en el historial. 
+        // Cuando pulsas atrás en el mando, el navegador intenta ir atrás en el historial 
+        // en lugar de cerrar la app.
+        window.history.pushState(null, document.title, window.location.href);
+        window.addEventListener('popstate', function (event) {
+            window.history.pushState(null, document.title, window.location.href);
+            // Si el usuario "navegó atrás" en el historial, simulamos la tecla atrás
+            handleBackAction();
+        });
 
-        function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
+        // ================= CAPTURA DE TECLAS =================
+        // Usamos 'true' para capturar antes que nadie
+        window.addEventListener('keydown', handleRemote, true);
 
         function handleRemote(e) {
             const k = e.keyCode;
             
-            // 1. MANEJO PRIORITARIO DE "ATRÁS"
-            if (isKey(e, 'BACK')) {
-                // Prevenir que el navegador cierre la app (Tizen/WebOS)
+            // 1. MANEJO DE ATRÁS
+            if (KEYMAP.BACK.includes(k)) {
                 e.preventDefault(); 
                 e.stopPropagation();
-                e.stopImmediatePropagation(); // Matar evento para que Shaka no lo vea
-
-                if (document.getElementById('error-modal').style.display === 'block') {
-                    document.getElementById('error-modal').style.display = 'none';
-                    exitPlayer(); // Salir por seguridad
-                    return;
-                }
-                
-                if (currentView === 'player') {
-                    console.log("Saliendo del player via Tecla Física");
-                    exitPlayer();
-                } else if (currentView === 'details') {
-                    closeDetails();
-                } else if (currentView === 'search') {
-                    renderView(activeCategory);
-                }
+                handleBackAction();
                 return;
             }
 
-            // Si hay un modal de error, bloquear todo menos Enter/Atrás
-            if (document.getElementById('error-modal').style.display === 'block') return;
-
-            // 2. NAVEGACIÓN (Flechas)
+            // 2. NAVEGACIÓN ESPACIAL (Arriba/Abajo/Izquierda/Derecha)
             if ([37, 38, 39, 40].includes(k)) {
-                // Solo movemos foco si NO es un input de rango (Seek bar)
+                // Si es un input range (barra de video), dejamos que actúe por defecto horizontalmente
                 const act = document.activeElement;
                 if(act && act.tagName === 'INPUT' && act.type === 'range') {
-                    if(k === 37 || k === 39) return; // Dejar que Shaka mueva la barra
+                    if(k === 37 || k === 39) return; 
                 }
-                e.preventDefault(); // Evitar scroll de página
-                moveFocus(k);
+                
+                e.preventDefault(); // Evitar scroll nativo del navegador
+                spatialNavigation(k); // <--- NUEVA LÓGICA ESPACIAL
             }
 
-            // 3. ENTER (Manejo de sliders Shaka con mando)
-            if (isKey(e, 'ENTER')) {
+            // 3. ENTER
+            if (KEYMAP.ENTER.includes(k)) {
                 const current = document.activeElement;
                 if (current && current.tagName === 'INPUT' && current.type === 'range') {
-                    e.preventDefault();
-                    togglePlay(); // Enter en seekbar = Play/Pause
+                    e.preventDefault(); togglePlay();
+                } else if (current) {
+                    current.click();
                 }
             }
 
-            // 4. MULTIMEDIA DIRECTO
+            // 4. PLAY/PAUSE FÍSICO
             if (currentView === 'player') {
                 resetUiTimer();
-                if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) { togglePlay(); }
+                if (KEYMAP.PLAY.includes(k) || KEYMAP.PAUSE.includes(k)) { togglePlay(); }
+            }
+        }
+
+        // LÓGICA CENTRALIZADA DE "ATRÁS"
+        function handleBackAction() {
+            if (document.getElementById('error-modal').style.display === 'block') {
+                document.getElementById('error-modal').style.display = 'none';
+                exitPlayer();
+                return;
+            }
+            
+            if (currentView === 'player') {
+                exitPlayer();
+            } else if (currentView === 'details') {
+                closeDetails();
+            } else if (currentView === 'search') {
+                renderView(activeCategory);
+            } else {
+                // Si estamos en home, no hacemos nada (o mostramos confirmación de salir)
+                console.log("Ya estás en el inicio");
+            }
+        }
+
+        // ================= NAVEGACIÓN ESPACIAL REAL (FIX MOVIMIENTO) =================
+        function spatialNavigation(k) {
+            const current = document.activeElement;
+            // Solo elementos visibles y habilitados
+            const candidates = Array.from(document.querySelectorAll('.focusable'))
+                .filter(el => {
+                    const style = window.getComputedStyle(el);
+                    return style.display !== 'none' && style.visibility !== 'hidden' && !el.disabled && el.offsetParent !== null;
+                });
+
+            if (!candidates.includes(current)) {
+                if(candidates.length > 0) candidates[0].focus();
+                return;
+            }
+
+            const currentRect = current.getBoundingClientRect();
+            const currentCenter = {
+                x: currentRect.left + currentRect.width / 2,
+                y: currentRect.top + currentRect.height / 2
+            };
+
+            let bestCandidate = null;
+            let minDistance = Infinity;
+
+            for (const el of candidates) {
+                if (el === current) continue;
+
+                const rect = el.getBoundingClientRect();
+                const center = {
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2
+                };
+
+                // Filtrar por dirección
+                let isValidDir = false;
+                const tolerance = 20; // Píxeles de tolerancia para alineación
+
+                if (k === 37) { // IZQUIERDA: Debe estar a la izquierda
+                    isValidDir = center.x < currentRect.left; 
+                } else if (k === 39) { // DERECHA: Debe estar a la derecha
+                    isValidDir = center.x > currentRect.right;
+                } else if (k === 38) { // ARRIBA: Debe estar arriba
+                    isValidDir = center.y < currentRect.top;
+                } else if (k === 40) { // ABAJO: Debe estar abajo
+                    isValidDir = center.y > currentRect.bottom;
+                }
+
+                if (isValidDir) {
+                    // Calcular distancia euclidiana
+                    const dx = center.x - currentCenter.x;
+                    const dy = center.y - currentCenter.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    // Ponderación: Priorizar elementos alineados en el eje principal
+                    // Si me muevo verticalmente (38,40), penalizo la distancia horizontal
+                    // Si me muevo horizontalmente (37,39), penalizo la distancia vertical
+                    let weightedDist = dist;
+                    if (k === 38 || k === 40) weightedDist += Math.abs(dx) * 2; 
+                    else weightedDist += Math.abs(dy) * 2;
+
+                    if (weightedDist < minDistance) {
+                        minDistance = weightedDist;
+                        bestCandidate = el;
+                    }
+                }
+            }
+
+            if (bestCandidate) {
+                bestCandidate.focus();
+                bestCandidate.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
             }
         }
 
         // ================= GESTIÓN DE CLICK/TOUCH EN BOTÓN VOLVER =================
-        // Vinculamos eventos manualmente para asegurar que no fallen
         const btnBack = document.getElementById('btn-back-player');
-        
-        // Función "búnker" para salir
         function forceExit(e) {
-            if(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-            }
-            console.log("Click forzado en Salir");
+            e.preventDefault(); e.stopPropagation();
             exitPlayer();
         }
+        btnBack.onclick = forceExit;
 
-        btnBack.addEventListener('click', forceExit);
-        btnBack.addEventListener('touchend', forceExit); // Para móviles rápidos
-        btnBack.onclick = forceExit; // Redundancia máxima
-
-        // ================= INICIALIZACIÓN SHAKA =================
+        // ================= INICIALIZACIÓN SHAKA (FIX AUDIO) =================
         function initShaka() {
             shaka.polyfill.installAll();
             if (shaka.Player.isBrowserSupported()) {
                 const video = document.getElementById('video');
                 player = new shaka.Player(video);
-                player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
+                
+                // --- CONFIGURACIÓN OPTIMIZADA PARA TV (AUDIO FIX) ---
+                player.configure({
+                    preferredAudioLanguage: 'es', 
+                    preferredTextLanguage: 'es',
+                    streaming: {
+                        // Aumentamos buffer para evitar cortes (entrecortado)
+                        bufferingGoal: 30, // Segundos meta de buffer (default es 10)
+                        rebufferingGoal: 5, // Segundos para reanudar si se traba (default es 2)
+                        bufferBehind: 10,
+                        retryParameters: { maxAttempts: 5, baseDelay: 1000, backoffFactor: 2 },
+                        ignoreTextStreamFailures: true,
+                        // Importante para TVs baratas: no saltar gaps agresivamente
+                        jumpLargeGaps: false 
+                    }
+                });
+
                 const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
                 ui.configure({
                     controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
                     addSeekBar: true,
-                    fadeDelay: 0 // Desactivamos el fade nativo de Shaka para usar el nuestro
+                    fadeDelay: 0 
                 });
 
-                // Error handler
                 player.addEventListener('error', (e) => {
                     if (e.detail && e.detail.code === 7000) return;
                     onError(e);
@@ -387,70 +458,13 @@
             } else { console.error('Browser not supported'); }
         }
 
-        // ================= LÓGICA DE FOCO =================
+        // ================= LÓGICA DE FOCO INTERNO =================
         function integrateShakaControls() {
-            // Hacemos que los controles nativos de Shaka sean "focuseables" por nuestro sistema
             const shakaControls = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input[type="range"]');
             shakaControls.forEach(el => {
                 el.classList.add('focusable');
-                // Al recibir foco nativo (mouse), avisar al timer
                 el.addEventListener('focus', () => { resetUiTimer(); });
             });
-        }
-
-        function moveFocus(k) {
-            // Obtenemos todos los elementos visibles y focuseables
-            const focusables = Array.from(document.querySelectorAll('.focusable'))
-                .filter(el => el.offsetParent !== null && !el.disabled);
-            
-            if (focusables.length === 0) return;
-
-            const current = document.activeElement;
-            const index = focusables.indexOf(current);
-            
-            // Si no hay foco, empezar
-            if (index === -1) { focusables[0].focus(); return; }
-
-            let next = null;
-            
-            // Lógica Especial para el Player (Arriba/Abajo entre controles)
-            if (currentView === 'player') {
-                const isTop = current.classList.contains('btn-back-p');
-                const isCenter = current.classList.contains('ctrl-btn');
-                const isBottom = current.closest('.shaka-controls-container');
-
-                if (k === 40) { // ABAJO
-                    if (isTop) next = document.getElementById('btn-play-center'); // Header -> Centro
-                    else if (isCenter) {
-                        // Centro -> Controles de Shaka (Barra)
-                        const shakaBar = document.querySelector('.shaka-seek-bar');
-                        if (shakaBar) next = shakaBar;
-                    }
-                }
-                if (k === 38) { // ARRIBA
-                    if (isBottom) next = document.getElementById('btn-play-center'); // Shaka -> Centro
-                    else if (isCenter) next = document.getElementById('btn-back-player'); // Centro -> Header
-                }
-            }
-
-            // Navegación Estándar (Grid/Listas) si no se asignó 'next' arriba
-            if (!next) {
-                if (k === 39 && index < focusables.length - 1) next = focusables[index + 1];
-                if (k === 37 && index > 0) next = focusables[index - 1];
-                if (k === 40) { 
-                    const isGrid = current.closest('.grid-view');
-                    next = focusables[Math.min(index + (isGrid ? 5 : 1), focusables.length - 1)];
-                }
-                if (k === 38) { 
-                    const isGrid = current.closest('.grid-view');
-                    next = focusables[Math.max(index - (isGrid ? 5 : 1), 0)];
-                }
-            }
-
-            if (next) {
-                next.focus();
-                next.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
-            }
         }
 
         // ================= PLAYER CORE =================
@@ -460,12 +474,10 @@
             document.getElementById('player-container').style.display = 'block';
             currentView = 'player';
             
-            // Configurar botones
             const disp = isSeries ? 'flex' : 'none';
             document.getElementById('btn-prev').style.display = disp;
             document.getElementById('btn-next').style.display = disp;
-            document.getElementById('p-title').innerText = currentItem.title;
-            document.getElementById('p-sub').innerText = isSeries ? title : "Película";
+            // document.getElementById('p-title').innerText = currentItem.title; // Opcional, ya está en overlay
 
             updateClock();
             clockInterval = setInterval(updateClock, 60000);
@@ -478,7 +490,6 @@
                 await player.load(mpd);
                 const vid = document.getElementById('video');
                 
-                // Resume
                 let loadId = currentItem.id;
                 if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
                 const saved = getProgress(loadId);
@@ -486,12 +497,9 @@
                 
                 vid.play().catch(e => console.log("Autoplay blocked", e));
                 
-                // === FOCO INICIAL CRÍTICO ===
-                // Forzamos el foco al botón de Play Central
                 setTimeout(() => {
                     document.getElementById('btn-play-center').focus();
                     resetUiTimer();
-                    // Re-inyectar focuseables de Shaka
                     integrateShakaControls();
                 }, 500);
 
@@ -507,12 +515,10 @@
         }
 
         function exitPlayer() {
-            console.log("Ejecutando exitPlayer...");
             const v = document.getElementById('video');
             v.pause();
-            v.src = ""; // Liberar recursos del navegador
-            
-            player.unload(); // Shaka unload
+            v.src = "";
+            player.unload();
             clearInterval(clockInterval);
             
             document.getElementById('player-container').style.display = 'none';
@@ -522,7 +528,6 @@
             document.getElementById('app').style.display = 'none';
             document.getElementById('main-header').style.display = 'none';
             
-            // Restaurar foco al botón de reproducir en detalles
             setTimeout(() => {
                 const btn = document.getElementById('btn-play-hero');
                 if(btn) btn.focus();
@@ -533,13 +538,12 @@
             const ui = document.getElementById('player-ui');
             ui.classList.remove('ui-fade-out');
             clearTimeout(uiTimer);
-            // Solo ocultar si está reproduciendo
             if (!document.getElementById('video').paused) {
                 uiTimer = setTimeout(() => ui.classList.add('ui-fade-out'), 3500);
             }
         }
 
-        // ================= CARGA DATOS Y UTILIDADES =================
+        // ================= CARGA DATOS =================
         async function loadData() {
             try {
                 const [r1, r2] = await Promise.all([
@@ -567,9 +571,8 @@
         }
 
         function renderView(view, query = '') {
-            if (['home', 'series', 'movies'].includes(view)) activeSection = view;
             activeCategory = view;
-            currentView = (view === 'search') ? 'search' : activeSection;
+            currentView = (view === 'search') ? 'search' : view;
             const app = document.getElementById('app');
             app.innerHTML = '';
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -578,13 +581,13 @@
                 const results = catalog.filter(item => item.title.toLowerCase().includes(query));
                 if(results.length > 0) createGrid(results);
                 else app.innerHTML = '<h3 style="text-align:center;color:#777;margin-top:50px;">Sin resultados</h3>';
-            } else if(activeSection === 'home') {
+            } else if(view === 'home') {
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
                 const watching = catalog.filter(x => { const p = getProgress(x.id); return p.pct > 1 && p.pct < 95; });
                 if(watching.length > 0) createRow("Continuar Viendo", watching);
                 createRow("Series", catalog.filter(x => x.type === 'series'));
                 createRow("Películas", catalog.filter(x => x.type === 'movie'));
-            } else if(activeSection === 'series') {
+            } else if(view === 'series') {
                 document.querySelectorAll('.nav-btn')[1].classList.add('active');
                 createGrid(catalog.filter(x => x.type === 'series'));
             } else {
@@ -594,6 +597,8 @@
             
             setTimeout(() => {
                 let el = lastFocusedId ? document.querySelector(`.card[data-id="${lastFocusedId}"]`) : document.querySelector('.card');
+                // Si no hay tarjeta (ej: home vacío), foco en el header
+                if(!el) el = document.querySelector('.nav-btn.active');
                 if (el) { el.focus(); el.scrollIntoView({behavior: 'auto', block: 'center'}); }
             }, 200);
         }
@@ -609,7 +614,6 @@
             return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')" data-id="${item.id}"><img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">${bar}</div>`;
         }
 
-        // DETALLES
         function openDetails(id) {
             lastFocusedId = id;
             const item = catalog.find(x => x.id === id);
@@ -632,7 +636,6 @@
             if(item.type === 'series') {
                 sCont.style.display = 'block';
                 renderSeasons(item);
-                // Smart Resume Logic
                 let nextS = 0, nextE = 0;
                 const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
                 if (lastSeenJson) {
@@ -684,7 +687,7 @@
             document.getElementById('details-view').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             document.getElementById('main-header').style.display = 'flex';
-            renderView(activeSection);
+            renderView(activeCategory);
         }
 
         async function playEpisode(sIdx, eIdx) {
@@ -706,7 +709,7 @@
         function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
         function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : {pct:0, time:0}; }
 
-        // Start
+        // START
         window.onload = async () => {
             initShaka();
             const searchInput = document.getElementById('searchInput');
