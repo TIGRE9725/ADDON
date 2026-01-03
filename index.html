@@ -138,7 +138,7 @@
         .shaka-bottom-controls { padding-bottom: 20px; padding-left: 20px; padding-right: 20px; }
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
         
-        /* INTEGRACIÓN SHAKA CONTROLS */
+        /* ESTILOS DE FOCO PARA CONTROLES DE SHAKA (TV) */
         .shaka-controls-container .focusable:focus {
             outline: none !important;
             border: 2px solid var(--primary) !important;
@@ -146,9 +146,10 @@
             transform: scale(1.1);
             box-shadow: 0 0 10px black;
         }
+        /* Estilo para la bolita de la barra de tiempo */
         .shaka-seek-bar-container input[type=range]:focus::-webkit-slider-thumb {
             box-shadow: 0 0 0 4px white;
-            transform: scale(1.2);
+            transform: scale(1.3);
             background: white;
         }
 
@@ -286,6 +287,9 @@
         let uiTimer = null;
         let clockInterval = null;
         
+        // Variable para recordar qué elemento tenía el foco
+        let lastFocusedId = null;
+        
         // Variables de Serie
         let currentSeasonIdx = 0;
         let currentEpIdx = 0;
@@ -314,24 +318,21 @@
                 const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
                 ui.configure({
                     controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
-                    seekBarColors: {
-                        base: 'rgba(255, 255, 255, 0.3)',
-                        buffered: 'rgba(255, 255, 255, 0.5)',
-                        played: 'var(--primary)' 
-                    }
+                    seekBarColors: { base: 'rgba(255, 255, 255, 0.3)', buffered: 'rgba(255, 255, 255, 0.5)', played: 'var(--primary)' }
                 });
 
                 player.addEventListener('error', onError);
-
-                // Esperar a Shaka para inyectar foco
+                
+                // Esperar a que Shaka dibuje el DOM para inyectar la clase .focusable
                 setTimeout(() => { integrateShakaControls(); }, 500); 
 
-                // GUARDADO DE PROGRESO
+                // Guardado de progreso y "Last Seen"
                 video.addEventListener('timeupdate', () => {
                     if (!video.paused && currentItem) {
                         let saveId = currentItem.id;
                         if(currentItem.type === 'series') {
                             saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
+                            // Guardar puntero: Qué episodio se vio por última vez
                             localStorage.setItem('last_seen_' + currentItem.id, JSON.stringify({
                                 s: currentSeasonIdx,
                                 e: currentEpIdx
@@ -363,13 +364,13 @@
             const k = e.keyCode;
             const current = document.activeElement;
 
-            // 1. GESTIÓN DE FOCO EN SHAKA PLAYER (Barras de tiempo/volumen)
+            // 1. Manejo de Barras de Shaka (Seek/Volumen)
             if (current && current.tagName === 'INPUT' && current.type === 'range') {
-                // Si estamos en la barra, flechas izq/der ajustan el valor, no el foco
+                // Si estoy en la barra, las flechas cambian el valor, no el foco
                 if (k === 37 || k === 39) return;
             }
 
-            // 2. BOTÓN ATRÁS
+            // 2. Botón Atrás
             if (isKey(e, 'BACK')) {
                 e.preventDefault();
                 if (document.getElementById('error-modal').style.display === 'block') {
@@ -381,35 +382,33 @@
                 return;
             }
 
-            // 3. ENTER (LOGICA INTELIGENTE)
+            // 3. Enter Inteligente
             if (isKey(e, 'ENTER')) {
                 if (current) {
-                    // Caso especial: Barras de Shaka
+                    // Si es una barra de Shaka
                     if (current.tagName === 'INPUT' && current.type === 'range') {
                         e.preventDefault();
+                        // Barra de tiempo: Play/Pause
                         if (current.getAttribute('aria-label') === 'Seek' || current.classList.contains('shaka-seek-bar')) {
-                            togglePlay();
-                            return;
+                            togglePlay(); return;
                         }
+                        // Barra de volumen: Mute
                         if (current.getAttribute('aria-label') === 'Volume' || current.classList.contains('shaka-volume-bar')) {
-                            const v = document.getElementById('video');
-                            v.muted = !v.muted;
-                            return;
+                            const v = document.getElementById('video'); v.muted = !v.muted; return;
                         }
                     }
-                    // Comportamiento normal (Click)
-                    current.click();
-                    return; 
+                    // Comportamiento normal
+                    current.click(); return; 
                 }
             }
             
-            // 4. TECLAS DE REPRODUCCIÓN
+            // 4. Teclas Multimedia directas
             if (currentView === 'player') {
                 resetUiTimer();
                 if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) { togglePlay(); return; }
             }
 
-            // 5. NAVEGACIÓN (FLECHAS)
+            // 5. Navegación (Flechas)
             if ([37, 38, 39, 40].includes(k)) {
                 e.preventDefault();
                 moveFocus(k);
@@ -417,16 +416,16 @@
         }
 
         function integrateShakaControls() {
+            // Busca los controles de Shaka y los hace navegables
             const shakaControls = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input[type="range"]');
             shakaControls.forEach(el => {
                 el.classList.add('focusable');
-                el.classList.add('shaka-integrated'); 
             });
         }
 
         function moveFocus(k) {
             const focusables = Array.from(document.querySelectorAll('.focusable'))
-                .filter(el => el.offsetParent !== null); // Solo elementos visibles
+                .filter(el => el.offsetParent !== null); // Solo visibles
             
             if (focusables.length === 0) return;
 
@@ -436,16 +435,17 @@
             if (index === -1) { focusables[0].focus(); return; }
 
             let next = null;
+            // Derecha / Izquierda
+            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1];
+            if (k === 37 && index > 0) next = focusables[index - 1];
             
-            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1]; // Derecha
-            if (k === 37 && index > 0) next = focusables[index - 1]; // Izquierda
-            
-            if (k === 40) { // Abajo
+            // Arriba / Abajo (Saltos en Grid)
+            if (k === 40) { 
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1; 
                 next = focusables[Math.min(index + jump, focusables.length - 1)];
             }
-            if (k === 38) { // Arriba
+            if (k === 38) { 
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1;
                 next = focusables[Math.max(index - jump, 0)];
@@ -532,7 +532,24 @@
                 createGrid(catalog.filter(x => x.type === 'movie'));
             }
             
-            setTimeout(() => document.querySelector('.card')?.focus(), 200);
+            // === LÓGICA DE RESTAURACIÓN DE FOCO (USANDO DATA-ID) ===
+            setTimeout(() => {
+                let elementToFocus = null;
+
+                if (lastFocusedId) {
+                    // Buscamos el elemento exacto usando el atributo data-id
+                    elementToFocus = document.querySelector(`.card[data-id="${lastFocusedId}"]`);
+                }
+
+                if (elementToFocus) {
+                    elementToFocus.focus();
+                    elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+                } else {
+                    // Foco por defecto si no hay historial
+                    const firstCard = document.querySelector('.card');
+                    if(firstCard) firstCard.focus();
+                }
+            }, 200);
         }
 
         function createRow(title, list) {
@@ -555,7 +572,9 @@
         function cardHtml(item) {
             const p = getProgress(item.id);
             const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
-            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')">
+            
+            // Importante: data-id="${item.id}" es lo que permite restaurar el foco
+            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')" data-id="${item.id}">
                 <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
                 ${bar}
             </div>`;
@@ -563,6 +582,9 @@
 
         // ================= DETALLES E INTELIGENCIA =================
         function openDetails(id) {
+            // Guardamos el ID para restaurar foco después
+            lastFocusedId = id;
+
             const item = catalog.find(x => x.id === id);
             if(!item) return;
             currentItem = item;
@@ -589,15 +611,17 @@
                 sCont.style.display = 'block';
                 renderSeasons(item);
 
-                // LÓGICA DE BOTÓN INTELIGENTE (RECUPERAR ÚLTIMO VISTO)
+                // Lógica Inteligente: Calcular botón "Reproducir/Reanudar"
                 let nextS = 0, nextE = 0;
                 
+                // 1. Intentar leer último visto
                 const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
                 if (lastSeenJson) {
                     const lastSeen = JSON.parse(lastSeenJson);
                     nextS = lastSeen.s;
                     nextE = lastSeen.e;
 
+                    // 2. Si ese ya terminó, intentar el siguiente
                     const epId = getEpId(item.id, nextS, nextE);
                     const prog = getProgress(epId);
 
@@ -606,12 +630,12 @@
                         if (nextE + 1 < currentSeasonLen) {
                             nextE++; 
                         } else if (nextS + 1 < item.seasons.length) {
-                            nextS++;
-                            nextE = 0;
+                            nextS++; nextE = 0;
                         }
                     }
                 }
 
+                // 3. Configurar botón
                 const finalEpId = getEpId(item.id, nextS, nextE);
                 const finalProg = getProgress(finalEpId);
                 
@@ -625,6 +649,7 @@
                      btnPlay.onclick = () => playEpisode(nextS, nextE);
                 }
             } else {
+                // Película
                 const p = getProgress(item.id);
                 txtPlay.innerText = (p.pct > 1 && p.pct < 98) ? "Reanudar" : "Reproducir";
                 btnPlay.onclick = () => startPlayer(item.mpd, item.drm, item.title, false);
@@ -644,20 +669,18 @@
             
             sel.onchange = () => renderEpisodes(item, sel.value);
 
-            // AUTO-SELECCIÓN DE TEMPORADA
+            // Auto-Selección de Temporada basada en historial
             let defaultIdx = 0;
             const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
             if (lastSeenJson) {
                 const last = JSON.parse(lastSeenJson);
                 defaultIdx = parseInt(last.s); 
-
+                
+                // Si terminamos la temporada, saltar a la siguiente en la lista
                 const epId = getEpId(item.id, last.s, last.e);
                 const prog = getProgress(epId);
-                
                 if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
-                    if (item.seasons[last.s + 1]) {
-                        defaultIdx++; 
-                    }
+                    if (item.seasons[last.s + 1]) defaultIdx++; 
                 }
             }
             sel.value = defaultIdx;
@@ -697,6 +720,9 @@
             document.getElementById('app').style.display = 'block';
             document.getElementById('main-header').style.display = 'flex';
             setTimeout(() => document.querySelector('.card')?.focus(), 100);
+            
+            // Disparar renderView para ejecutar la lógica de restauración de foco
+            renderView(currentView);
         }
 
         async function playEpisode(sIdx, eIdx) {
