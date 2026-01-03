@@ -812,7 +812,7 @@
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        function onError(e) { console.error('Shaka Error', e); showError("Error: " + e.code); }
+        function onError(e) { }
 
         function showError(msg) {
             const v = document.getElementById('video');
