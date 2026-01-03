@@ -52,25 +52,39 @@
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           VISTA DE DETALLES
+           VISTA DE DETALLES (CORREGIDA)
            ========================================= */
         #details-view { 
             position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; 
             overflow-x: hidden; overflow-y: auto; 
         }
         
+        /* CORRECCIÓN SOMBREADO DERECHO: Se eliminó el degradado lateral (to right) */
         .details-hero { 
             position: absolute; inset: 0; width: 100%; height: 100%; 
             background-size: cover; background-position: center top; 
+            /* Solo degradado hacia abajo para integrar con el fondo negro */
             mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
         }
         
-        .hero-gradient { position: absolute; inset: 0; }
+        /* CORRECCIÓN GRADIENTE: Solo de abajo hacia arriba, sin oscurecer la derecha */
+        .hero-gradient { 
+            position: absolute; inset: 0; 
+        }
 
+        /* CORRECCIÓN LAYOUT HORIZONTAL: Evita que los botones queden detrás de los caps */
         .details-content { 
-            position: absolute; top: 1%; left: 5%; width: 90%; z-index: 10; 
-            display: flex; flex-direction: column; bottom: 240px; justify-content: flex-start; 
+            position: absolute; 
+            top: 1%; 
+            left: 5%; 
+            width: 90%; /* Ancho limitado para horizontal */
+            z-index: 10; 
+            display: flex; 
+            flex-direction: column; 
+            /* Altura máxima calculada para no chocar con la lista de abajo (aprox 250px) */
+            bottom: 240px; 
+            justify-content: flex-star; /* Alinea contenido hacia arriba de su caja */
         }
 
         .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 10px black; line-height: 1; }
@@ -80,7 +94,8 @@
         .details-desc { 
             font-size: 1rem; line-height: 1.4; color: #ddd; margin-bottom: 20px; 
             overflow: hidden; text-overflow: ellipsis; 
-            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; 
+            display: -webkit-box; -webkit-line-clamp: 3; /* Limitado a 3 líneas en horizontal */
+            -webkit-box-orient: vertical; 
             text-shadow: 1px 1px 2px black;
         }
 
@@ -137,25 +152,14 @@
 
         .shaka-bottom-controls { padding-bottom: 20px; padding-left: 20px; padding-right: 20px; }
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 6000; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
-        
-        /* ESTILOS DE FOCO PARA CONTROLES DE SHAKA (TV) */
-        .shaka-controls-container .focusable:focus {
-            outline: none !important;
-            border: 2px solid var(--primary) !important;
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-            box-shadow: 0 0 10px black;
-        }
-        .shaka-seek-bar-container input[type=range]:focus::-webkit-slider-thumb {
-            box-shadow: 0 0 0 4px white;
-            transform: scale(1.3);
-            background: white;
-        }
 
-        /* MEDIA QUERIES */
+        /* =========================================
+           MEDIA QUERIES (MÓVIL / PORTRAIT)
+           ========================================= */
         @media (orientation: portrait) {
             .details-hero { 
                 height: 50vh; width: 100%; top: 0;
+                /* Sin degradado a la derecha, solo abajo */
                 -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
                 mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
             }
@@ -164,7 +168,8 @@
             .details-content { 
                 position: relative; top: auto; margin-top: 35vh; 
                 width: 90%; left: 5%; margin-bottom: 20px;
-                max-height: none; justify-content: flex-start;
+                max-height: none; /* Reseteamos la altura máxima en vertical */
+                justify-content: flex-start;
             }
             .details-title { font-size: 2.5rem; }
             .details-desc { -webkit-line-clamp: 6; }
@@ -278,19 +283,13 @@
 
     <script>
         // ================= CONFIGURACIÓN GLOBAL =================
-        // Agrega esta variable al inicio junto con las otras
-        let activeCategory = 'home'; // Para recordar si estabas en Home, Series o Peliculas
         const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
         let catalog = [];
         let currentView = 'home';
-        // Variable para saber en qué sección estábamos (home, series, movies)
-        let activeSection = 'home'; 
         let currentItem = null;
         let player = null;
         let uiTimer = null;
         let clockInterval = null;
-        
-        // Variable para recordar qué elemento tenía el foco
         let lastFocusedId = null;
         
         // Variables de Serie
@@ -299,7 +298,7 @@
 
         // MAPA DE TECLAS (Mando TV / Teclado)
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27],
+            BACK: [8, 461, 10009, 27], // Backspace, WebOS, Tizen, Esc
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
             PLAY: [415, 19], PAUSE: [19], STOP: [413],
@@ -309,133 +308,54 @@
         function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
 
         // ================= INICIALIZACIÓN =================
-        function initShaka() {
-    shaka.polyfill.installAll();
-    if (shaka.Player.isBrowserSupported()) {
-        const video = document.getElementById('video');
-        player = new shaka.Player(video);
-        player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
-
-        const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
-        
-        // Configuración UI
-        ui.configure({
-            controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
-            addSeekBar: true // Asegura que la barra de progreso aparezca
-        });
-
-        // CORRECCIÓN ERROR 7000: Filtramos errores de carga interrumpida
-        player.addEventListener('error', (e) => {
-            if (e.detail && e.detail.code === 7000) {
-                console.warn("Carga interrumpida (ignorado).");
-                return; // No mostramos el modal
-            }
-            onError(e);
-        });
-
-                player.addEventListener('error', onError);
-                
-                // Esperar a que Shaka dibuje el DOM para inyectar la clase .focusable
-                setTimeout(() => { integrateShakaControls(); }, 500); 
-
-                // Guardado de progreso y "Last Seen"
-                video.addEventListener('timeupdate', () => {
-                    if (!video.paused && currentItem) {
-                        let saveId = currentItem.id;
-                        if(currentItem.type === 'series') {
-                            saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
-                            localStorage.setItem('last_seen_' + currentItem.id, JSON.stringify({
-                                s: currentSeasonIdx,
-                                e: currentEpIdx
-                            }));
-                        }
-                        saveProgress(saveId, video.currentTime, video.duration);
-                    }
-                });
-
-                video.addEventListener('ended', () => {
-                    if (currentItem.type === 'series') changeEpisode(1);
-                    else exitPlayer();
-                });
-
-                video.addEventListener('play', () => {
-                    document.getElementById('icon-play').innerText = 'pause';
-                    resetUiTimer();
-                });
-                video.addEventListener('pause', () => {
-                    document.getElementById('icon-play').innerText = 'play_arrow';
-                    clearTimeout(uiTimer);
-                    document.getElementById('player-ui').classList.remove('ui-fade-out');
-                });
-            } else {
-                console.error('Navegador no soporta Shaka Player');
-            }
-        }
+        window.onload = async () => {
+            initShaka();
+            document.addEventListener('keydown', handleRemote);
+            
+            // Mouse/Touch para mostrar interfaz
+            const pCont = document.getElementById('player-container');
+            pCont.addEventListener('mousemove', resetUiTimer);
+            pCont.addEventListener('click', resetUiTimer);
+            
+            await loadData();
+        };
 
         // ================= CONTROL REMOTO / TECLADO =================
         function handleRemote(e) {
             const k = e.keyCode;
-            const current = document.activeElement;
-
-            // 1. Manejo de Barras de Shaka (Seek/Volumen)
-            if (current && current.tagName === 'INPUT' && current.type === 'range') {
-                if (k === 37 || k === 39) return;
-            }
-
-            // 2. Botón Atrás (FIX para que no regrese la película)
+            
+            // Botón Atrás
             if (isKey(e, 'BACK')) {
                 e.preventDefault();
-                if (document.getElementById('error-modal').style.display === 'block') {
-                    document.getElementById('error-modal').style.display = 'none';
-                    return;
+                if(document.getElementById('error-modal').style.display === 'block') {
+                    document.getElementById('error-modal').style.display = 'none'; return;
                 }
-                if (currentView === 'player') {
-                    exitPlayer();
-                } else if (currentView === 'details') {
-                    closeDetails();
-                }
+                if (currentView === 'player') exitPlayer();
+                else if (currentView === 'details') closeDetails();
                 return;
             }
 
-            // 3. Enter Inteligente
-            if (isKey(e, 'ENTER')) {
-                if (current) {
-                    if (current.tagName === 'INPUT' && current.type === 'range') {
-                        e.preventDefault();
-                        if (current.getAttribute('aria-label') === 'Seek' || current.classList.contains('shaka-seek-bar')) {
-                            togglePlay(); return;
-                        }
-                        if (current.getAttribute('aria-label') === 'Volume' || current.classList.contains('shaka-volume-bar')) {
-                            const v = document.getElementById('video'); v.muted = !v.muted; return;
-                        }
-                    }
-                    current.click(); return; 
-                }
-            }
-            
-            // 4. Teclas Multimedia directas
+            // Teclas Multimedia
             if (currentView === 'player') {
                 resetUiTimer();
-                if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) { togglePlay(); return; }
+                if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) togglePlay();
             }
 
-            // 5. Navegación (Flechas)
+            // Navegación (Flechas)
             if ([37, 38, 39, 40].includes(k)) {
                 e.preventDefault();
                 moveFocus(k);
             }
-        }
 
-        function integrateShakaControls() {
-            const shakaControls = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input[type="range"]');
-            shakaControls.forEach(el => {
-                el.classList.add('focusable');
-            });
+            // Enter
+            if (isKey(e, 'ENTER') && document.activeElement) {
+                document.activeElement.click();
+            }
         }
 
         function moveFocus(k) {
             const focusables = Array.from(document.querySelectorAll('.focusable'))
-                .filter(el => el.offsetParent !== null); // Solo visibles
+                .filter(el => el.offsetParent !== null); // Solo elementos visibles
             
             if (focusables.length === 0) return;
 
@@ -445,15 +365,18 @@
             if (index === -1) { focusables[0].focus(); return; }
 
             let next = null;
-            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1];
-            if (k === 37 && index > 0) next = focusables[index - 1];
             
-            if (k === 40) { 
+            // Lógica de saltos
+            if (k === 39 && index < focusables.length - 1) next = focusables[index + 1]; // Derecha
+            if (k === 37 && index > 0) next = focusables[index - 1]; // Izquierda
+            
+            // Arriba/Abajo (Saltos más grandes en grids)
+            if (k === 40) { // Abajo
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1; 
                 next = focusables[Math.min(index + jump, focusables.length - 1)];
             }
-            if (k === 38) { 
+            if (k === 38) { // Arriba
                 const isGrid = current.closest('.grid-view');
                 const jump = isGrid ? 5 : 1;
                 next = focusables[Math.max(index - jump, 0)];
@@ -468,6 +391,7 @@
         // ================= CARGA DE DATOS =================
         async function loadData() {
             try {
+                // URLs JSON
                 const [r1, r2] = await Promise.all([
                     fetch('https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=1'),
                     fetch('https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1')
@@ -495,6 +419,7 @@
                     num: s.número || s.number,
                     episodes: s.episodios || s.episodes
                 }));
+                // Si no hay poster, usar thumb del ep 1
                 if(!item.poster && seasons[0]?.episodes[0]?.img) img = seasons[0].episodes[0].img;
             }
 
@@ -514,118 +439,61 @@
 
         // ================= VISTAS Y RENDERIZADO =================
         function renderView(view) {
-    // CORRECCIÓN: Guardamos la categoría actual, NO la reseteamos siempre a 'home'
-    activeCategory = view; 
-    currentView = view;
-    
+    currentView = 'home';
     const app = document.getElementById('app');
     app.innerHTML = '';
     
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     
-    // Botones del menú superior
-    const navBtns = document.querySelectorAll('.nav-btn');
     if(view === 'home') {
-        navBtns[0].classList.add('active');
+        document.querySelectorAll('.nav-btn')[0].classList.add('active');
+        
         const watching = catalog.filter(x => { 
             const p = getProgress(x.id); 
             return p.pct > 1 && p.pct < 95; 
         });
         if(watching.length > 0) createRow("Continuar Viendo", watching);
+        
         createRow("Series", catalog.filter(x => x.type === 'series'));
         createRow("Películas", catalog.filter(x => x.type === 'movie'));
         
     } else if(view === 'series') {
-        navBtns[1].classList.add('active');
+        document.querySelectorAll('.nav-btn')[1].classList.add('active');
         createGrid(catalog.filter(x => x.type === 'series'));
-    } else if (view === 'movies') {
-        navBtns[2].classList.add('active');
+    } else {
+        document.querySelectorAll('.nav-btn')[2].classList.add('active');
         createGrid(catalog.filter(x => x.type === 'movie'));
     }
     
-    // RESTAURACIÓN DE FOCO MEJORADA
+    // --- LÓGICA DE RESTAURACIÓN DE FOCO ---
     setTimeout(() => {
+        let elementToFocus = null;
+
+        // 1. Si tenemos un ID guardado, intentamos buscar ese elemento específico
         if (lastFocusedId) {
-            // Buscamos específicamente el elemento que tiene el onclick con ese ID
-            const el = document.querySelector(`.card[onclick*="'${lastFocusedId}'"]`);
-            if (el) {
-                el.focus();
-                el.scrollIntoView({behavior: 'auto', block: 'center'});
-                return;
-            }
+            // Buscamos el elemento que tenga onclick="openDetails('EL_ID')"
+            // Nota: Es una búsqueda un poco "sucia" pero efectiva dado tu HTML actual
+            const selector = `.card[onclick*="'${lastFocusedId}'"]`;
+            elementToFocus = document.querySelector(selector);
         }
-        // Si no encuentra el último, enfoca el primero
-        const first = document.querySelector('.card');
-        if(first) first.focus();
-    }, 100);
-}
 
-function closeDetails() {
-    // CORRECCIÓN: Restauramos la vista que teníamos antes (Home, Series o Movies)
-    currentView = activeCategory; 
-    
-    document.getElementById('details-view').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('main-header').style.display = 'flex';
-    
-    // Forzamos el renderizado de nuevo para asegurar que el scroll y el foco se calculen bien
-    renderView(activeCategory);
-}
-        function renderView(view, query = '') {
-            // Actualizar activeSection solo si es una sección principal
-            if (['home', 'series', 'movies'].includes(view)) {
-                activeSection = view;
-            }
-            
-            currentView = (view === 'search') ? 'search' : activeSection;
-            const app = document.getElementById('app');
-            app.innerHTML = '';
-            
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            // Lógica de Renderizado
-            if(view === 'search') {
-                // Modo Búsqueda
-                const results = catalog.filter(item => item.title.toLowerCase().includes(query));
-                if(results.length > 0) createGrid(results);
-                else app.innerHTML = '<h3 style="text-align:center;color:#777;margin-top:50px;">Sin resultados</h3>';
-            
-            } else if(activeSection === 'home') {
-                document.querySelectorAll('.nav-btn')[0].classList.add('active');
-                
-                const watching = catalog.filter(x => { 
-                    const p = getProgress(x.id); 
-                    return p.pct > 1 && p.pct < 95; 
-                });
-                if(watching.length > 0) createRow("Continuar Viendo", watching);
-                
-                createRow("Series", catalog.filter(x => x.type === 'series'));
-                createRow("Películas", catalog.filter(x => x.type === 'movie'));
-                
-            } else if(activeSection === 'series') {
-                document.querySelectorAll('.nav-btn')[1].classList.add('active');
-                createGrid(catalog.filter(x => x.type === 'series'));
-            } else {
-                document.querySelectorAll('.nav-btn')[2].classList.add('active');
-                createGrid(catalog.filter(x => x.type === 'movie'));
-            }
-            
-            // === RESTAURACIÓN DE FOCO ===
-            setTimeout(() => {
-                let elementToFocus = null;
-                if (lastFocusedId) {
-                    elementToFocus = document.querySelector(`.card[data-id="${lastFocusedId}"]`);
-                }
-
-                if (elementToFocus) {
-                    elementToFocus.focus();
-                    elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
-                } else {
-                    const firstCard = document.querySelector('.card');
-                    if(firstCard) firstCard.focus();
-                }
-            }, 200);
+        // 2. Si encontramos el elemento anterior, le damos foco
+        if (elementToFocus) {
+            elementToFocus.focus();
+            elementToFocus.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+        } 
+        // 3. Si no (es la primera carga), damos foco al primer elemento disponible
+        else {
+            const firstCard = document.querySelector('.card');
+            if(firstCard) firstCard.focus();
         }
+        
+        // Opcional: Limpiar la variable si cambias entre secciones principales (Home -> Series)
+        // Si quieres que recuerde la posición entre pestañas, borra la siguiente línea.
+        // lastFocusedId = null; 
+
+    }, 200);
+}
 
         function createRow(title, list) {
             if(!list.length) return;
@@ -647,110 +515,142 @@ function closeDetails() {
         function cardHtml(item) {
             const p = getProgress(item.id);
             const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
-            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')" data-id="${item.id}">
+            return `<div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')">
                 <img src="${item.poster}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
                 ${bar}
             </div>`;
         }
 
         // ================= DETALLES E INTELIGENCIA =================
-        function openDetails(id) {
-            lastFocusedId = id; // Guardar ID para volver después
+function openDetails(id) {
+    lastFocusedId = id;
+    const item = catalog.find(x => x.id === id);
+    if(!item) return;
+    currentItem = item;
+    currentView = 'details';
 
-            const item = catalog.find(x => x.id === id);
-            if(!item) return;
-            currentItem = item;
-            currentView = 'details';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('main-header').style.display = 'none';
+    
+    const view = document.getElementById('details-view');
+    view.style.display = 'block';
+    view.scrollTop = 0;
 
-            document.getElementById('app').style.display = 'none';
-            document.getElementById('main-header').style.display = 'none';
-            
-            const view = document.getElementById('details-view');
-            view.style.display = 'block';
-            view.scrollTop = 0;
+    // Datos visuales
+    document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
+    document.getElementById('det-title').innerText = item.title;
+    document.getElementById('det-desc').innerText = item.desc;
+    document.getElementById('det-year').innerText = item.year;
+    document.getElementById('det-type').innerText = item.type === 'series' ? 'Serie' : 'Película';
 
-            document.getElementById('det-hero').style.backgroundImage = `url('${item.hero}')`;
-            document.getElementById('det-title').innerText = item.title;
-            document.getElementById('det-desc').innerText = item.desc;
-            document.getElementById('det-year').innerText = item.year;
-            document.getElementById('det-type').innerText = item.type === 'series' ? 'Serie' : 'Película';
+    const btnPlay = document.getElementById('btn-play-hero');
+    const txtPlay = document.getElementById('play-text');
+    const sCont = document.getElementById('series-container');
 
-            const btnPlay = document.getElementById('btn-play-hero');
-            const txtPlay = document.getElementById('play-text');
-            const sCont = document.getElementById('series-container');
+    if(item.type === 'series') {
+        sCont.style.display = 'block';
+        renderSeasons(item);
 
-            if(item.type === 'series') {
-                sCont.style.display = 'block';
-                renderSeasons(item);
+        // --- LÓGICA DE BOTÓN INTELIGENTE CORREGIDA ---
+        let nextS = 0, nextE = 0;
+        
+        // 1. Intentamos recuperar el último episodio visto guardado explícitamente
+        const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
+        
+        if (lastSeenJson) {
+            const lastSeen = JSON.parse(lastSeenJson);
+            nextS = lastSeen.s;
+            nextE = lastSeen.e;
 
-                // Lógica Inteligente
-                let nextS = 0, nextE = 0;
-                
-                const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
-                if (lastSeenJson) {
-                    const lastSeen = JSON.parse(lastSeenJson);
-                    nextS = lastSeen.s;
-                    nextE = lastSeen.e;
+            // Verificamos si ese último episodio ya se terminó ( > 95% )
+            const epId = getEpId(item.id, nextS, nextE);
+            const prog = getProgress(epId);
 
-                    const epId = getEpId(item.id, nextS, nextE);
-                    const prog = getProgress(epId);
-
-                    if (prog.pct >= 95) {
-                        const currentSeasonLen = item.seasons[nextS].episodes.length;
-                        if (nextE + 1 < currentSeasonLen) {
-                            nextE++; 
-                        } else if (nextS + 1 < item.seasons.length) {
-                            nextS++; nextE = 0;
-                        }
-                    }
+            if (prog.pct >= 95) {
+                // Si se terminó, intentamos avanzar al siguiente episodio
+                const currentSeasonLen = item.seasons[nextS].episodes.length;
+                if (nextE + 1 < currentSeasonLen) {
+                    // Mover al siguiente episodio de la misma temporada
+                    nextE++; 
+                } else if (nextS + 1 < item.seasons.length) {
+                    // Mover a la siguiente temporada, primer episodio
+                    nextS++;
+                    nextE = 0;
                 }
-
-                const finalEpId = getEpId(item.id, nextS, nextE);
-                const finalProg = getProgress(finalEpId);
-                
-                if(item.seasons[nextS] && item.seasons[nextS].episodes[nextE]) {
-                     const seasonNum = item.seasons[nextS].num;
-                     if(finalProg.pct > 1 && finalProg.pct < 95) {
-                         txtPlay.innerText = `Reanudar T${seasonNum} E${nextE+1}`;
-                     } else {
-                         txtPlay.innerText = `Reproducir T${seasonNum} E${nextE+1}`;
-                     }
-                     btnPlay.onclick = () => playEpisode(nextS, nextE);
-                }
-            } else {
-                // Película
-                const p = getProgress(item.id);
-                txtPlay.innerText = (p.pct > 1 && p.pct < 98) ? "Reanudar" : "Reproducir";
-                btnPlay.onclick = () => startPlayer(item.mpd, item.drm, item.title, false);
-                sCont.style.display = 'none';
+                // Si era el último de la serie, se queda ahí (o podrías resetear a 0,0)
             }
-            setTimeout(() => btnPlay.focus(), 100);
         }
 
-        function renderSeasons(item) {
-            const sel = document.getElementById('season-select');
-            sel.innerHTML = '';
-            if(!item.seasons.length) return;
-
-            item.seasons.forEach((s, idx) => {
-                sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
-            });
-            sel.onchange = () => renderEpisodes(item, sel.value);
-
-            let defaultIdx = 0;
-            const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
-            if (lastSeenJson) {
-                const last = JSON.parse(lastSeenJson);
-                defaultIdx = parseInt(last.s); 
-                const epId = getEpId(item.id, last.s, last.e);
-                const prog = getProgress(epId);
-                if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
-                    if (item.seasons[last.s + 1]) defaultIdx++; 
-                }
-            }
-            sel.value = defaultIdx;
-            renderEpisodes(item, defaultIdx);
+        // Definir etiqueta del botón
+        const finalEpId = getEpId(item.id, nextS, nextE);
+        const finalProg = getProgress(finalEpId);
+        
+        // Asegurarse de que los índices existen (por si cambiaron el JSON de datos)
+        if(item.seasons[nextS] && item.seasons[nextS].episodes[nextE]) {
+             const seasonNum = item.seasons[nextS].num;
+             // Nota: idx+1 para mostrar al usuario, pero internamente usamos índice 0
+             if(finalProg.pct > 1 && finalProg.pct < 95) {
+                 txtPlay.innerText = `Reanudar T${seasonNum} E${nextE+1}`;
+             } else {
+                 txtPlay.innerText = `Reproducir T${seasonNum} E${nextE+1}`;
+             }
+             btnPlay.onclick = () => playEpisode(nextS, nextE);
         }
+
+    } else {
+        // Película (Lógica original, funciona bien)
+        const p = getProgress(item.id);
+        txtPlay.innerText = (p.pct > 1 && p.pct < 98) ? "Reanudar" : "Reproducir";
+        btnPlay.onclick = () => startPlayer(item.mpd, item.drm, item.title, false);
+        sCont.style.display = 'none';
+    }
+    
+    setTimeout(() => btnPlay.focus(), 100);
+}
+
+    function renderSeasons(item) {
+    const sel = document.getElementById('season-select');
+    sel.innerHTML = '';
+    if(!item.seasons.length) return;
+
+    // 1. Generar las opciones del Select
+    item.seasons.forEach((s, idx) => {
+        sel.innerHTML += `<option value="${idx}">Temporada ${s.num}</option>`;
+    });
+    
+    // Evento al cambiar manualmente
+    sel.onchange = () => renderEpisodes(item, sel.value);
+
+    // ======================================================
+    // LOGICA INTELIGENTE DE SELECCIÓN DE TEMPORADA
+    // ======================================================
+    let defaultIdx = 0;
+    
+    // Recuperamos lo último que vio el usuario
+    const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
+    
+    if (lastSeenJson) {
+        const last = JSON.parse(lastSeenJson);
+        defaultIdx = parseInt(last.s); // Seleccionamos la temporada donde se quedó
+
+        // Lógica Extra: Si terminó el ÚLTIMO episodio de esa temporada, 
+        // mostrar automáticamente la SIGUIENTE temporada en la lista.
+        const epId = getEpId(item.id, last.s, last.e);
+        const prog = getProgress(epId);
+        
+        // Si el episodio está terminado (>95%) Y era el último de la lista...
+        if (prog.pct >= 95 && last.e === item.seasons[last.s].episodes.length - 1) {
+            // ... y existe una temporada siguiente
+            if (item.seasons[last.s + 1]) {
+                defaultIdx++; 
+            }
+        }
+    }
+
+    // Aplicar selección y renderizar episodios
+    sel.value = defaultIdx;
+    renderEpisodes(item, defaultIdx);
+}
 
         function renderEpisodes(item, sIdx) {
             const list = document.getElementById('episodes-list');
@@ -780,12 +680,110 @@ function closeDetails() {
         }
 
         function closeDetails() {
-            // VOLVER A LA SECCIÓN ACTIVA (Home, Series o Películas)
+            currentView = 'home';
             document.getElementById('details-view').style.display = 'none';
             document.getElementById('app').style.display = 'block';
             document.getElementById('main-header').style.display = 'flex';
+            setTimeout(() => document.querySelector('.card')?.focus(), 100);
+        }
+
+        // ================= SHAKA PLAYER & LÓGICA VIDEO =================
+        function initShaka() {
+            shaka.polyfill.installAll();
+            if (shaka.Player.isBrowserSupported()) {
+                const video = document.getElementById('video');
+                player = new shaka.Player(video);
+                
+                // Configuración de idioma
+                player.configure({ preferredAudioLanguage: 'es', preferredTextLanguage: 'es' });
+
+                // UI Overlay
+                const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
+                ui.configure({
+                    controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu']
+                });
+
+                player.addEventListener('error', onError);
+                
+                // --- GUARDADO DE PROGRESO Y PUNTERO DE SERIE ---
+                video.addEventListener('timeupdate', () => {
+                    if (!video.paused && currentItem) {
+                        // 1. Guardar progreso del video actual (tiempo)
+                        let saveId = currentItem.id;
+                        if(currentItem.type === 'series') {
+                            saveId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
             
-            renderView(activeSection); 
+                           // 2. NUEVO: Guardar el "Puntero" del último episodio visto para esta serie
+                           // Esto le dice al sistema: "Lo último que vio el usuario de esta serie fue la Temp X, Ep Y"
+                          localStorage.setItem('last_seen_' + currentItem.id, JSON.stringify({
+                              s: currentSeasonIdx,
+                              e: currentEpIdx
+                          }));
+                        }
+                        saveProgress(saveId, video.currentTime, video.duration);
+                    }
+                 });
+
+                // Auto siguiente
+                video.addEventListener('ended', () => {
+                    if (currentItem.type === 'series') changeEpisode(1);
+                    else exitPlayer();
+                });
+
+                // Control visual de Play/Pause
+                video.addEventListener('play', () => {
+                    document.getElementById('icon-play').innerText = 'pause';
+                    resetUiTimer();
+                });
+                video.addEventListener('pause', () => {
+                    document.getElementById('icon-play').innerText = 'play_arrow';
+                    clearTimeout(uiTimer);
+                    document.getElementById('player-ui').classList.remove('ui-fade-out');
+                });
+            }
+        }
+
+        async function startPlayer(mpd, drm, title, isSeries) {
+            if (!mpd) return showError("Sin URL de video.");
+            
+            // NOTA: Se ha eliminado la restricción de protocolo file: para compatibilidad APK
+
+            document.getElementById('player-container').style.display = 'block';
+            currentView = 'player';
+            
+            // Botones Anterior/Siguiente
+            const disp = isSeries ? 'flex' : 'none';
+            document.getElementById('btn-prev').style.display = disp;
+            document.getElementById('btn-next').style.display = disp;
+            
+            // Textos
+            document.getElementById('p-title').innerText = currentItem.title;
+            document.getElementById('p-sub').innerText = isSeries ? title : "Película";
+
+            // Reloj
+            updateClock();
+            clockInterval = setInterval(updateClock, 60000);
+
+            // DRM
+            let config = {};
+            if (drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
+            player.configure(config);
+
+            try {
+                await player.load(mpd);
+                const vid = document.getElementById('video');
+                
+                // Recuperar progreso
+                let loadId = currentItem.id;
+                if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
+                const saved = getProgress(loadId);
+
+                if (saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
+                
+                vid.play();
+                document.getElementById('btn-play-center').focus();
+                resetUiTimer();
+            } catch (e) { onError(e); }
         }
 
         async function playEpisode(sIdx, eIdx) {
@@ -819,98 +817,18 @@ function closeDetails() {
             }
         }
 
-       async function startPlayer(mpd, drm, title, isSeries) {
-    if (!mpd) return showError("Sin URL de video.");
-    
-    document.getElementById('player-container').style.display = 'block';
-    currentView = 'player';
-    
-    // Configuración UI Custom
-    const disp = isSeries ? 'flex' : 'none';
-    document.getElementById('btn-prev').style.display = disp;
-    document.getElementById('btn-next').style.display = disp;
-    document.getElementById('p-title').innerText = currentItem.title;
-    document.getElementById('p-sub').innerText = isSeries ? title : "Película";
-
-    updateClock();
-    clockInterval = setInterval(updateClock, 60000);
-
-    // DRM config
-    let config = {};
-    if (drm && drm.clearKeys) config.drm = { clearKeys: drm.clearKeys };
-    player.configure(config);
-
-    try {
-        await player.load(mpd);
-        const vid = document.getElementById('video');
-        
-        // Recuperar progreso
-        let loadId = currentItem.id;
-        if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
-        const saved = getProgress(loadId);
-        if (saved.pct > 1 && saved.pct < 98) vid.currentTime = saved.time;
-        
-        vid.play().catch(e => console.log("Autoplay bloqueado por navegador", e));
-        
-        // Foco inicial al botón central
-        document.getElementById('btn-play-center').focus();
-        resetUiTimer();
-        
-        // === LA SOLUCIÓN DEL CUADRO VERDE ===
-        // Ejecutamos esto un poco después para dar tiempo a Shaka a crear los botones
-        setTimeout(makeShakaControlsFocusable, 1000);
-        
-    } catch (e) { 
-        // Si el error es 7000 aquí, lo atrapamos silenciosamente
-        if(e.code === 7000) return;
-        onError(e); 
-    }
-}
-
-// NUEVA FUNCIÓN: Hace que los controles de Shaka se puedan usar con el control remoto
-function makeShakaControlsFocusable() {
-    // Buscamos los botones generados por Shaka
-    const shakaBtns = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input');
-    
-    shakaBtns.forEach(btn => {
-        // Les agregamos tu clase .focusable
-        btn.classList.add('focusable');
-        
-        // Opcional: Estilo visual para cuando tengan foco (ya que Shaka tiene sus propios estilos)
-        btn.style.border = "2px solid transparent"; 
-        
-        // Manejamos el foco para que se vea tu borde blanco
-        btn.addEventListener('focus', () => {
-            btn.style.border = "2px solid white";
-            resetUiTimer(); // Mantener UI visible mientras se navega abajo
-        });
-        btn.addEventListener('blur', () => {
-            btn.style.border = "2px solid transparent";
-        });
-    });
-}
-
         function togglePlay() {
             const v = document.getElementById('video');
             v.paused ? v.play() : v.pause();
         }
 
         function exitPlayer() {
-            // FIX: Detener video inmediatamente
-            const v = document.getElementById('video');
-            v.pause();
-            v.src = ""; // Liberar buffer
-            
             player.unload();
             clearInterval(clockInterval);
             document.getElementById('player-container').style.display = 'none';
             currentView = 'details';
-            
-            // Regresar a la vista de detalles
-            document.getElementById('details-view').style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-            document.getElementById('main-header').style.display = 'none';
-            document.getElementById('btn-play-hero').focus();
+            // Refrescar detalles
+            openDetails(currentItem.id);
         }
 
         function resetUiTimer() {
@@ -927,16 +845,14 @@ function makeShakaControlsFocusable() {
             document.getElementById('p-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        function onError(e) { 
-            // FIX: Ignorar Error 7000 (Load Interrupted)
-            if (e.code === 7000) return;
-            console.error('Shaka Error', e); 
-            showError("Error: " + e.code); 
+        function onError(e) {
         }
 
         function showError(msg) {
+            // FIX: Detener reproducción para que no suene de fondo
             const v = document.getElementById('video');
             if (v) v.pause();
+
             const m = document.getElementById('error-modal');
             document.getElementById('error-msg').innerText = msg;
             m.style.display = 'block';
@@ -948,44 +864,6 @@ function makeShakaControlsFocusable() {
         function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
         function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : {pct:0, time:0}; }
 
-        // ================= ARRANQUE DE LA APLICACIÓN =================
-        window.onload = async () => {
-    initShaka();
-    document.addEventListener('keydown', handleRemote);
-    
-    // Mouse/Touch
-    const pCont = document.getElementById('player-container');
-    pCont.addEventListener('mousemove', resetUiTimer);
-    pCont.addEventListener('click', resetUiTimer);
-
-    // --- LÓGICA DE BÚSQUEDA CORREGIDA ---
-    const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('keyup', (e) => {
-        const term = e.target.value.toLowerCase();
-        if(term.length < 2) {
-             // Si borra, regresa a la vista actual
-            renderView(activeCategory); 
-            return;
-        }
-        
-        // Filtramos todo el catálogo
-        const filtered = catalog.filter(item => item.title.toLowerCase().includes(term));
-        
-        const app = document.getElementById('app');
-        app.innerHTML = `<h3 class="section-title">Resultados de: "${term}"</h3>`;
-        
-        if(filtered.length > 0) {
-            app.insertAdjacentHTML('beforeend', `<div class="grid-view">${filtered.map(i => cardHtml(i)).join('')}</div>`);
-        } else {
-            app.insertAdjacentHTML('beforeend', `<p style="margin-left:4%; color:#777;">No se encontraron resultados.</p>`);
-        }
-        // Resetear foco al primer resultado
-        const first = document.querySelector('.card');
-        if(first) first.focus();
-    });
-    
-    await loadData();
-};
     </script>
 </body>
 </html>
