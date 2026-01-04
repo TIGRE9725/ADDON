@@ -371,17 +371,43 @@
 
         // TECLAS CRÍTICAS (Actualizado para Cordova/Android TV)
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27], 
-            ENTER: [13, 23, 66], // 23 y 66 son select/enter en algunos Androids
-            LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
-            // AGREGADOS CÓDIGOS DE ANDROID TV / FIRE TV:
-            // 85: Media Play/Pause (El más común en Fire TV Stick)
-            // 179: Media Play/Pause (Variante)
-            // 126: Media Play
-            // 127: Media Pause
+            // --- NAVEGACIÓN BÁSICA ---
+            // 37-40: Flechas PC/SmartTV
+            LEFT: [37], 
+            UP: [38], 
+            RIGHT: [39], 
+            DOWN: [40],
+            // 13: Enter PC, 23: D-Pad Center (Android antiguo), 66: Enter (Android nuevo)
+            ENTER: [13, 23, 66], 
+            
+            // --- SALIR / VOLVER ---
+            // 8: Backspace (PC), 461: Back (WebOS), 10009: Back (Tizen), 27: ESC, 4: Android Back nativo
+            BACK: [8, 461, 10009, 27, 4], 
+
+            // --- REPRODUCCIÓN (PLAY/PAUSE/STOP) ---
+            // 19: Pause (PC/Legacy), 415: Play (Tizen/WebOS), 85: Media Play/Pause (Android), 126/127: Play/Pause separados
             PLAY: [415, 19, 85, 179, 126], 
             PAUSE: [19, 85, 179, 127], 
-            STOP: [413, 86] // 86 es Stop en Android
+            STOP: [413, 86], // 86: Android Stop
+
+            // --- AVANCE Y RETROCESO RÁPIDO (NUEVO) ---
+            // 412: Rewind (Tizen), 89: Rewind (Android)
+            REWIND: [412, 89], 
+            // 417: Fast Fwd (Tizen), 90: Fast Fwd (Android)
+            FAST_FWD: [417, 90], 
+
+            // --- SIGUIENTE / ANTERIOR CAPÍTULO (NUEVO) ---
+            // Botones dedicados de |<< y >>| en el control
+            // 177: Prev (Standard), 88: Prev (Android)
+            PREV_TRACK: [177, 88], 
+            // 176: Next (Standard), 87: Next (Android)
+            NEXT_TRACK: [176, 87],
+
+            // --- EXTRAS ---
+            // 82: Botón de tres rayitas (Menu) en Android
+            MENU: [82],
+            // Botones de colores (Comunes en Samsung/LG)
+            RED: [403], GREEN: [404], YELLOW: [405], BLUE: [406]
         };
 
         // ================= EVENT LISTENER UNIVERSAL =================
@@ -448,12 +474,37 @@
                 }
             }
 
-            // 4. MULTIMEDIA
+            // 4. MULTIMEDIA (DENTRO DE handleRemote)
             if (currentView === 'player') {
-                resetUiTimer();
-                if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) togglePlay(); 
+                resetUiTimer(); // Mostrar interfaz si se toca algo
+
+                // Play / Pause
+                if (isKey(e, 'PLAY') || isKey(e, 'PAUSE')) {
+                    togglePlay();
+                }
+                
+                // Stop (Detener y salir)
+                if (isKey(e, 'STOP')) {
+                    exitPlayer();
+                }
+
+                // Avanzar / Retroceder Rápido (Botones << y >>)
+                // Haremos que funcionen igual que las flechas izquierda/derecha
+                if (isKey(e, 'REWIND')) {
+                    document.getElementById('video').currentTime -= 10; // Retroceder 10s
+                }
+                if (isKey(e, 'FAST_FWD')) {
+                    document.getElementById('video').currentTime += 10; // Avanzar 10s
+                }
+
+                // Siguiente / Anterior Capítulo (Botones |<< y >>|)
+                if (isKey(e, 'NEXT_TRACK')) {
+                    changeEpisode(1);
+                }
+                if (isKey(e, 'PREV_TRACK')) {
+                    changeEpisode(-1);
+                }
             }
-        }
 
         // ================= LÓGICA DE NAVEGACIÓN ESPACIAL (VISUAL) =================
         function moveFocus(k) {
