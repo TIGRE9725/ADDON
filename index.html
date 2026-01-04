@@ -11,17 +11,19 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     
-<style>
+    <style>
         /* =========================================
            ESTILOS GENERALES
            ========================================= */
         :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
+        /* FOCO UNIVERSAL (TV/TECLADO) */
         .focusable:focus {
             outline: none; border: 3px solid white !important; transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999;
-            background-color: rgba(255,255,255,0.2); color: white;
+            background-color: rgba(255,255,255,0.2);
+            color: white;
         }
 
         /* HEADER */
@@ -30,22 +32,30 @@
         .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
         .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; padding: 5px 15px; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center;}
         .nav-btn.active { color: white; background: rgba(255,255,255,0.1); border-bottom: 2px solid var(--primary); }
-        .search-btn-header { background: rgba(255,255,255,0.1); border: 2px solid transparent; color: white; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        
+        /* BOTON DE BUSQUEDA (LUPA) */
+        .search-btn-header {
+            background: rgba(255,255,255,0.1); 
+            border: 2px solid transparent;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
         .search-btn-header .material-icons-round { font-size: 20px; }
 
         /* APP CONTAINER */
         #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
         .section-title { margin-left: 4%; font-size: 1.4rem; color: #e5e5e5; margin-bottom: 10px; margin-top: 20px; text-shadow: 1px 1px 2px black; font-weight: bold;}
+        
         .horizontal-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 15px 4%; scroll-behavior: smooth; }
         .horizontal-scroll::-webkit-scrollbar { height: 0px; }
         
-        /* GRID DE PELÍCULAS (Ajustado para ser más pequeño) */
-        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 20px 4%; }
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 20px 4%; }
         
+        /* ESTILO GLOBAL DE TARJETAS (Inicio/Peliculas) */
         .card { 
-            /* Reducimos el tamaño base */
-            min-width: 100px; height: 160px; 
-            background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
+            min-width: 140px; height: 210px; background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
             transition: transform 0.2s; border: 3px solid transparent; display: flex; align-items: center; justify-content: center;
         }
         .card img { width: 100%; height: 100%; object-fit: cover; }
@@ -53,51 +63,62 @@
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
         /* =========================================
-           NUEVA INTERFAZ DE BÚSQUEDA (ESTILO BIEN.JPG)
+           NUEVA INTERFAZ DE BÚSQUEDA (ESTILO COMPACTO)
            ========================================= */
         #search-interface {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             background: #000; z-index: 2000; display: none;
-            padding: 80px 4% 20px 4%; box-sizing: border-box; /* Más padding arriba */
+            padding: 80px 4% 20px 4%; box-sizing: border-box;
         }
         .search-container { display: flex; height: 100%; gap: 30px; }
         
-        /* COLUMNA IZQUIERDA: TECLADO MÁS COMPACTO */
-        .keyboard-panel { flex: 0 0 320px; display: flex; flex-direction: column; } /* Ancho fijo más angosto */
-        .search-display-area { margin-bottom: 15px; }
-        .search-instruction { color: #888; font-size: 0.8rem; margin-bottom: 5px; }
+        /* COLUMNA IZQUIERDA: TECLADO (Reducido de 400px a 320px) */
+        .keyboard-panel { flex: 0 0 320px; display: flex; flex-direction: column; }
+        .search-display-area { margin-bottom: 20px; }
+        .search-instruction { color: #888; font-size: 0.9rem; margin-bottom: 5px; }
         .search-input-display { 
-            font-size: 1.8rem; color: white; border-bottom: 2px solid var(--primary); 
-            padding-bottom: 5px; min-height: 40px; font-weight: bold; margin-bottom: 10px;
+            font-size: 2rem; color: white; border-bottom: 2px solid var(--primary); 
+            padding-bottom: 10px; min-height: 40px; font-weight: bold; 
         }
         
         .keyboard-grid {
             display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; /* Gap más pequeño */
+            justify-items: center; /* Centrar botones */
         }
+        /* BOTONES DE TECLADO MÁS PEQUEÑOS Y FIJOS */
         .key-btn {
-            /* Tamaño fijo para las teclas, más pequeñas */
-            width: 42px; height: 42px; 
+            width: 45px; height: 45px; /* Tamaño fijo para que no se estiren */
             background: var(--key-bg); color: #ddd;
             border: 2px solid transparent; border-radius: 50%;
-            font-size: 0.9rem; font-weight: bold; cursor: pointer;
+            font-size: 1rem; font-weight: bold; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
         }
-        .key-btn.wide { grid-column: span 2; width: auto; border-radius: 30px; }
+        .key-btn.wide { grid-column: span 2; width: auto; padding: 0 20px; border-radius: 30px; }
         .key-btn.action { background: #333; }
         
-        /* COLUMNA DERECHA: RESULTADOS DENSOS */
+        /* COLUMNA DERECHA: RESULTADOS (Compactos) */
         .results-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .results-header { color: #888; margin-bottom: 10px; font-size: 1rem; }
+        .results-header { color: #888; margin-bottom: 15px; font-size: 1.1rem; }
+        
+        /* GRID ESPECIFICO PARA BÚSQUEDA */
         #search-results-grid { 
-            padding: 5px; overflow-y: auto; height: 100%; 
-            /* Grid denso: minmax 100px hace que quepan muchas portadas */
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
-            grid-auto-rows: 150px; gap: 10px; align-content: start;
+            padding: 10px; overflow-y: auto; height: 100%; 
+            display: grid; 
+            /* Grid más denso: minmax 100px en lugar de 140px */
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
+            /* Altura más pequeña: 150px en lugar de 210px */
+            grid-auto-rows: 150px; 
+            gap: 10px; align-content: start;
         }
-        /* Ajuste de cartas dentro de búsqueda */
-        #search-results-grid .card { min-width: auto; height: 100%; }
 
-        /* Resto de estilos (Detalles, Player, etc...) MANTENER IGUAL */
+        /* OVERRIDE: Tarjetas pequeñas SOLO dentro de búsqueda */
+        #search-results-grid .card {
+            min-width: auto; /* Quitar el límite global */
+            height: 100%;    /* Llenar la celda pequeña */
+            width: 100%;
+        }
+        
+        /* DETALLES */
         #details-view { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: none; overflow-x: hidden; overflow-y: auto; }
         .details-hero { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center top; mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); }
         .hero-gradient { position: absolute; inset: 0; }
@@ -110,6 +131,7 @@
         .btn-large { padding: 10px 25px; font-size: 1rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s;}
         .btn-primary { background: white; color: black; border: 3px solid transparent; }
         .btn-secondary { background: rgba(100, 100, 100, 0.6); color: white; border: 3px solid transparent; }
+        
         #series-container { position: absolute; bottom: 20px; left: 5%; right: 5%; z-index: 20; background: transparent; }
         .season-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
         .season-selector { background: #333; color: white; border: 1px solid #555; padding: 5px 15px; border-radius: 4px; font-size: 1rem; }
@@ -120,22 +142,57 @@
         .ep-thumb { width: 100%; height: 125px; object-fit: cover; }
         .ep-info { padding: 10px; }
         .ep-title { font-size: 0.9rem; font-weight: bold; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* =========================================
+           REPRODUCTOR
+           ========================================= */
         #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
-        .player-ui { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.9) 100%); transition: opacity 0.3s ease; z-index: 99999 !important; pointer-events: none; }
+        
+        .player-ui { 
+            position: absolute; inset: 0; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.9) 100%);
+            transition: opacity 0.3s ease;
+            z-index: 99999 !important; pointer-events: none; 
+        }
         .ui-fade-out { opacity: 0 !important; pointer-events: none; }
+
         .p-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; position: relative; }
-        .btn-back-p { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.15); color: white; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100000; pointer-events: auto !important; }
+        
+        .btn-back-p { 
+            width: 60px; height: 60px; border-radius: 50%; 
+            background: rgba(255,255,255,0.15); color: white; 
+            border: 2px solid transparent; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; z-index: 100000; pointer-events: auto !important; 
+        }
         .btn-back-p:active { background: rgba(255,0,0,0.5); transform: scale(0.95); }
+
         .p-clock { font-size: 1.5rem; font-weight: bold; color: #ccc; text-shadow: 2px 2px 4px black; position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 1; pointer-events: none; }
         .p-meta { text-align: right; text-shadow: 1px 1px 3px black; max-width: 40%; z-index: 2; pointer-events: none; }
-        .p-controls-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 40px; align-items: center; pointer-events: none; }
-        .ctrl-btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: 3px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; pointer-events: auto !important; }
+
+        .p-controls-center { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            display: flex; gap: 40px; align-items: center; pointer-events: none; 
+        }
+        
+        .ctrl-btn { 
+            width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.6); color: white; border: 3px solid rgba(255,255,255,0.2); 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; 
+            pointer-events: auto !important; 
+        }
         .ctrl-btn:focus, .ctrl-btn:hover { background: var(--primary); border-color: white; transform: scale(1.15); }
         .ctrl-btn .material-icons-round { font-size: 40px; }
         .ctrl-btn.mini { width: 55px; height: 55px; } 
+
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 999999; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
-        .shaka-controls-container .focusable:focus { outline: none !important; border: 2px solid var(--primary) !important; background-color: rgba(255, 255, 255, 0.2); transform: scale(1.1); }
+        
+        .shaka-controls-container .focusable:focus {
+            outline: none !important; border: 2px solid var(--primary) !important;
+            background-color: rgba(255, 255, 255, 0.2); transform: scale(1.1);
+        }
+
+        /* MEDIA QUERIES (Vertical/Mobile) */
         @media (orientation: portrait) {
             .details-hero { height: 50vh; width: 100%; top: 0; mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); }
             .hero-gradient { height: 50vh; background: linear-gradient(to top, black 10%, transparent); }
@@ -147,6 +204,7 @@
             .episode-card { max-width: 100%; min-width: 100%; flex-direction: row; height: 90px; align-items: center; margin-bottom: 10px; background: rgba(40,40,40,0.9); }
             .ep-thumb { width: 140px; height: 100%; }
             .ep-info { flex: 1; padding-left: 15px; }
+            /* Ajuste busqueda */
             .search-container { flex-direction: column; }
             .keyboard-panel { flex: none; width: 100%; margin-bottom: 20px;}
             .key-btn { width: 45px; height: 45px; font-size: 1rem; }
@@ -307,7 +365,7 @@
 
         function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
 
-function handleRemote(e) {
+        function handleRemote(e) {
             const k = e.keyCode;
             
             // 1. MANEJO PRIORITARIO DE "ATRÁS"
