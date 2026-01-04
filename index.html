@@ -54,20 +54,18 @@
         .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 20px 4%; }
         
         /* ESTILO GLOBAL DE TARJETAS (Inicio/Peliculas) */
-        /* ESTILO DE TARJETAS */
         .card { 
-            /* Mantenemos tus estilos base */
             min-width: 140px; height: 210px; 
-            background: #222; /* Fondo gris oscuro */
+            background: #222; 
             border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
             transition: transform 0.2s; border: 3px solid transparent; 
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* NUEVO: Título que vive DETRÁS de la imagen */
+        /* Título de respaldo detrás de la imagen */
         .card-fallback-title {
             position: absolute;
-            inset: 0; /* Ocupa toda la carta */
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -75,19 +73,28 @@
             padding: 10px;
             font-size: 0.9rem;
             font-weight: bold;
-            color: #aaa; /* Color de texto gris claro */
-            z-index: 0; /* Nivel inferior */
+            color: #aaa;
+            z-index: 0; 
             word-wrap: break-word;
         }
 
         .card img { 
             width: 100%; height: 100%; object-fit: cover; 
             position: relative; 
-            z-index: 10; /* La imagen va ENCIMA del texto */
-            background: #222; /* Importante: fondo para tapar el texto mientras carga */
+            z-index: 10; /* La imagen tapa el texto */
+            background: #222; 
         }
         
-        /* Ajuste específico para resultados de búsqueda (mantenemos lo que hicimos antes) */
+        /* BARRA DE PROGRESO CORREGIDA */
+        .progress-track { 
+            position: absolute; bottom: 0; left: 0; right: 0; height: 4px; 
+            background: rgba(255,255,255,0.3); 
+            z-index: 20; /* CORREGIDO: 20 para estar encima de la imagen (que es 10) */
+            display: none; 
+        }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; }
+
+        /* Ajuste específico para resultados de búsqueda */
         #search-results-grid .card { min-width: auto; height: 100%; width: 100%; }
 
         /* =========================================
@@ -100,7 +107,6 @@
         }
         .search-container { display: flex; height: 100%; gap: 30px; }
         
-        /* COLUMNA IZQUIERDA: TECLADO (Reducido de 400px a 320px) */
         .keyboard-panel { flex: 0 0 320px; display: flex; flex-direction: column; }
         .search-display-area { margin-bottom: 20px; }
         .search-instruction { color: #888; font-size: 0.9rem; margin-bottom: 5px; }
@@ -110,12 +116,11 @@
         }
         
         .keyboard-grid {
-            display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; /* Gap más pequeño */
-            justify-items: center; /* Centrar botones */
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; 
+            justify-items: center; 
         }
-        /* BOTONES DE TECLADO MÁS PEQUEÑOS Y FIJOS */
         .key-btn {
-            width: 45px; height: 45px; /* Tamaño fijo para que no se estiren */
+            width: 45px; height: 45px; 
             background: var(--key-bg); color: #ddd;
             border: 2px solid transparent; border-radius: 50%;
             font-size: 1rem; font-weight: bold; cursor: pointer;
@@ -124,26 +129,19 @@
         .key-btn.wide { grid-column: span 2; width: auto; padding: 0 20px; border-radius: 30px; }
         .key-btn.action { background: #333; }
         
-        /* COLUMNA DERECHA: RESULTADOS (Compactos) */
         .results-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         .results-header { color: #888; margin-bottom: 15px; font-size: 1.1rem; }
         
-        /* GRID ESPECIFICO PARA BÚSQUEDA */
         #search-results-grid { 
             padding: 10px; overflow-y: auto; height: 100%; 
             display: grid; 
-            /* Grid más denso: minmax 100px en lugar de 140px */
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
-            /* Altura más pequeña: 150px en lugar de 210px */
             grid-auto-rows: 150px; 
             gap: 10px; align-content: start;
         }
 
-        /* OVERRIDE: Tarjetas pequeñas SOLO dentro de búsqueda */
         #search-results-grid .card {
-            min-width: auto; /* Quitar el límite global */
-            height: 100%;    /* Llenar la celda pequeña */
-            width: 100%;
+            min-width: auto; height: 100%; width: 100%;
         }
         
         /* DETALLES */
@@ -232,7 +230,6 @@
             .episode-card { max-width: 100%; min-width: 100%; flex-direction: row; height: 90px; align-items: center; margin-bottom: 10px; background: rgba(40,40,40,0.9); }
             .ep-thumb { width: 140px; height: 100%; }
             .ep-info { flex: 1; padding-left: 15px; }
-            /* Ajuste busqueda */
             .search-container { flex-direction: column; }
             .keyboard-panel { flex: none; width: 100%; margin-bottom: 20px;}
             .key-btn { width: 45px; height: 45px; font-size: 1rem; }
@@ -301,8 +298,8 @@
 
         <div id="series-container" style="display:none;">
             <div class="season-header">
-                <h3 style="margin:0;">Episodios</h3>
                 <select id="season-select" class="season-selector focusable"></select>
+                <h3 style="margin:0;">Episodios</h3>
             </div>
             <div id="episodes-list" class="episode-scroller"></div>
         </div>
@@ -374,7 +371,7 @@
 
         // TECLAS CRÍTICAS
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27, 4], 
+            BACK: [8, 461, 10009, 27], 
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
             PLAY: [415, 19], PAUSE: [19], STOP: [413]
@@ -723,10 +720,6 @@
         function cardHtml(item) {
             const p = getProgress(item.id);
             const bar = p.pct > 0 ? `<div class="progress-track" style="display:block"><div class="progress-fill" style="width:${p.pct}%"></div></div>` : '';
-            
-            // CAMBIO AQUÍ:
-            // 1. Agregamos <div class="card-fallback-title">${item.title}</div>
-            // 2. En la etiqueta <img>, cambiamos el onerror para ocultar la imagen si falla
             return `
             <div class="card focusable" tabindex="0" onclick="openDetails('${item.id}')" data-id="${item.id}">
                 <div class="card-fallback-title">${item.title}</div>
@@ -796,7 +789,9 @@
 
         function updateClock() { document.getElementById('p-clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
         function onError(e) { console.error(e); showError("Error: " + e.code); }
+        // FUNCIÓN MODIFICADA PARA NO MOSTRAR POPUPS
         function showError(msg) { console.log("Error suprimido visualmente:", msg); }
+        
         function getEpId(itemId, sIdx, eIdx) { return `${itemId}_s${sIdx}e${eIdx}`; }
         function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
         function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : {pct:0, time:0}; }
