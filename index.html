@@ -452,19 +452,23 @@
                 moveFocus(k);
             }
 
-            // 3. ENTER Y TECLADO VIRTUAL (CORRECCIÓN DE DOBLE INPUT)
+            // 3. ENTER Y TECLADO VIRTUAL (CORRECCIÓN VOLVER)
             if (isKey(e, 'ENTER')) {
                 const current = document.activeElement;
                 
                 // Si estamos en el buscador y el foco está en una tecla
                 if (currentView === 'search' && current.classList.contains('key-btn')) {
-                    // ¡IMPORTANTE! Prevenimos el comportamiento por defecto 
-                    // para que el navegador NO simule un click extra.
                     e.preventDefault(); 
                     e.stopPropagation();
                     
-                    // Llamamos manualmente a la función
-                    updateSearchString(current.getAttribute('data-char'));
+                    const char = current.getAttribute('data-char');
+                    
+                    // NUEVA LÓGICA: Si es VOLVER cerramos, si no, escribimos
+                    if (char === 'VOLVER') {
+                        closeSearchInterface();
+                    } else {
+                        updateSearchString(char);
+                    }
                     return; 
                 }
 
@@ -648,15 +652,13 @@
                 const btn = document.createElement('button');
                 btn.className = 'key-btn focusable';
 
-                // Lógica específica para el botón VOLVER
                 if (char === 'VOLVER') {
                     btn.innerText = 'Volver';
-                    // Usamos las mismas clases 'wide' y 'action' que SPACE y DEL para que se vea igual
-                    btn.classList.add('wide', 'action'); 
-                    // La acción al hacer click es cerrar la interfaz
+                    btn.classList.add('wide', 'action');
+                    // IMPORTANTE: Le damos un nombre para identificarlo
+                    btn.setAttribute('data-char', 'VOLVER'); 
                     btn.onclick = () => closeSearchInterface();
                 } 
-                // Lógica para el resto de teclas (letras, números, espacio, borrar)
                 else {
                     btn.innerText = char === 'DEL' ? '⌫' : (char === 'SPACE' ? '␣' : char);
                     btn.setAttribute('data-char', char);
