@@ -366,7 +366,7 @@
             "S", "T", "U", "V", "W", "X",
             "Y", "Z", "1", "2", "3", "4",
             "5", "6", "7", "8", "9", "0",
-            "SPACE", "DEL"
+            "SPACE", "DEL", "VOLVER"
         ];
 
         // TECLAS CRÍTICAS
@@ -582,15 +582,29 @@
         }
 
         // ================= SEARCH INTERFACE LOGIC =================
+        // FUNCIÓN ACTUALIZADA PARA INCLUIR EL BOTÓN VOLVER
         function generateKeyboard() {
             const grid = document.getElementById('keyboard-grid'); grid.innerHTML = '';
             KEYBOARD_LAYOUT.forEach(char => {
                 const btn = document.createElement('button');
                 btn.className = 'key-btn focusable';
-                btn.innerText = char === 'DEL' ? '⌫' : (char === 'SPACE' ? '␣' : char);
-                btn.setAttribute('data-char', char);
-                if (char === 'SPACE' || char === 'DEL') btn.classList.add('wide', 'action');
-                btn.onclick = () => updateSearchString(char);
+
+                // Lógica específica para el botón VOLVER
+                if (char === 'VOLVER') {
+                    btn.innerText = 'Volver';
+                    // Usamos las mismas clases 'wide' y 'action' que SPACE y DEL para que se vea igual
+                    btn.classList.add('wide', 'action'); 
+                    // La acción al hacer click es cerrar la interfaz
+                    btn.onclick = () => closeSearchInterface();
+                } 
+                // Lógica para el resto de teclas (letras, números, espacio, borrar)
+                else {
+                    btn.innerText = char === 'DEL' ? '⌫' : (char === 'SPACE' ? '␣' : char);
+                    btn.setAttribute('data-char', char);
+                    if (char === 'SPACE' || char === 'DEL') btn.classList.add('wide', 'action');
+                    btn.onclick = () => updateSearchString(char);
+                }
+                
                 grid.appendChild(btn);
             });
         }
