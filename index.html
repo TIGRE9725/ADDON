@@ -796,7 +796,7 @@
 
         function updateClock() { document.getElementById('p-clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
         function onError(e) { console.error(e); showError("Error: " + e.code); }
-        function showError(msg) { const v=document.getElementById('video'); if(v)v.pause(); document.getElementById('error-msg').innerText=msg; document.getElementById('error-modal').style.display='block'; }
+        function showError(msg) { console.log("Error suprimido visualmente:", msg); }
         function getEpId(itemId, sIdx, eIdx) { return `${itemId}_s${sIdx}e${eIdx}`; }
         function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
         function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : {pct:0, time:0}; }
