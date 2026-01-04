@@ -15,24 +15,34 @@
         /* =========================================
            ESTILOS GENERALES
            ========================================= */
-        :root { --primary: #E50914; --bg: #000000; }
+        :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
         /* FOCO UNIVERSAL (TV/TECLADO) */
         .focusable:focus {
             outline: none; border: 3px solid white !important; transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999;
-            background-color: rgba(255,255,255,0.1);
+            background-color: rgba(255,255,255,0.2);
+            color: white;
         }
 
         /* HEADER */
         header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
-        .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; padding: 5px 10px; border-radius: 4px; transition: 0.2s; }
+        .nav-btn { background: transparent; border: 2px solid transparent; color: #ccc; font-size: 14px; cursor: pointer; font-weight: bold; padding: 5px 15px; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center;}
         .nav-btn.active { color: white; background: rgba(255,255,255,0.1); border-bottom: 2px solid var(--primary); }
-        .search-box { display: flex; align-items: center; background: rgba(255,255,255,0.1); border: 1px solid #333; padding: 5px 10px; border-radius: 4px; }
-        .search-box input { background: transparent; border: none; color: white; outline: none; width: 150px; font-size: 14px; }
+        
+        /* BOTON DE BUSQUEDA (LUPA) */
+        .search-btn-header {
+            background: rgba(255,255,255,0.1); 
+            border: 2px solid transparent;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .search-btn-header .material-icons-round { font-size: 20px; }
 
         /* APP CONTAINER */
         #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
@@ -51,6 +61,46 @@
         .progress-track { position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.3); z-index: 5; display: none; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; }
 
+        /* =========================================
+           NUEVA INTERFAZ DE BÚSQUEDA (TECLADO TV)
+           ========================================= */
+        #search-interface {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: #000; z-index: 2000; display: none;
+            padding: 60px 4% 20px 4%; box-sizing: border-box;
+        }
+        .search-container { display: flex; height: 100%; gap: 40px; }
+        
+        /* COLUMNA IZQUIERDA: TECLADO */
+        .keyboard-panel { flex: 0 0 400px; display: flex; flex-direction: column; }
+        .search-display-area { margin-bottom: 20px; }
+        .search-instruction { color: #888; font-size: 0.9rem; margin-bottom: 5px; }
+        .search-input-display { 
+            font-size: 2rem; color: white; border-bottom: 2px solid var(--primary); 
+            padding-bottom: 10px; min-height: 40px; font-weight: bold; 
+        }
+        
+        .keyboard-grid {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+        }
+        .key-btn {
+            aspect-ratio: 1; background: var(--key-bg); color: #ddd;
+            border: 2px solid transparent; border-radius: 50%;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .key-btn.wide { grid-column: span 2; aspect-ratio: auto; border-radius: 30px; }
+        .key-btn.action { background: #333; }
+        
+        /* COLUMNA DERECHA: RESULTADOS */
+        .results-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .results-header { color: #888; margin-bottom: 15px; font-size: 1.1rem; }
+        #search-results-grid { 
+            padding: 10px; overflow-y: auto; height: 100%; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            grid-auto-rows: 210px; gap: 15px; align-content: start;
+        }
+        
         /* DETALLES */
         #details-view { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: none; overflow-x: hidden; overflow-y: auto; }
         .details-hero { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center top; mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); }
@@ -75,36 +125,31 @@
         .ep-thumb { width: 100%; height: 125px; object-fit: cover; }
         .ep-info { padding: 10px; }
         .ep-title { font-size: 0.9rem; font-weight: bold; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ep-num { font-size: 0.8rem; color: #aaa; margin-top: 3px; }
 
         /* =========================================
-           REPRODUCTOR - FIX COMPATIBILIDAD EXTREMA
+           REPRODUCTOR
            ========================================= */
         #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
         
-        /* Capa UI por encima de TODO */
         .player-ui { 
             position: absolute; inset: 0; 
             display: flex; flex-direction: column; justify-content: space-between; 
             background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.9) 100%);
             transition: opacity 0.3s ease;
-            z-index: 99999 !important; /* Ganar a Shaka */
-            pointer-events: none; /* Permitir pasar clicks a Shaka en el vacío */
+            z-index: 99999 !important; pointer-events: none; 
         }
         .ui-fade-out { opacity: 0 !important; pointer-events: none; }
 
         .p-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px; position: relative; }
         
-        /* BOTÓN VOLVER BLINDADO */
         .btn-back-p { 
-            width: 60px; height: 60px; border-radius: 50%; /* Más grande para Touch */
+            width: 60px; height: 60px; border-radius: 50%; 
             background: rgba(255,255,255,0.15); color: white; 
             border: 2px solid transparent; display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; z-index: 100000; 
-            pointer-events: auto !important; /* Clickable siempre */
+            cursor: pointer; z-index: 100000; pointer-events: auto !important; 
         }
-        .btn-back-p:active { background: rgba(255,0,0,0.5); transform: scale(0.95); } /* Feedback visual touch */
+        .btn-back-p:active { background: rgba(255,0,0,0.5); transform: scale(0.95); }
 
         .p-clock { font-size: 1.5rem; font-weight: bold; color: #ccc; text-shadow: 2px 2px 4px black; position: absolute; left: 50%; top: 40px; transform: translateX(-50%); z-index: 1; pointer-events: none; }
         .p-meta { text-align: right; text-shadow: 1px 1px 3px black; max-width: 40%; z-index: 2; pointer-events: none; }
@@ -125,7 +170,6 @@
 
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 999999; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
         
-        /* Shaka Custom Styling */
         .shaka-controls-container .focusable:focus {
             outline: none !important; border: 2px solid var(--primary) !important;
             background-color: rgba(255, 255, 255, 0.2); transform: scale(1.1);
@@ -143,6 +187,10 @@
             .episode-card { max-width: 100%; min-width: 100%; flex-direction: row; height: 90px; align-items: center; margin-bottom: 10px; background: rgba(40,40,40,0.9); }
             .ep-thumb { width: 140px; height: 100%; }
             .ep-info { flex: 1; padding-left: 15px; }
+            /* Ajuste busqueda */
+            .search-container { flex-direction: column; }
+            .keyboard-panel { flex: none; width: 100%; margin-bottom: 20px;}
+            .key-btn { width: 45px; height: 45px; font-size: 1rem; }
         }
     </style>
 </head>
@@ -155,14 +203,33 @@
             <button class="nav-btn focusable" onclick="renderView('series')">Series</button>
             <button class="nav-btn focusable" onclick="renderView('movies')">Películas</button>
         </div>
-        <div class="search-box">
+        <button class="search-btn-header focusable" onclick="openSearchInterface()">
             <span class="material-icons-round">search</span>
-            <input type="text" id="searchInput" class="focusable" placeholder="Buscar...">
-        </div>
+        </button>
     </header>
 
     <div id="app">
         <h2 style="text-align:center; margin-top:100px; color:#777;" id="loading-msg">Cargando contenido...</h2>
+    </div>
+
+    <div id="search-interface">
+        <div class="search-container">
+            <div class="keyboard-panel">
+                <div class="search-display-area">
+                    <div class="search-instruction">Escribe para buscar...</div>
+                    <div id="virtual-input-display" class="search-input-display"></div>
+                </div>
+                
+                <div id="keyboard-grid" class="keyboard-grid">
+                    </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="results-header" id="results-count-text">aquí van apareciendo las peliculas o series</div>
+                <div id="search-results-grid">
+                    </div>
+            </div>
+        </div>
     </div>
 
     <div id="details-view">
@@ -247,18 +314,40 @@
         let lastFocusedId = null;
         let currentSeasonIdx = 0;
         let currentEpIdx = 0;
+        
+        // BÚSQUEDA VARIABLES
+        let searchString = "";
+        const KEYBOARD_LAYOUT = [
+            "A", "B", "C", "D", "E", "F",
+            "G", "H", "I", "J", "K", "L",
+            "M", "N", "O", "P", "Q", "R",
+            "S", "T", "U", "V", "W", "X",
+            "Y", "Z", "1", "2", "3", "4",
+            "5", "6", "7", "8", "9", "0",
+            "SPACE", "DEL"
+        ];
 
         // TECLAS CRÍTICAS (Smart TV / FireTV / Tizen / WebOS)
         const KEYMAP = {
-            BACK: [8, 461, 10009, 27, 27], // WebOS: 461, Tizen: 10009, PC: 8/27
+            BACK: [8, 461, 10009, 27], // WebOS: 461, Tizen: 10009, PC: 8/27
             ENTER: [13],
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
             PLAY: [415, 19], PAUSE: [19], STOP: [413]
         };
 
-        // ================= EVENT LISTENER UNIVERSAL (FASE DE CAPTURA) =================
-        // Usamos 'true' (Capture) para interceptar teclas antes que Shaka o el Navegador
+        // ================= EVENT LISTENER UNIVERSAL =================
         window.addEventListener('keydown', handleRemote, true);
+
+        // Listener para teclado físico al escribir en búsqueda
+        window.addEventListener('keydown', (e) => {
+            if (currentView === 'search') {
+                if(e.key.length === 1 && /[a-zA-Z0-9 ]/.test(e.key)) {
+                    updateSearchString(e.key);
+                } else if(e.key === 'Backspace') {
+                    updateSearchString('DEL');
+                }
+            }
+        });
 
         function isKey(e, keyName) { return KEYMAP[keyName] && KEYMAP[keyName].includes(e.keyCode); }
 
@@ -267,24 +356,22 @@
             
             // 1. MANEJO PRIORITARIO DE "ATRÁS"
             if (isKey(e, 'BACK')) {
-                // Prevenir que el navegador cierre la app (Tizen/WebOS)
                 e.preventDefault(); 
                 e.stopPropagation();
-                e.stopImmediatePropagation(); // Matar evento para que Shaka no lo vea
+                e.stopImmediatePropagation();
 
                 if (document.getElementById('error-modal').style.display === 'block') {
                     document.getElementById('error-modal').style.display = 'none';
-                    exitPlayer(); // Salir por seguridad
+                    exitPlayer();
                     return;
                 }
                 
                 if (currentView === 'player') {
-                    console.log("Saliendo del player via Tecla Física");
                     exitPlayer();
                 } else if (currentView === 'details') {
                     closeDetails();
                 } else if (currentView === 'search') {
-                    renderView(activeCategory);
+                    closeSearchInterface();
                 }
                 return;
             }
@@ -297,18 +384,22 @@
                 // Solo movemos foco si NO es un input de rango (Seek bar)
                 const act = document.activeElement;
                 if(act && act.tagName === 'INPUT' && act.type === 'range') {
-                    if(k === 37 || k === 39) return; // Dejar que Shaka mueva la barra
+                    if(k === 37 || k === 39) return; 
                 }
-                e.preventDefault(); // Evitar scroll de página
+                e.preventDefault(); 
                 moveFocus(k);
             }
 
-            // 3. ENTER (Manejo de sliders Shaka con mando)
+            // 3. ENTER 
             if (isKey(e, 'ENTER')) {
                 const current = document.activeElement;
+                if (currentView === 'search' && current.classList.contains('key-btn')) {
+                    // Click virtual en tecla
+                    updateSearchString(current.getAttribute('data-char'));
+                }
+                // Si es seekbar
                 if (current && current.tagName === 'INPUT' && current.type === 'range') {
-                    e.preventDefault();
-                    togglePlay(); // Enter en seekbar = Play/Pause
+                    e.preventDefault(); togglePlay(); 
                 }
             }
 
@@ -320,23 +411,14 @@
         }
 
         // ================= GESTIÓN DE CLICK/TOUCH EN BOTÓN VOLVER =================
-        // Vinculamos eventos manualmente para asegurar que no fallen
         const btnBack = document.getElementById('btn-back-player');
-        
-        // Función "búnker" para salir
         function forceExit(e) {
-            if(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-            }
-            console.log("Click forzado en Salir");
+            if(e) { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); }
             exitPlayer();
         }
-
         btnBack.addEventListener('click', forceExit);
-        btnBack.addEventListener('touchend', forceExit); // Para móviles rápidos
-        btnBack.onclick = forceExit; // Redundancia máxima
+        btnBack.addEventListener('touchend', forceExit); 
+        btnBack.onclick = forceExit; 
 
         // ================= INICIALIZACIÓN SHAKA =================
         function initShaka() {
@@ -349,10 +431,9 @@
                 ui.configure({
                     controlPanelElements: ['time_and_duration', 'spacer', 'mute', 'volume', 'fullscreen', 'overflow_menu'],
                     addSeekBar: true,
-                    fadeDelay: 0 // Desactivamos el fade nativo de Shaka para usar el nuestro
+                    fadeDelay: 0 
                 });
 
-                // Error handler
                 player.addEventListener('error', (e) => {
                     if (e.detail && e.detail.code === 7000) return;
                     onError(e);
@@ -360,7 +441,6 @@
 
                 setTimeout(() => { integrateShakaControls(); }, 1000);
 
-                // Eventos de Video
                 video.addEventListener('timeupdate', () => {
                     if (!video.paused && currentItem) {
                         let saveId = currentItem.id;
@@ -387,69 +467,187 @@
             } else { console.error('Browser not supported'); }
         }
 
-        // ================= LÓGICA DE FOCO =================
+        // ================= LÓGICA DE FOCO ESPACIAL (MEJORADA) =================
         function integrateShakaControls() {
-            // Hacemos que los controles nativos de Shaka sean "focuseables" por nuestro sistema
             const shakaControls = document.querySelectorAll('.shaka-controls-container button, .shaka-controls-container input[type="range"]');
             shakaControls.forEach(el => {
                 el.classList.add('focusable');
-                // Al recibir foco nativo (mouse), avisar al timer
                 el.addEventListener('focus', () => { resetUiTimer(); });
             });
         }
 
         function moveFocus(k) {
-            // Obtenemos todos los elementos visibles y focuseables
             const focusables = Array.from(document.querySelectorAll('.focusable'))
-                .filter(el => el.offsetParent !== null && !el.disabled);
+                .filter(el => {
+                    // Solo elementos visibles
+                    return el.offsetParent !== null && !el.disabled && el.style.display !== 'none';
+                });
             
             if (focusables.length === 0) return;
 
             const current = document.activeElement;
             const index = focusables.indexOf(current);
             
-            // Si no hay foco, empezar
             if (index === -1) { focusables[0].focus(); return; }
 
             let next = null;
             
-            // Lógica Especial para el Player (Arriba/Abajo entre controles)
+            // --- LOGICA DE NAVEGACION EN BUSQUEDA (TECLADO VS RESULTADOS) ---
+            if (currentView === 'search') {
+                const isKey = current.classList.contains('key-btn');
+                const isResult = current.classList.contains('card');
+                
+                // Si estoy en el teclado y doy a la derecha en la ultima columna...
+                if (isKey && k === 39) {
+                    const rect = current.getBoundingClientRect();
+                    // Si estamos cerca del borde derecho del contenedor del teclado
+                    const gridRect = document.getElementById('keyboard-grid').getBoundingClientRect();
+                    if (rect.right > gridRect.right - 20) {
+                        // Saltar a la primera carta de resultados
+                        const firstRes = document.querySelector('#search-results-grid .card');
+                        if (firstRes) {
+                            firstRes.focus();
+                            return;
+                        }
+                    }
+                }
+                
+                // Si estoy en los resultados y doy a la izquierda en la primera columna...
+                if (isResult && k === 37) {
+                    // Calculamos si es columna izquierda
+                    const rect = current.getBoundingClientRect();
+                    const gridRect = document.getElementById('search-results-grid').getBoundingClientRect();
+                    if (rect.left < gridRect.left + 20) {
+                        // Volver al teclado (ultima tecla usada o la letra M por defecto)
+                        const keys = document.querySelectorAll('.key-btn');
+                        if (keys.length > 0) {
+                            keys[Math.min(12, keys.length-1)].focus(); // Foco al medio aprox
+                            return;
+                        }
+                    }
+                }
+            }
+            // ----------------------------------------------------------------
+
+            // Lógica Especial para el Player
             if (currentView === 'player') {
                 const isTop = current.classList.contains('btn-back-p');
                 const isCenter = current.classList.contains('ctrl-btn');
                 const isBottom = current.closest('.shaka-controls-container');
 
                 if (k === 40) { // ABAJO
-                    if (isTop) next = document.getElementById('btn-play-center'); // Header -> Centro
+                    if (isTop) next = document.getElementById('btn-play-center'); 
                     else if (isCenter) {
-                        // Centro -> Controles de Shaka (Barra)
                         const shakaBar = document.querySelector('.shaka-seek-bar');
                         if (shakaBar) next = shakaBar;
                     }
                 }
                 if (k === 38) { // ARRIBA
-                    if (isBottom) next = document.getElementById('btn-play-center'); // Shaka -> Centro
-                    else if (isCenter) next = document.getElementById('btn-back-player'); // Centro -> Header
+                    if (isBottom) next = document.getElementById('btn-play-center');
+                    else if (isCenter) next = document.getElementById('btn-back-player'); 
                 }
             }
 
-            // Navegación Estándar (Grid/Listas) si no se asignó 'next' arriba
+            // Navegación Estándar (Grid/Listas)
             if (!next) {
+                // Determinar columnas del grid basado en tipo
+                let columns = 1;
+                if (current.classList.contains('key-btn')) columns = 6; // Teclado tiene 6 col
+                else if (current.closest('.grid-view')) columns = 5; // Resultados tienen aprox 5
+
                 if (k === 39 && index < focusables.length - 1) next = focusables[index + 1];
                 if (k === 37 && index > 0) next = focusables[index - 1];
                 if (k === 40) { 
-                    const isGrid = current.closest('.grid-view');
-                    next = focusables[Math.min(index + (isGrid ? 5 : 1), focusables.length - 1)];
+                    next = focusables[Math.min(index + columns, focusables.length - 1)];
                 }
                 if (k === 38) { 
-                    const isGrid = current.closest('.grid-view');
-                    next = focusables[Math.max(index - (isGrid ? 5 : 1), 0)];
+                    next = focusables[Math.max(index - columns, 0)];
                 }
             }
 
             if (next) {
                 next.focus();
                 next.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
+            }
+        }
+
+        // ================= SEARCH INTERFACE LOGIC =================
+        function generateKeyboard() {
+            const grid = document.getElementById('keyboard-grid');
+            grid.innerHTML = '';
+            KEYBOARD_LAYOUT.forEach(char => {
+                const btn = document.createElement('button');
+                btn.className = 'key-btn focusable';
+                btn.innerText = char === 'DEL' ? '⌫' : (char === 'SPACE' ? '␣' : char);
+                btn.setAttribute('data-char', char);
+                if (char === 'SPACE' || char === 'DEL') btn.classList.add('wide', 'action');
+                
+                // Mouse click support
+                btn.onclick = () => updateSearchString(char);
+                grid.appendChild(btn);
+            });
+        }
+
+        function openSearchInterface() {
+            currentView = 'search';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('search-interface').style.display = 'block';
+            
+            searchString = "";
+            document.getElementById('virtual-input-display').innerText = "";
+            document.getElementById('search-results-grid').innerHTML = "";
+            document.getElementById('results-count-text').innerText = "Empieza a escribir para buscar...";
+            
+            generateKeyboard();
+            
+            // Foco inicial en la 'A'
+            setTimeout(() => {
+                const firstKey = document.querySelector('.key-btn');
+                if(firstKey) firstKey.focus();
+            }, 100);
+        }
+
+        function closeSearchInterface() {
+            document.getElementById('search-interface').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            renderView(activeCategory); // Volver a la vista anterior
+        }
+
+        function updateSearchString(char) {
+            if (char === 'DEL') {
+                searchString = searchString.slice(0, -1);
+            } else if (char === 'SPACE') {
+                searchString += " ";
+            } else {
+                searchString += char.toUpperCase();
+            }
+            
+            // Actualizar visualización
+            document.getElementById('virtual-input-display').innerText = searchString + "_";
+            
+            // Filtrar resultados
+            performSearch();
+        }
+
+        function performSearch() {
+            const term = searchString.toLowerCase();
+            const resultsGrid = document.getElementById('search-results-grid');
+            const infoText = document.getElementById('results-count-text');
+            
+            if (term.length === 0) {
+                resultsGrid.innerHTML = "";
+                infoText.innerText = "Escribe para buscar...";
+                return;
+            }
+
+            const filtered = catalog.filter(item => item.title.toLowerCase().includes(term));
+            
+            if (filtered.length > 0) {
+                infoText.innerText = `${filtered.length} coincidencias encontradas:`;
+                resultsGrid.innerHTML = filtered.map(i => cardHtml(i)).join('');
+            } else {
+                infoText.innerText = "No se encontraron resultados.";
+                resultsGrid.innerHTML = "";
             }
         }
 
@@ -460,7 +658,6 @@
             document.getElementById('player-container').style.display = 'block';
             currentView = 'player';
             
-            // Configurar botones
             const disp = isSeries ? 'flex' : 'none';
             document.getElementById('btn-prev').style.display = disp;
             document.getElementById('btn-next').style.display = disp;
@@ -478,7 +675,6 @@
                 await player.load(mpd);
                 const vid = document.getElementById('video');
                 
-                // Resume
                 let loadId = currentItem.id;
                 if(isSeries) loadId = getEpId(currentItem.id, currentSeasonIdx, currentEpIdx);
                 const saved = getProgress(loadId);
@@ -486,12 +682,9 @@
                 
                 vid.play().catch(e => console.log("Autoplay blocked", e));
                 
-                // === FOCO INICIAL CRÍTICO ===
-                // Forzamos el foco al botón de Play Central
                 setTimeout(() => {
                     document.getElementById('btn-play-center').focus();
                     resetUiTimer();
-                    // Re-inyectar focuseables de Shaka
                     integrateShakaControls();
                 }, 500);
 
@@ -507,33 +700,36 @@
         }
 
         function exitPlayer() {
-            console.log("Ejecutando exitPlayer...");
             const v = document.getElementById('video');
             v.pause();
-            v.src = ""; // Liberar recursos del navegador
+            v.src = ""; 
             
-            player.unload(); // Shaka unload
+            player.unload(); 
             clearInterval(clockInterval);
             
             document.getElementById('player-container').style.display = 'none';
-            currentView = 'details';
             
-            document.getElementById('details-view').style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-            document.getElementById('main-header').style.display = 'none';
-            
-            // Restaurar foco al botón de reproducir en detalles
-            setTimeout(() => {
-                const btn = document.getElementById('btn-play-hero');
-                if(btn) btn.focus();
-            }, 100);
+            // Volver siempre a Detalles si veníamos de allí
+            if (currentItem) {
+                currentView = 'details';
+                document.getElementById('details-view').style.display = 'block';
+                document.getElementById('app').style.display = 'none';
+                document.getElementById('main-header').style.display = 'none';
+                
+                setTimeout(() => {
+                    const btn = document.getElementById('btn-play-hero');
+                    if(btn) btn.focus();
+                }, 100);
+            } else {
+                // Fallback a home
+                renderView('home');
+            }
         }
 
         function resetUiTimer() {
             const ui = document.getElementById('player-ui');
             ui.classList.remove('ui-fade-out');
             clearTimeout(uiTimer);
-            // Solo ocultar si está reproduciendo
             if (!document.getElementById('video').paused) {
                 uiTimer = setTimeout(() => ui.classList.add('ui-fade-out'), 3500);
             }
@@ -566,19 +762,22 @@
             return { id: item.id, title: item.titulo || item.title || item.id, desc: item.sinopsis || "Sin descripción.", poster: img, hero: img, type: type, year: item.year || '', mpd: item.mpd, drm: item.drm, seasons: seasons };
         }
 
-        function renderView(view, query = '') {
+        function renderView(view) {
             if (['home', 'series', 'movies'].includes(view)) activeSection = view;
             activeCategory = view;
-            currentView = (view === 'search') ? 'search' : activeSection;
+            currentView = activeSection;
+            
+            // Asegurar visibilidad header principal
+            document.getElementById('main-header').style.display = 'flex';
+            document.getElementById('search-interface').style.display = 'none';
+            document.getElementById('details-view').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+
             const app = document.getElementById('app');
             app.innerHTML = '';
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
-            if(view === 'search') {
-                const results = catalog.filter(item => item.title.toLowerCase().includes(query));
-                if(results.length > 0) createGrid(results);
-                else app.innerHTML = '<h3 style="text-align:center;color:#777;margin-top:50px;">Sin resultados</h3>';
-            } else if(activeSection === 'home') {
+            if(activeSection === 'home') {
                 document.querySelectorAll('.nav-btn')[0].classList.add('active');
                 const watching = catalog.filter(x => { const p = getProgress(x.id); return p.pct > 1 && p.pct < 95; });
                 if(watching.length > 0) createRow("Continuar Viendo", watching);
@@ -618,6 +817,10 @@
             currentView = 'details';
             document.getElementById('app').style.display = 'none';
             document.getElementById('main-header').style.display = 'none';
+            
+            // Ocultar búsqueda si venimos de ahí
+            document.getElementById('search-interface').style.display = 'none';
+            
             const view = document.getElementById('details-view');
             view.style.display = 'block';
             view.scrollTop = 0;
@@ -632,7 +835,6 @@
             if(item.type === 'series') {
                 sCont.style.display = 'block';
                 renderSeasons(item);
-                // Smart Resume Logic
                 let nextS = 0, nextE = 0;
                 const lastSeenJson = localStorage.getItem('last_seen_' + item.id);
                 if (lastSeenJson) {
@@ -682,8 +884,10 @@
         }
         function closeDetails() {
             document.getElementById('details-view').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            document.getElementById('main-header').style.display = 'flex';
+            
+            // Si venimos de busqueda, hay que tener cuidado
+            // Por simplicidad, volveremos al Home/App normal, salvo que queramos volver a la busqueda.
+            // Para "App standard" generalmente volver a los listados es mejor UX.
             renderView(activeSection);
         }
 
@@ -709,15 +913,6 @@
         // Start
         window.onload = async () => {
             initShaka();
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('keyup', (e) => {
-                const term = e.target.value.toLowerCase();
-                if(term.length < 2) { renderView(activeCategory); return; }
-                const app = document.getElementById('app');
-                const filtered = catalog.filter(item => item.title.toLowerCase().includes(term));
-                app.innerHTML = `<h3 class="section-title">Resultados: "${term}"</h3>`;
-                if(filtered.length>0) createGrid(filtered); else app.insertAdjacentHTML('beforeend', `<p style="margin-left:4%; color:#777;">Sin resultados.</p>`);
-            });
             await loadData();
             // Mouse Move Timer
             const pCont = document.getElementById('player-container');
