@@ -369,12 +369,19 @@
             "SPACE", "DEL", "VOLVER"
         ];
 
-        // TECLAS CRÍTICAS
+        // TECLAS CRÍTICAS (Actualizado para Cordova/Android TV)
         const KEYMAP = {
             BACK: [8, 461, 10009, 27], 
-            ENTER: [13],
+            ENTER: [13, 23, 66], // 23 y 66 son select/enter en algunos Androids
             LEFT: [37], UP: [38], RIGHT: [39], DOWN: [40],
-            PLAY: [415, 19], PAUSE: [19], STOP: [413]
+            // AGREGADOS CÓDIGOS DE ANDROID TV / FIRE TV:
+            // 85: Media Play/Pause (El más común en Fire TV Stick)
+            // 179: Media Play/Pause (Variante)
+            // 126: Media Play
+            // 127: Media Pause
+            PLAY: [415, 19, 85, 179, 126], 
+            PAUSE: [19, 85, 179, 127], 
+            STOP: [413, 86] // 86 es Stop en Android
         };
 
         // ================= EVENT LISTENER UNIVERSAL =================
