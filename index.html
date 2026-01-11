@@ -15,38 +15,7 @@
         #playlist { width: 350px; background-color: #282c34; color: #fff; overflow-y: auto; border-right: 1px solid #444; padding: 20px; box-shadow: 2px 0 5px rgb(0 0 0 / .2); display: flex; flex-direction: column; }
         
         /* Ocultamos inputs que no son fáciles de usar en TV, pero los dejamos en el DOM por si acaso */
-        /* Agrega o reemplaza esto en tu CSS */
-
-/* Hacer visible el contenedor del buscador */
-.input-container {
-    display: flex;
-    margin-bottom: 10px;
-}
-
-#search-input {
-    display: block; /* Ahora es visible */
-    width: 100%;
-    padding: 10px;
-    background-color: #3c4043;
-    color: white;
-    border: 1px solid #555;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-/* Estilo cuando seleccionas el buscador con el mando */
-#search-input:focus {
-    background-color: #4fa3c4;
-    color: black;
-    outline: 2px solid white;
-}
-
-/* Icono de Catch-up (Reloj) */
-.catchup-icon {
-    margin-left: auto; /* Empuja el icono a la derecha */
-    font-size: 1.2em;
-    color: #ffd700; /* Color dorado */
-}
+        .input-container, #search-input, #fetch-button, #epg-button { display: none !important; }
 
         /* Video Area */
         #video-container { flex: 1; display: flex; flex-direction: column; z-index: 2; position: relative;}
@@ -142,7 +111,7 @@
             shaka.polyfill.installAll();
 
             // URL Hardcoded (Dropbox)
-            const m3u8Link = 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=0';
+            const m3u8Link = 'https://dl.dropboxusercontent.com/s/5wcyoevb2z4wf7qo82nlv/TVU.m3u?rlkey=mkxpksws68zbrix9qisj4e7vp';
             setPlaylistFromUrl(m3u8Link);
 
             // Manejador de Errores de Shaka
@@ -151,97 +120,56 @@
             });
         });
 
-        // --- LÓGICA DE NAVEGACIÓN Y TECLADO ---
-document.addEventListener('keydown', function(e) {
-    const active = document.activeElement;
-    
-    // CASO ESPECIAL 1: Bajar desde el buscador a la lista
-    if (active.id === 'search-input' && e.keyCode === KEY.DOWN) {
-        e.preventDefault(); // Evitamos que el scroll salte raro
-        const firstItem = videoList.querySelector('li');
-        if (firstItem) {
-            firstItem.focus();
-            firstItem.scrollIntoView({block: "center"});
-        }
-        return; // Detenemos aquí para no ejecutar el switch de abajo
-    }
-
-    // CASO ESPECIAL 2: Subir desde el primer canal al buscador
-    if (active.tagName === 'LI' && !active.previousElementSibling && e.keyCode === KEY.UP) {
-         e.preventDefault();
-         searchInput.focus();
-         return; // Detenemos aquí
-    }
-
-    // NAVEGACIÓN ESTÁNDAR
-    switch(e.keyCode) {
-        case KEY.DOWN:
-            if (active.tagName === 'LI' && active.nextElementSibling) {
-                active.nextElementSibling.focus();
-                active.nextElementSibling.scrollIntoView({block: "center"});
-            }
-            break;
+        // --- LÓGICA DE NAVEGACIÓN TIZEN ---
+        document.addEventListener('keydown', function(e) {
+            const active = document.activeElement;
             
-        case KEY.UP:
-             if (active.tagName === 'LI' && active.previousElementSibling) {
-                active.previousElementSibling.focus();
-                active.previousElementSibling.scrollIntoView({block: "center"});
-            }
-            break;
+            switch(e.keyCode) {
+                case KEY.DOWN:
+                    if (active.tagName === 'LI' && active.nextElementSibling) {
+                        active.nextElementSibling.focus();
+                        active.nextElementSibling.scrollIntoView({block: "center"});
+                    }
+                    break;
+                    
+                case KEY.UP:
+                    if (active.tagName === 'LI' && active.previousElementSibling) {
+                        active.previousElementSibling.focus();
+                        active.previousElementSibling.scrollIntoView({block: "center"});
+                    }
+                    break;
 
-        case KEY.ENTER:
-            if (active.tagName === 'LI') {
-                active.click(); // Carga el canal
-            }
-            // Nota: Si el foco está en el input, Tizen abre el teclado automáticamente al dar Enter
-            break;
-        
-        case KEY.RIGHT:
-            // Flecha derecha: Mostrar información del programa (Overlay)
-            if (active.tagName === 'LI') {
-                // Buscamos el objeto del canal basado en el texto del elemento li
-                const channelNameText = active.querySelector('.video-title').textContent;
-                const channelData = channels.find(c => c.channelName === channelNameText);
+                case KEY.ENTER:
+                    if (active.tagName === 'LI') {
+                        active.click(); // Dispara la carga del video
+                    }
+                    break;
                 
-                if(channelData && channelData.tvgId) {
-                     showOverlayInfo(channelData.tvgId);
-                } else {
-                    showToast("Sin información de EPG");
-                }
-            }
-            break;
+                case KEY.RIGHT:
+                    // Usar FLECHA DERECHA para ver info (Overlay) si hay EPG
+                    if (active.tagName === 'LI') {
+                        const channelData = channels.find(c => c.channelName === active.textContent.trim());
+                        if(channelData) {
+                             showOverlayInfo(channelData.tvgId);
+                        }
+                    }
+                    break;
 
-        case KEY.LEFT:
-        case KEY.RETURN: // Botón 'Back' o 'Return' del mando
-            if (overlay.style.display === 'flex') {
-                // Si el overlay de info está abierto, lo cerramos
-                overlay.style.display = 'none';
-                // videoElement.style.display = 'block'; // Descomentar si ocultaste el video
-            } else if (epgContainer.style.display === 'block') {
-                // Si la guía completa está abierta, la cerramos
-                epgContainer.style.display = 'none';
-            } else {
-                // Si estamos en la pantalla principal, salimos de la App
-                try { 
-                    tizen.application.getCurrentApplication().exit(); 
-                } catch (err) { 
-                    console.log("Intento de salir (No es Tizen o sin permisos)"); 
-                }
+                case KEY.LEFT:
+                case KEY.RETURN:
+                    // Cerrar Overlay o Salir
+                    if (overlay.style.display === 'flex') {
+                        overlay.style.display = 'none';
+                        videoContainer.querySelector('video').style.display = 'block';
+                    } else if (epgContainer.style.display === 'block') {
+                        epgContainer.style.display = 'none';
+                    } else {
+                        // Salir de la app (requiere privilegios Tizen, si falla no hace nada)
+                        try { tizen.application.getCurrentApplication().exit(); } catch (err) { console.log("Back pressed"); }
+                    }
+                    break;
             }
-            break;
-
-        // CONTROLES MULTIMEDIA (Play/Pause del mando)
-        case KEY.PLAY:
-        case KEY.PAUSE:
-        case KEY.PLAY_PAUSE:
-            if(videoElement.paused) {
-                videoElement.play();
-            } else {
-                videoElement.pause();
-            }
-            break;
-    }
-});
+        });
 
         // --- FUNCIONES CORE ---
 
@@ -275,43 +203,37 @@ document.addEventListener('keydown', function(e) {
             updatePlaylist(channels);
         }
 
-        function updatePlaylist(channelsToDisplay) {
-    videoList.innerHTML = '';
-    
-    // Si no pasamos canales, usamos la lista global
-    const list = channelsToDisplay || channels;
+        function updatePlaylist(channels) {
+            videoList.innerHTML = '';
+            channels.forEach((channel, index) => {
+                const listItem = document.createElement('li');
+                // tabindex="0" hace que el elemento sea "enfocable" por la TV
+                listItem.setAttribute('tabindex', '0'); 
+                
+                listItem.innerHTML = `
+                    <img src="${channel.tvgLogo || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" alt="Logo" onerror="this.style.display='none'">
+                    <span class="video-title">${channel.channelName}</span>
+                `;
 
-    list.forEach((channel) => {
-        const listItem = document.createElement('li');
-        listItem.setAttribute('tabindex', '0'); 
+                // Evento Click (Enter en el mando)
+                listItem.onclick = () => {
+                    loadVideo(channel.manifestUrl, channel.licenseKey);
+                    
+                    // Gestionar clase visual 'active'
+                    const allItems = videoList.querySelectorAll('li');
+                    allItems.forEach(i => i.classList.remove('active'));
+                    listItem.classList.add('active');
+                };
 
-        // --- LÓGICA DE DETECCIÓN DE CATCH-UP ---
-        // Verificamos si existe la propiedad catchup o atributos relacionados
-        // Nota: Depende de cómo M3U8Interpreter guarde los datos, probamos varias formas comunes:
-        const hasCatchup = channel.catchup || 
-                           (channel.attributes && channel.attributes['catchup']) || 
-                           (channel.attributes && channel.attributes['catchup-days']);
-        
-        // Si tiene catchup, mostramos un reloj (🕒), si no, nada.
-        const catchupIcon = hasCatchup ? '<span class="catchup-icon">🕒</span>' : '';
-        // ---------------------------------------
+                videoList.appendChild(listItem);
+            });
 
-        listItem.innerHTML = `
-            <img src="${channel.tvgLogo || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" alt="Logo" onerror="this.style.display='none'">
-            <span class="video-title">${channel.channelName}</span>
-            ${catchupIcon} 
-        `;
-
-        listItem.onclick = () => {
-            loadVideo(channel.manifestUrl, channel.licenseKey);
-            const allItems = videoList.querySelectorAll('li');
-            allItems.forEach(i => i.classList.remove('active'));
-            listItem.classList.add('active');
-        };
-
-        videoList.appendChild(listItem);
-    });
-}
+            // Enfocar el primer elemento automáticamente después de cargar
+            setTimeout(() => {
+                const first = videoList.querySelector('li');
+                if(first) first.focus();
+            }, 500);
+        }
 
         window.loadVideo = function(manifestUrl, licenseKey) {
     // 1. FORZAR AUDIO EN ESPAÑOL
