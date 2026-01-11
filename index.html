@@ -236,21 +236,41 @@
         }
 
         window.loadVideo = function(manifestUrl, licenseKey) {
-            if (licenseKey != null && !Array.isArray(licenseKey)) {
-                licenseKey = JSON.parse(decodeURIComponent(licenseKey));
-            }
-            if (licenseKey) {
-                licenseKey.forEach(pair => {
-                    player.configure({ drm: { clearKeys: { [pair.keyId]: pair.key } } });
-                });
-            } else {
-                player.configure({ drm: { clearKeys: {} } }); // Limpiar claves anteriores
-            }
-            
-            player.load(manifestUrl).then(() => {
-                videoElement.play();
-            }).catch(e => console.error('Error cargando video', e));
-        };
+    // 1. FORZAR AUDIO EN ESPAÑOL
+    // Configura Shaka para que prefiera 'es' (Español)
+    // Esto buscará 'es', 'es-MX', 'es-ES' o 'spa' automáticamente.
+    player.configure({
+        preferredAudioLanguage: 'es'
+    });
+
+    // 2. CONFIGURAR DRM (Si existe)
+    if (licenseKey != null && !Array.isArray(licenseKey)) {
+        licenseKey = JSON.parse(decodeURIComponent(licenseKey));
+    }
+    
+    if (licenseKey) {
+        licenseKey.forEach(pair => {
+            player.configure({ drm: { clearKeys: { [pair.keyId]: pair.key } } });
+        });
+    } else {
+        // Limpiar claves anteriores si el canal es abierto
+        player.configure({ drm: { clearKeys: {} } }); 
+    }
+    
+    // 3. CARGAR VIDEO
+    player.load(manifestUrl).then(() => {
+        console.log('Video cargado exitosamente');
+        videoElement.play();
+        
+        // (Opcional) Intento secundario de forzar si la configuración falló
+        // Selecciona explícitamente el rol de audio si está disponible
+        player.selectAudioLanguage('es'); 
+        
+    }).catch(e => {
+        console.error('Error cargando video', e);
+        showToast('Error: No se puede reproducir este canal');
+    });
+};
 
         function showOverlayInfo(tvgId) {
             // Mostrar EPG en overlay
