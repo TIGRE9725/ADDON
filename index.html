@@ -1,21 +1,293 @@
-<!doctypehtml><html lang=es><meta charset=UTF-8><meta content="width=device-width,initial-scale=1"name=viewport><meta content=no-referrer name=referrer><link href=data:image/x-icon;, rel=icon><title>github.com/dbghelp</title><link href=https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.11.2/controls.min.css rel=stylesheet><link href=https://dbghelp.github.io/xml-epg.css rel=stylesheet><style>body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh;background-color:#282c34}#playlist{width:350px;background-color:#282c34;color:#fff;overflow-y:auto;border-right:1px solid #444;padding:20px;box-shadow:2px 0 5px rgb(0 0 0 / .2);display:flex;flex-direction:column}#search-input,#url-input{width:100%;padding:10px;margin-bottom:10px;border:1px solid #444;border-radius:5px;background-color:#3c4043;color:#fff;font-size:1em;box-sizing:border-box}#epg-button{display:none;width:100%;padding:10px;margin-bottom:10px;background-color:#61dafb;color:#000;border:none;border-radius:5px;font-size:1em;cursor:pointer;box-shadow:0 4px 8px rgb(0 0 0 / .3)}#fetch-button{width:100%;padding:10px;margin-bottom:10px;background-color:#61dafb;color:#000;border:none;border-radius:5px;font-size:1em;cursor:pointer;box-shadow:0 4px 8px rgb(0 0 0 / .3)}#fetch-button:hover{background-color:#4fa3c4}#epg-button:hover{background-color:#4fa3c4}#video-container{flex:1;display:flex;flex-direction:column;z-index:2}#video{flex:1;width:100%;height:100%;background-color:#000}#video-list{list-style:none;padding:0;margin:0}#video-list li{padding:10px;margin:5px 0;border-radius:5px;cursor:pointer;transition:background-color .3s ease,transform .2s ease;display:flex;align-items:center}#video-list li:hover{background-color:#61dafb;transform:scale(1.05)}#video-list img{width:50px;height:50px;margin-right:10px;border-radius:5px;object-fit:cover;object-fit:contain}.video-title{font-size:1em}.active{background-color:#4fa3c4}#overlay{display:none;flex-direction:column;align-items:center;overflow-y:auto;z-index:2;flex:1}#epg-container{display:none;z-index:1000;position:fixed;width:100%;height:100%;overflow-y:scroll;overflow-x:scroll;background-color:#282c34}#search-input{display:none}.input-container{position:relative;display:flex;align-items:center;width:100%}#upload-button{width:10%;padding:10px;margin-bottom:10px;margin-left:5px;background-color:#61dafb;color:#000;border:none;border-radius:5px;font-size:1em;cursor:pointer;box-shadow:0 4px 8px rgb(0 0 0 / .3)}#upload-button:hover{background-color:#4fa3c4}</style><div id=playlist><div class=input-container><input id=url-input placeholder="Enter M3U8 Playlist URL"> <input id=file-input style=display:none type=file> <button id=upload-button onclick='document.getElementById("file-input").click()'>↑</button></div><button id=fetch-button>Load Playlist</button> <button id=epg-button onclick=openEPG()>EPG</button> <input id=search-input placeholder=Search...><ul id=video-list></ul></div><div id=video-container><video autoplay controls id=video></video></div><div id=overlay></div><div id=epg-container></div><script src=https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js></script><script src=https://dbghelp.github.io/M3U8Interpreter.js></script><script src=https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js></script><script src=https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js></script><script src=https://dbghelp.github.io/xml-epg.js></script><script>var xmlepg=new XMLEPG();var overlay=document.getElementById('overlay');var videoContainer=document.getElementById('video-container');var epgContainer=document.getElementById('epg-container');hideOverlayTimeout=null;overlay.addEventListener('mouseenter',()=>{if(hideOverlayTimeout){clearTimeout(hideOverlayTimeout)}
-overlay.style.display='flex';videoContainer.style.display='none'});overlay.addEventListener('mouseleave',()=>{overlay.style.display='none';videoContainer.style.display='flex'});document.addEventListener('DOMContentLoaded',()=>{const videoElement=document.getElementById('video');const videoList=document.getElementById('video-list');const searchInput=document.getElementById('search-input');const urlInput=document.getElementById('url-input');const fetchButton=document.getElementById('fetch-button');const fileInput=document.getElementById('file-input');const uploadButton=document.getElementById('upload-button');let selectedFileContent=null;var player=new shaka.Player(videoElement);var channels;var lastActiveChannel;shaka.polyfill.installAll();document.getElementById('upload-button').remove();document.getElementById('url-input').remove();document.getElementById('fetch-button').remove();const m3u8Link='https://dl.dropboxusercontent.com/s/5wcyoevb2z4wf7qo82nlv/TVU.m3u?rlkey=mkxpksws68zbrix9qisj4e7vp&dl=1';setPlaylistFromUrl(m3u8Link);fetchButton.addEventListener('click',async()=>{const url=urlInput.value;if(selectedFileContent){setPlaylistFromFile(selectedFileContent)}else if(url){setPlaylistFromUrl(url)}});fileInput.addEventListener('change',(event)=>{const file=event.target.files[0];if(file){urlInput.value=file.name;const reader=new FileReader();reader.onload=(e)=>{selectedFileContent=e.target.result};reader.readAsText(file)}});async function setPlaylistFromUrl(url){try{const response=await fetch(url);if(response.ok){const text=await response.text();parseAndSetPlaylist(text)}else{console.error('Failed to fetch M3U8 playlist.')}}catch(error){console.error('Error fetching M3U8 playlist:',error)}}
-async function setPlaylistFromFile(content){parseAndSetPlaylist(content)}
-async function parseAndSetPlaylist(content){const m3u8Interpreter=new M3U8Interpreter(content);m3u8Interpreter.parse();channels=m3u8Interpreter.getChannels();const urls=m3u8Interpreter.getUrlTvg();xmlepg.setPlaylistChannels(channels);xmlepg.load(urls).then(()=>{xmlepg.displayAllPrograms('epg-container','xmlepg')});if(urls!=null&&urls.length!==0){document.getElementById('epg-button').style.display='block'}
-updatePlaylist(channels);document.getElementById('search-input').style.display='block'}
-function extractAppendedURL(){const params=new URLSearchParams(window.location.search);return params.get('file')}
-window.loadVideo=function(manifestUrl,licenseKey){if(licenseKey!=null&&!Array.isArray(licenseKey)){licenseKey=JSON.parse(decodeURIComponent(licenseKey))}
-if(licenseKey){licenseKey.forEach(pair=>{player.configure({drm:{clearKeys:{[pair.keyId]:pair.key}}})})}
-player.load(manifestUrl);videoElement.play()}
-function updatePlaylist(channels){videoList.innerHTML='';channels.forEach(channel=>{const listItem=document.createElement('li');listItem.innerHTML=`
-										<img src="${channel.tvgLogo}" alt="${channel.channelName} logo">${channel.channelName}
-										</span>`;const imgElement=listItem.querySelector('img');imgElement.onmouseenter=()=>{xmlepg.displayPrograms('overlay',channel.tvgId);overlay.style.display='flex';videoContainer.style.display='none';if(hideOverlayTimeout){clearTimeout(hideOverlayTimeout)}};imgElement.onmouseleave=()=>{hideOverlayTimeout=setTimeout(()=>{overlay.style.display='none';videoContainer.style.display='flex'},100)};listItem.onclick=()=>{loadVideo(channel.manifestUrl,channel.licenseKey);const parent=listItem.parentElement;const children=parent.getElementsByTagName('li');for(let i=0;i<children.length;i++){children[i].classList.remove('active')}
-listItem.classList.add('active');lastActiveChannel=listItem.innerHTML}
-videoList.appendChild(listItem)})}
-function filterPlaylist(searchTerm){const filteredChannels=channels.filter(channel=>channel.channelName.toLowerCase().includes(searchTerm.toLowerCase()));updatePlaylist(filteredChannels)}
-searchInput.addEventListener('input',(event)=>{const searchTerm=event.target.value;filterPlaylist(searchTerm)})});function openEPG(){epgContainer.style.display='block';xmlepg.timelineNeedleRender()}
-function showToast(message){const style=document.createElement('style');style.innerHTML=`
-			.toast-container{position:absolute;top:20px;right:20px;z-index:9999}.toast{background-color:#333;color:#fff;padding:10px 20px;border-radius:5px;margin-bottom:10px;font-size:16px;box-shadow:0 4px 6px rgb(0 0 0 / .1);opacity:0;animation:fadeIn 0.5s forwards,fadeOut 3s forwards 2s}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes fadeOut{from{opacity:1}to{opacity:0}}
-		  `;document.head.appendChild(style);const toast=document.createElement('div');toast.classList.add('toast');toast.textContent=message;const toastContainer=document.querySelector('.toast-container');if(!toastContainer){const newContainer=document.createElement('div');newContainer.classList.add('toast-container');document.body.appendChild(newContainer)}
-document.querySelector('.toast-container').appendChild(toast);setTimeout(()=>{toast.remove()},4000)}
-function copyToClipboard(text,name){text=decodeURIComponent(text);navigator.clipboard.writeText(text.replace(/x123x/g,"'")).then(()=>{showToast(name+' command successfully copied to clipboard')}).catch(err=>{showToast('Failed to copy '+name+' download command: ',err)})}</script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Player - Dropbox List</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            margin: 0;
+            background-color: #0f0f0f;
+            color: #eee;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR (Lista de Canales) --- */
+        #sidebar {
+            width: 350px;
+            background-color: #1a1a1a;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        #header {
+            padding: 15px;
+            background: #111;
+            border-bottom: 2px solid #007bff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #status { font-size: 0.8rem; color: #aaa; }
+
+        #channel-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .channel-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #2a2a2a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .channel-item:hover { background-color: #333; }
+        
+        /* Foco para TV */
+        .channel-item:focus, .channel-item.active {
+            background-color: #007bff;
+            color: white;
+            outline: none;
+        }
+
+        .channel-logo {
+            width: 50px;
+            height: 40px;
+            object-fit: contain;
+            margin-right: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
+
+        .channel-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .channel-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .channel-group { font-size: 0.75rem; color: #888; }
+        .channel-item:focus .channel-group { color: #ddd; }
+
+        /* --- PLAYER AREA --- */
+        #player-container {
+            flex: 1;
+            background-color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #video { width: 100%; height: 100%; }
+        
+        /* Mensajes */
+        #loading-overlay {
+            position: absolute; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.8);
+            color: white; display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; z-index: 50; display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div id="header">
+            <span>📺 CANALES</span>
+            <span id="status">Cargando...</span>
+        </div>
+        <ul id="channel-list"></ul>
+    </div>
+
+    <div id="player-container">
+        <div id="loading-overlay">Cargando video...</div>
+        <video id="video" autoplay controls></video>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+    <script src="https://dbghelp.github.io/M3U8Interpreter.js"></script>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const PLAYLIST_URL = "https://dl.dropboxusercontent.com/s/5wcyoevb2z4wf7qo82nlv/TVU.m3u?rlkey=mkxpksws68zbrix9qisj4e7vp";
+        
+        let player;
+        let channels = [];
+        const videoElement = document.getElementById('video');
+        const listElement = document.getElementById('channel-list');
+        const statusElement = document.getElementById('status');
+        const loader = document.getElementById('loading-overlay');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+        });
+
+        async function initApp() {
+            // 1. Iniciar Shaka
+            shaka.polyfill.installAll();
+            if (shaka.Player.isBrowserSupported()) {
+                player = new shaka.Player(videoElement);
+                player.configure({ preferredAudioLanguage: 'es' });
+                player.addEventListener('error', onError);
+                
+                // 2. Descargar y Procesar Lista
+                await fetchPlaylist();
+            } else {
+                alert('Navegador no soportado');
+            }
+        }
+
+        async function fetchPlaylist() {
+            try {
+                statusElement.innerText = "Descargando lista...";
+                const response = await fetch(PLAYLIST_URL);
+                if (!response.ok) throw new Error("Error HTTP " + response.status);
+                
+                const text = await response.text();
+                parseM3U(text);
+                
+            } catch (e) {
+                console.error(e);
+                statusElement.innerText = "Error de carga";
+            }
+        }
+
+        function parseM3U(content) {
+            statusElement.innerText = "Procesando...";
+            
+            // Usamos la librería M3U8Interpreter que ya usabas antes
+            const interpreter = new M3U8Interpreter(content);
+            interpreter.parse();
+            
+            // Obtenemos los canales procesados (incluye DRM info)
+            channels = interpreter.getChannels();
+            
+            if (channels.length > 0) {
+                renderList();
+                statusElement.innerText = `${channels.length} Canales`;
+            } else {
+                statusElement.innerText = "Lista vacía";
+            }
+        }
+
+        function renderList() {
+            listElement.innerHTML = "";
+            
+            channels.forEach((channel, index) => {
+                const li = document.createElement('li');
+                li.className = 'channel-item';
+                li.tabIndex = 0; // Navegable con control remoto
+                
+                // Imagen por defecto si falla
+                const logo = channel.tvgLogo || "https://via.placeholder.com/50x40?text=TV";
+                
+                li.innerHTML = `
+                    <img src="${logo}" class="channel-logo" onerror="this.style.display='none'">
+                    <div class="channel-info">
+                        <span class="channel-name">${channel.channelName}</span>
+                        <span class="channel-group">${channel.groupTitle || 'General'}</span>
+                    </div>
+                `;
+
+                // Eventos de reproducción
+                li.onclick = () => loadChannel(channel, li);
+                li.onkeydown = (e) => {
+                    if (e.key === 'Enter') loadChannel(channel, li);
+                };
+
+                listElement.appendChild(li);
+            });
+            
+            // Enfocar el primero
+            if(listElement.firstChild) listElement.firstChild.focus();
+        }
+
+        async function loadChannel(channel, liElement) {
+            // UI Update
+            document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+            liElement.classList.add('active');
+            loader.style.display = 'flex';
+
+            console.log("Cargando:", channel.channelName);
+            console.log("DRM Info:", channel.licenseKey);
+
+            try {
+                // --- CONFIGURACIÓN DRM ---
+                // La librería M3U8Interpreter suele devolver licenseKey como objeto o string
+                // Dependiendo de cómo vengan tus #KODIPROP
+                let clearKeys = {};
+                
+                if (channel.licenseKey) {
+                    // Caso 1: Array de objetos (lo más común en esta librería)
+                    if (Array.isArray(channel.licenseKey)) {
+                        channel.licenseKey.forEach(k => {
+                            clearKeys[k.keyId] = k.key;
+                        });
+                    } 
+                    // Caso 2: Objeto único
+                    else if (typeof channel.licenseKey === 'object') {
+                         clearKeys[channel.licenseKey.keyId] = channel.licenseKey.key;
+                    }
+                    // Caso 3: String crudo (intento de parseo manual si falla la librería)
+                    else if (typeof channel.licenseKey === 'string' && channel.licenseKey.includes(':')) {
+                        const parts = channel.licenseKey.split(':');
+                        if (parts.length === 2) {
+                            clearKeys[parts[0]] = parts[1];
+                        }
+                    }
+                }
+
+                // Configurar Shaka
+                player.configure({
+                    drm: { clearKeys: clearKeys }
+                });
+
+                // Cargar Video
+                await player.load(channel.manifestUrl);
+                loader.style.display = 'none';
+
+            } catch (e) {
+                console.error("Error al cargar:", e);
+                loader.innerText = "Error: " + e.code;
+                // No ocultamos el loader para que se vea el error
+            }
+        }
+
+        function onError(event) {
+            console.error('Error Shaka:', event.detail);
+        }
+
+        // --- CONTROL REMOTO BÁSICO ---
+        document.addEventListener('keydown', (e) => {
+            // Flecha Derecha -> Fullscreen
+            if (e.keyCode === 39) {
+                 if(document.activeElement.classList.contains('channel-item')) {
+                     videoElement.requestFullscreen().catch(()=>{});
+                     videoElement.focus();
+                 }
+            }
+            // Flecha Izquierda / Back -> Salir Fullscreen / Volver a lista
+            if (e.keyCode === 37 || e.keyCode === 10009) {
+                if(document.fullscreenElement) {
+                    document.exitFullscreen();
+                    document.querySelector('.channel-item.active').focus();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
