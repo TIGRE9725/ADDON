@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Player Ultimate Media Keys</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           ESTILOS GENERALES
+           ========================================= */
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Roboto', sans-serif; }
+        .player-wrapper { position: relative; width: 100vw; height: 100vh; background: #000; }
+        [data-shaka-player-container] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+
+        /* =========================================
+           MENÚ LATERAL
+           ========================================= */
+        .sidebar {
+            position: absolute; top: 0; left: 0; bottom: 0; width: 350px;
+            background: rgba(15, 15, 20, 0.98); 
+            z-index: 5000; 
+            transform: translateX(-100%); 
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            display: flex; flex-direction: column; 
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar.open { transform: translateX(0); box-shadow: 10px 0 50px rgba(0,0,0,0.8); }
+        
+        .sidebar-header {
+            padding: 25px; background: rgba(255,255,255,0.05); color: #fff;
+            font-size: 1.2rem; font-weight: bold; text-align: center; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); letter-spacing: 2px;
+        }
+
+        .channel-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+
+        .channel-item {
+            display: flex; align-items: center; padding: 15px 25px; color: #aaa;
+            cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; outline: none;
+        }
+
+        .channel-item:focus, .channel-item:hover {
+            background: rgba(0, 229, 255, 0.15); color: #fff; 
+            border-left-color: #00e5ff; transform: translateX(5px);
+        }
+        
+        .channel-icon { margin-right: 20px; font-size: 1.5rem; }
+        .channel-name { font-size: 1.1rem; font-weight: 500; }
+
+        /* =========================================
+           CONTROLES INFERIORES
+           ========================================= */
+        .shaka-controls-container {
+            background: linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
+            transition: opacity 0.3s ease;
+        }
+        .shaka-controls-container:not(.shaka-shown) { background: none !important; }
+
+        .shaka-bottom-controls {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-end !important;
+            padding-bottom: 20px;
+            height: auto !important;
+        }
+
+        /* Barra de Progreso */
+        .shaka-seek-bar-container {
+            order: 1 !important; width: 94% !important; margin: 0 auto 15px auto !important; 
+            height: 12px !important; cursor: pointer;
+        }
+        .shaka-seek-bar-container .shaka-seek-bar-playhead { background: #00e5ff !important; }
+        .shaka-seek-bar-container input::-webkit-slider-thumb { background: #00e5ff !important; }
+
+        /* Botones */
+        .shaka-controls-button-panel {
+            order: 2 !important; width: 100%; padding: 0 4%; box-sizing: border-box;
+            justify-content: flex-start !important; z-index: 10; display: flex; align-items: center;
+        }
+
+        .material-icons-round { font-size: 38px !important; transition: transform 0.2s; color: #f0f0f0; }
+        
+        button:focus .material-icons-round, button:hover .material-icons-round { 
+            color: #00e5ff !important; transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(0,229,255,0.8)); 
+        }
+        button:focus { outline: none !important; }
+
+        /* Botón Menú */
+        #btn-menu-custom {
+            background: transparent; border: none; color: white; cursor: pointer;
+            padding: 5px 10px; margin-right: 15px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #btn-menu-custom span { font-size: 42px !important; }
+        #btn-menu-custom:focus { background: rgba(255,255,255,0.1); color: #00e5ff; }
+
+        /* Overlay Mensajes */
+        #msg-overlay {
+            position: absolute; top: 20px; right: 20px; padding: 10px 20px; border-radius: 8px;
+            font-weight: bold; z-index: 6000; color: white; display: none; background: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-wrapper">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">CANALES</div>
+            <div class="channel-list" id="channel-list"></div>
+        </div>
+
+        <div data-shaka-player-container>
+            <video autoplay data-shaka-player id="video"></video>
+        </div>
+        
+        <div id="msg-overlay"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. CANALES
+        // ==========================================
+        const misCanales = [
+            {
+                nombre: "Canal_Local_Gigared_Santa_Fe",
+                icono: "🌍",
+                tipo: "drm",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_Local_Gigared_Santa_Fe/sa_live_dash/Canal_Local_Gigared_Santa_Fe.mpd",
+                kid: "c48d578949a3d595c87232a17430e375",
+                key: "6ef34a3ae28d31ddb9e3741fe15e36f8"
+            },
+            {
+                nombre: "Canal_Local_Gigared_Resistencia",
+                icono: "🌍",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Canal_Local_Gigared_Resistencia/sa_live_dash/Canal_Local_Gigared_Resistencia.mpd",
+                kid: "b7d80939c0ead461d0cf449148e1db45",
+                key: "a5e57ec6360536d2ebc479eab3fda3b9"
+            },
+            {
+                nombre: "Canal_Local_Gigared_Posadas",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_Local_Gigared_Posadas/sa_live_dash/Canal_Local_Gigared_Posadas.mpd",
+                kid: "ced47361cf2f266e0842894d1c925464",
+                key: "3c12297f2cb08d14f30382bcb9e247bf"
+            },
+            {
+                nombre: "AmericaTV",
+                icono: "🌍",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/AmericaTV/sa_live_dash/AmericaTV.mpd",
+                kid: "32392e5868873c91ca77a0406b3d32d8",
+                key: "0f74f66dbeda0bb43b32445ea74d2087"
+            },
+            {
+                nombre: "Canal_9_Litoral",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_9_Litoral/sa_live_dash/Canal_9_Litoral&kid=a12379137924358ec604d854587a516d",
+                key: "14343b93fa8ecf2eabad85cc295fb46a"
+            },
+            {
+                nombre: "Telefe",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Telefe/sa_live_dash/Telefe.mpd",
+                kid: "865b35fdb4c119f3ccfd4ee392928aef",
+                key: "b43adf6d88b3befbf7f69a71dc273e46"
+            },
+            {
+                nombre: "Telefe_Santa_Fe",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Telefe_Santa_Fe/sa_live_dash/Telefe_Santa_Fe.mpd",
+                kid: "a01eedf6b870a091a049a95ba6f85b15",
+                key: "9f161558348513e5f3ed3a3a3ea2867d"
+            },
+            {
+                nombre: "TV_Publica",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/TV_Publica/sa_live_dash/TV_Publica.mpd",
+                kid: "f50f7ac8cca2bcb40bf4a895b6378cea",
+                key: "0ca9392a44d0c0ff79abc01c15df8888"
+            },
+            {
+                nombre: "Canal_9",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_9/sa_live_dash/Canal_9.mpd",
+                kid: "eaecaad505a66fab4161959099767384",
+                key: "ca66afd7ba0f3ce767b698b5e94c84e3"
+            },
+            {
+                nombre: "TN",
+                icono: "🌍",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/TN/sa_live_dash/TN.mpd",
+                kid: "c5bb6f9ef3b632b7ba2797048b4941a0",
+                key: "53f33a7ab0729daee5dbe8ecc8ee2c08"
+            },
+            {
+                nombre: "LNmas",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/LNmas/sa_live_dash/LNmas.mpd",
+                kid: "ffbe99278cd1aea87b3506d1c06defd6",
+                key: "fa8d96b8c2d97390ab329241a4e651ae"
+            },
+            {
+                nombre: "C5N",
+                icono: "🌍",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/C5N/sa_live_dash/C5N.mpd",
+                kid: "a4b47d87494bd17dd7acf86ebb6c3a32",
+                key: "5df76e3d86d8d88799c52eae263d08b0"
+            },
+            {
+                nombre: "CronicaTV",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/CronicaTV/sa_live_dash/CronicaTV.mpd",
+                kid: "2932730b9b35ad5ded0e4d96af122676",
+                key: "57f01dd4f21f8786352399c80d36caf8"
+            },
+            {
+                nombre: "Canal26",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal26/sa_live_dash/Canal26.mpd",
+                kid: "e9a29d60110b731c5f3a141084379a40",
+                key: "8dcb1a09a6007fe72d621a09017276ba"
+            },
+            {
+                nombre: "A24",
+                icono: "🌍",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/A24/sa_live_dash/A24.mpd",
+                kid: "c43779fa115f80c118c29665cc78e4ba",
+                key: "4303ea7157eb2e6f6ce980bb87183825"
+            },
+            {
+                nombre: "DeporTV",
+                icono: "⚽",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/DeporTV/sa_live_dash/DeporTV.mpd",
+                kid: "5f8bcea8ec9fdd5e6927e46ce856824b",
+                key: "3cf09d0c9ebeab2edfe600887e61b368"
+            },
+            {
+                nombre: "TyC_Sports",
+                icono: "⚽",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/TyC_Sports/sa_live_dash/TyC_Sports.mpd",
+                kid: "cac7b52cb14661fe3db0449020791d97",
+                key: "0c2780acce4ef9d7334ef25be445ceb4"
+            },
+            {
+                nombre: "TNT_Sports_Premium",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/TNT_Sports_Premium/sa_live_dash/TNT_Sports_Premium.mpd",
+                kid: "f26eb059fb0854f4d4218c895d7ae803",
+                key: "ffcb3fd4bd5657889215be4cb6275d1b"
+            },
+            {
+                nombre: "ESPN_Premium",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/ESPN_Premium/sa_live_dash/ESPN_Premium.mpd",
+                kid: "dca96877c202470bdad9839bea525c0a",
+                key: "d651871131d4b26f0095bcb9771b8f2f"
+            },
+            {
+                nombre: "ESPN",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/ESPN/sa_live_dash/ESPN.mpd",
+                kid: "8b55a3ba068f882f49b36d216f29506f",
+                key: "77f418bbcfc73739ebca9c52321472d3"
+            },
+            {
+                nombre: "ESPN 2",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/ESPN2/sa_live_dash/ESPN2.mpd",
+                kid: "02819f905f4e126d492693e44c688b82",
+                key: "a12adec960cd1e33ad3b8ddbf0dd22b9"
+            },
+            {
+                nombre: "ESPN 3",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/ESPN3/sa_live_dash/ESPN3.mpd",
+                kid: "ad0c72e30648501377425a62a2bf095c",
+                key: "2cfbc73f423203a9fc8a1d983ec4e8bb"
+            },
+            {
+                nombre: "ESPN 4",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/ESPN4/sa_live_dash/ESPN4.mpd",
+                kid: "ecafef3b8979c737d05ea191a02b7617",
+                key: "f46cd12052b0da221a3a178e2bde0162"
+            },
+            {
+                nombre: "Fox Sports",
+                icono: "⚽",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Fox_Sports/sa_live_dash/Fox_Sports.mpd",
+                kid: "6c0016fff15fcc3cc5d103f821189100",
+                key: "94d789ac388ccbbfbd2cf91d5b7db028"
+            },
+            {
+                nombre: "Fox Sports 2",
+                icono: "⚽",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Fox_Sports_2/sa_live_dash/Fox_Sports_2.mpd",
+                kid: "a2e448d00073c0a66e02caa20a2fe135",
+                key: "70e9e4adfb2f0b5ac127654c1a56d238"
+            },
+            {
+                nombre: "Fox Sports 3",
+                icono: "⚽",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Fox_Sports_3/sa_live_dash/Fox_Sports_3.mpd",
+                kid: "f2f0d2f5e823bf3bd1113ed83b244c57",
+                key: "addd4c11afb303beb21f95f79a935561"
+            },
+            {
+                nombre: "El Garage",
+                icono: "⚽",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/El_Garage/sa_live_dash/El_Garage.mpd",
+                kid: "c44389e1e90fb4d80e0a0d8090f8da1f",
+                key: "7bdf6460869276e70bd3eae576be2286"
+            },
+            {
+                nombre: "Discovery Turbo",
+                icono: "⚽",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Discovery_Turbo/sa_live_dash/Discovery_Turbo.mpd",
+                kid: "55b1aff18cff06f311d2f53145c0a748",
+                key: "7556d7b06fa5f94c7501c8956a764931"
+            },
+            {
+                nombre: "PakaPaka",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/PakaPaka/sa_live_dash/PakaPaka.mpd",
+                kid: "0aa7687e39e7e7e2e3d64d87a2fa1920",
+                key: "523cc84985fadae95289dd88838133c9"
+            },
+            {
+                nombre: "Disney_Channel",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Disney_Channel/sa_live_dash/Disney_Channel.mpd",
+                kid: "629f78368829802ade506b8f03e2d18b",
+                key: "6824ea53d6fd70d146b9e31a57cf3a20"
+            },
+            {
+                nombre: "Disney_Junior",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Disney_Junior/sa_live_dash/Disney_Junior.mpd",
+                kid: "0eabe9f5aee4020c50f52a2bf476ac57",
+                key: "490fc8a1a900893d20631da45412879d"
+            },
+            {
+                nombre: "Nickelodeon",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Nickelodeon/sa_live_dash/Nickelodeon.mpd",
+                kid: "611595b6387cdcfb67ce564768fd61aa",
+                key: "dd5fba9ab529822129c09c029b28651c"
+            },
+            {
+                nombre: "Discovery_Kids",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Discovery_Kids/sa_live_dash/Discovery_Kids.mpd",
+                kid: "1f92dc6055aefecb8a2abdba9ecf65cb",
+                key: "23a68bb309729298ceb3b5fcd3ff174d"
+            },
+            {
+                nombre: "Plim_Plim",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Plim_Plim/sa_live_dash/Plim_Plim.mpd",
+                kid: "44292917d1f5519af4598ccfc66b53dd",
+                key: "f90cee2e43e02176113cff8ccf09465e"
+            },
+            {
+                nombre: "Zoo_Moo",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Zoo_Moo/sa_live_dash/Zoo_Moo.mpd",
+                kid: "8fe8869466801cac2f84dcc6c3584d76",
+                key: "d6c878a3c04face66707d817ec62d628"
+            },
+            {
+                nombre: "Cine_ar",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Cine_ar/sa_live_dash/Cine_ar.mpd",
+                kid: "ff87d23b45efc58ff6a7ad0f5fdef566",
+                key: "0e84fa871d67fede2c5385b54b60b5dc"
+            },
+            {
+                nombre: "Cinecanal",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Cinecanal/sa_live_dash/Cinecanal.mpd",
+                kid: "ed9cb36b2c7ab639bb5b8627b2e980e8",
+                key: "a0d844faf1c31330165393e43e0d3bd8"
+            },
+            {
+                nombre: "TNT",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/TNT/sa_live_dash/TNT.mpd",
+                kid: "9d9e8eb8d97c4ff0dbfb02c3c417ae48",
+                key: "a426cb9e3ff4cac8b2e153ef54e69072"
+            },
+            {
+                nombre: "FX",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/FX/sa_live_dash/FX.mpd",
+                kid: "b060d6864d9b870b3a5f43c10370977c",
+                key: "7a9104e80a2bd14429ad4c877a9926b5"
+            },
+            {
+                nombre: "Star_Channel",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Star_Channel/sa_live_dash/Star_Channel.mpd",
+                kid: "ba8e3594a2280a1f0b749d66dccfab99",
+                key: "efa66c01f0e96775398994f1754be46b"
+            },
+            {
+                nombre: "Sony_Channel",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Sony_Channel/sa_live_dash/Sony_Channel.mpd",
+                kid: "a2e6c6842391fd4d9dfe3c047e286eb4",
+                key: "7d563478e5669d44cec9a6215052fec3"
+            },
+            {
+                nombre: "Universal",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Universal/sa_live_dash/Universal.mpd",
+                kid: "281ed03234dce7e50391f9c4c7c90b48",
+                key: "148c12b5c4526f3f7ab70f385cb36fac"
+            },
+            {
+                nombre: "AXN",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/AXN/sa_live_dash/AXN.mpd",
+                kid: "bac0cdbf2e5a82fb27818e30bc8b75e5",
+                key: "478bda16b7bbb4d01928270159771bd9"
+            },
+            {
+                nombre: "Studio_Universal",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Studio_Universal/sa_live_dash/Studio_Universal.mpd",
+                kid: "68987b791521decfbe5dd633a3c15dc5",
+                key: "cff99d15661b3e8393d9ac9dd9a89869"
+            },
+            {
+                nombre: "A&E",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/AyE/sa_live_dash/AyE.mpd",
+                kid: "0e45fe47af35c23962a3cc0ada9119f0",
+                key: "84f178941bbcedca8d43926b69cca9b1"
+            },
+            {
+                nombre: "USA_Network",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/USA_Network/sa_live_dash/USA_Network.mpd",
+                kid: "072f31c5b5238da0d3b54b2a79e7a7d9",
+                key: "984532822dc6ff3be1ffc56b0686d290"
+            },
+            {
+                nombre: "AMC",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/AMC/sa_live_dash/AMC.mpd",
+                kid: "d60a3128c3cbe6c2728ccca61f55a87f",
+                key: "1cc37b6959b6f9e7f70532604d1e8ed1"
+            },
+            {
+                nombre: "Golden",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Golden/sa_live_dash/Golden.mpd",
+                kid: "384a49756e9d5247537404c487edf312",
+                key: "72e31a1d402eb30584c541736267f478"
+            },
+            {
+                nombre: "Sony_Movies",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Sony_Movies/sa_live_dash/Sony_Movies.mpd",
+                kid: "4201cacd22f7a4f3bb6db354c9ac9d75",
+                key: "f43bbaf105697ac3f8ff4c69ee30967f"
+            },
+            {
+                nombre: "Eurochannel",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Eurochannel/sa_live_dash/Eurochannel.mpd",
+                kid: "ee22649f9cf24a09c8e2d7f527b61ab6",
+                key: "5f4f4cf346468adb895a5b5d5edd9a72"
+            },
+            {
+                nombre: "Golden_Plus",
+                icono: "🎬",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Golden_Plus/sa_live_dash/Golden_Plus.mpd",
+                kid: "2127eb2cb9152cb1a21815cf423b7114",
+                key: "3a1715592b6916bb3c2e7e477c5441bd"
+            },
+            {
+                nombre: "Investigation_discovery",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Investigation_discovery/sa_live_dash/Investigation_discovery.mpd",
+                kid: "54c693fe580f7a376d3a4ffcbaff2377",
+                key: "64f7f672af645bd14c26f598e65ca686"
+            },
+            {
+                nombre: "Comedy_Central",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Comedy_Central/sa_live_dash/Comedy_Central.mpd",
+                kid: "e2ef982ad8e10b04abb16ecfe4deab17",
+                key: "c9ec0f4087a3cd993de0a0dcb0a8a86b"
+            },
+            {
+                nombre: "Golden_Edge",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Golden_Edge/sa_live_dash/Golden_Edge.mpd",
+                kid: "db61dc785664ffa25a061f2dcbaa5932",
+                key: "94f6b0deb7436265c839d6faf0112f21"
+            },
+            {
+                nombre: "Cine_Familiar",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Cine_Familiar/sa_live_dash/Cine_Familiar.mpd",
+                kid: "721b4557143c8a37ec427423785875e5",
+                key: "3b76efe869910f4d86012915422a5b89"
+            },
+            {
+                nombre: "Cine_Premium",
+                icono: "🎬",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Cine_Premium/sa_live_dash/Cine_Premium.mpd",
+                kid: "670ffd29bd6ada72170188ed785f7e2f",
+                key: "7fa7edadd763531e133bf4a1aef51ce3"
+            },
+            {
+                nombre: "Telenovelas",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Telenovelas/sa_live_dash/Telenovelas.mpd",
+                kid: "214c0efa71c1ac68be8143b18e4a5a52",
+                key: "dbd58022cf2f0f6c69e979a54346cc8b"
+            },
+            {
+                nombre: "El_Gourmet",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/El_Gourmet/sa_live_dash/El_Gourmet.mpd",
+                kid: "a9034121a55c5254270a7fc87e6b933c",
+                key: "630f14e9ca88c92a25af19834bbf01d6"
+            },
+            {
+                nombre: "E_Entertainment",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/E_Entertainment/sa_live_dash/E_Entertainment.mpd",
+                kid: "a67b85023aec0c096831b2b0373715fd",
+                key: "be97d3955e711dfa12237416a1b9ad52"
+            },
+            {
+                nombre: "Discovery_HyH",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Discovery_HyH/sa_live_dash/Discovery_HyH.mpd",
+                kid: "270233c3621c173ad74f16aa6ba367ac",
+                key: "b39c8748f7f7530b1591c3a2ee0a3703"
+            },
+            {
+                nombre: "AMC SERIES",
+                icono: "📺",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Mas_Chic/sa_live_dash/Mas_Chic.mpd",
+                kid: "f4eafc89afd50886c0fc2cc733dc62d8",
+                key: "dd9be06d69c495b23952652b0f765892"
+            },
+            {
+                nombre: "TLC",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/TLC/sa_live_dash/TLC.mpd",
+                kid: "28f91c97b02842d14c2196467d9f22ec",
+                key: "07167c215250ae056a8f5dfb9b80d3a4"
+            },
+            {
+                nombre: "Love_Nature",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Love_Nature/sa_live_dash/Love_Nature.mpd",
+                kid: "30c35033226fea72c04b3fbdd3fe67d5",
+                key: "fbf7d2dffa946cbf38ef329a5f31f795"
+            },
+            {
+                nombre: "Unife",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Unife/sa_live_dash/Unife.mpd",
+                kid: "7213abb07b0ce71bedc6ba337e168fa4",
+                key: "317bc08ed843883a9397c61b22e1b60e"
+            },
+            {
+                nombre: "Discovery_Science",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Discovery_Science/sa_live_dash/Discovery_Science.mpd",
+                kid: "26c0b72d115923133a5a9e4d4011819f",
+                key: "cf04154c74f09b1fd98115a9e04fcec6"
+            },
+            {
+                nombre: "Nat_Geo",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Nat_Geo/sa_live_dash/Nat_Geo.mpd",
+                kid: "aa5e6dae90f144937f1cf638460efe13",
+                key: "284534e78bb04505bae9b484b2dc1537"
+            },
+            {
+                nombre: "Discovery_Channel",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Discovery_Channel/sa_live_dash/Discovery_Channel.mpd",
+                kid: "142c0c050c551486e07bc210a1357da6",
+                key: "0dbbc07185e4650e1a05dbbcb888909f"
+            },
+            {
+                nombre: "Animal_Planet",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Animal_Planet/sa_live_dash/Animal_Planet.mpd",
+                kid: "5eded9e86a760b6e23d1ce1d80b85484",
+                key: "74e74a9ea3933219454c81f28ade93a8"
+            },
+            {
+                nombre: "HGTV",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/HGTV/sa_live_dash/HGTV.mpd",
+                kid: "75dab5c02f8c98acc2a461a99da99b7e",
+                key: "01fbb96e5283f6706b102c8d8ad54c5c"
+            },
+            {
+                nombre: "History_Channel",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/History_Channel/sa_live_dash/History_Channel.mpd",
+                kid: "0c14f56c92a97db5abb4b83da823f81f",
+                key: "143a64606506c57b452bd9c8327bd6ff"
+            },
+            {
+                nombre: "CanalA",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/CanalA/sa_live_dash/CanalA.mpd",
+                kid: "097578fb861438a8deecc5643082997b",
+                key: "3ac02ae9a503e76a58f1e94eebd5f43d"
+            },
+            {
+                nombre: "Film_and_Arts",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Film_and_Arts/sa_live_dash/Film_and_Arts.mpd",
+                kid: "940d79fb1961288803c64e60da991c5a",
+                key: "f55e18690327be6db3a1cf24b5be438b"
+            },
+            {
+                nombre: "Discovery_World",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Discovery_World/sa_live_dash/Discovery_World.mpd",
+                kid: "cea94fefef1ff96d4ab0e27fb846b0c3",
+                key: "634b2496b64bffc426bd4093c5945ec3"
+            },
+            {
+                nombre: "RAI",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/RAI/sa_live_dash/RAI.mpd",
+                kid: "a2e6c6842391fd4d9dfe3c047e286eb4",
+                key: "7d563478e5669d44cec9a6215052fec3"
+            },
+            {
+                nombre: "TVE",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/TVE/sa_live_dash/TVE.mpd",
+                kid: "40d5b3d7302d0d707e88ea1cb4b194b5",
+                key: "b0f99846a1680e9425e8c76aae57fb53"
+            },
+            {
+                nombre: "24H",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/24H/sa_live_dash/24H.mpd",
+                kid: "91978d09e4feadcdcb15c1d670e149d3",
+                key: "83f5a6f07b63a02157fffb9fc83e1c68"
+            },
+            {
+                nombre: "MTV",
+                icono: "🎵",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/MTV/sa_live_dash/MTV.mpd",
+                kid: "92a2837411c8be67f7ec1f79a7996750",
+                key: "1ec313bd01d3f6d306fff11e4b032a1b"
+            },
+            {
+                nombre: "CM",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/CM/sa_live_dash/CM.mpd",
+                kid: "1713f5c8e140bc32fab3893341bd6bf6",
+                key: "85dbe90fab4bca195924b7cb17bfc211"
+            },
+            {
+                nombre: "Quiero_Musica",
+                icono: "🎵",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Quiero_Musica/sa_live_dash/Quiero_Musica.mpd",
+                kid: "8be45f648b2f5a27f6c16a8dce2c92e1",
+                key: "defd91f23137624fec9fe157d6adc1dd"
+            },
+            {
+                nombre: "Telehit_Musica",
+                icono: "🎵",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Telehit_Musica/sa_live_dash/Telehit_Musica.mpd",
+                kid: "f8837e4d7fdfaba5940310e719e12b99",
+                key: "057a34cc85e38471e2a023b78ec79175"
+            },
+            {
+                nombre: "Telehit_Plus",
+                icono: "🎵",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Telehit_Plus/sa_live_dash/Telehit_Plus.mpd",
+                kid: "6dcafee5775552f97891dfdada84df85",
+                key: "089ae50f8036135e7e458292e44676b5"
+            },
+            {
+                nombre: "Canal_9_Resistencia",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/Canal_9_Resistencia/sa_live_dash/Canal_9_Resistencia.mpd",
+                kid: "b8167152c10a91c5dd0059ac5a044c05",
+                key: "0cabfa6c6fca095ca813776d4bec822e"
+            },
+            {
+                nombre: "13_Max_Digital",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/13_Max_Digital/sa_live_dash/13_Max_Digital.mpd",
+                kid: "42c456cdb80d65376b1544925edb20fa",
+                key: "ad416b60ccc666b7dd607a8786c9ed86"
+            },
+            {
+                nombre: "CNN_Espanol",
+                icono: "🏀",
+                mpd: "https://cdn03.gigared.com.ar/live/eds/CNN_Espanol/sa_live_dash/CNN_Espanol.mpd",
+                kid: "720688ae8c6fbbcaed67cbb36da828b6",
+                key: "1efa379726cf781346ad761e85dd7dc3"
+            },
+            {
+                nombre: "Museum_TV",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Museum_TV/sa_live_dash/Museum_TV.mpd",
+                kid: "56ec00961b8711a7e39f326c3ed8295d",
+                key: "4e8742a824e7ac6e603ffa58fe821e88"
+            },
+            {
+                nombre: "Allegro",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Allegro_HD/sa_live_dash/Allegro_HD.mpd",
+                kid: "ddf23e1623b6cee24fce26f997230001",
+                key: "eecb79cd14e8b734f03af64c54b7f25c"
+            },
+            {
+                nombre: "Canal_12_Misiones",
+                icono: "🏀",
+                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_12_Misiones/sa_live_dash/Canal_12_Misiones.mpd",
+                kid: "ed6e9faec04aa78f261171d1ace48957",
+                key: "2995fa69fa1158e82547d5d5a22b4e98"
+            }
+        ];
+
+        let player, controls, sidebarOpen = false;
+
+        // ==========================================
+        // 2. INICIALIZACIÓN
+        // ==========================================
+        async function init() {
+            const video = document.getElementById('video');
+            const ui = video['ui'];
+            controls = ui.getControls();
+            player = controls.getPlayer();
+
+            const config = {
+                'controlPanelElements': [
+                    'play_pause', 
+                    'mute', 
+                    'time_and_duration', 
+                    'spacer', 
+                    'quality', 
+                    'fullscreen'
+                ],
+                'seekBarColors': { base: 'rgba(255,255,255,0.3)', played: '#00e5ff' },
+                'fadeDelay': 4 
+            };
+            ui.configure(config);
+
+            addMenuButtonSafe();
+
+            const params = new URLSearchParams(window.location.search);
+            const mpd = params.get('mpd') || (misCanales[0] ? misCanales[0].mpd : '');
+            const kid = params.get('kid') || (misCanales[0] ? misCanales[0].kid : '');
+            const key = params.get('key') || (misCanales[0] ? misCanales[0].key : '');
+
+            player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36';
+            });
+
+            const playerConfig = { preferredAudioLanguage: 'es' };
+            if(kid && key) playerConfig.drm = { clearKeys: { [kid]: key } };
+            
+            player.configure(playerConfig);
+
+            try {
+                if(mpd) await player.load(mpd);
+            } catch (e) {
+                showMessage("Error al cargar video");
+            }
+
+            renderChannelList();
+            
+            document.addEventListener('keydown', handleRemoteControl);
+        }
+
+        function addMenuButtonSafe() {
+            const menuBtn = document.createElement('button');
+            menuBtn.id = "btn-menu-custom";
+            menuBtn.className = "shaka-overflow-menu-button shaka-tooltip-status";
+            menuBtn.innerHTML = '<span class="material-icons-round">menu</span>';
+            menuBtn.onclick = toggleSidebar;
+
+            const interval = setInterval(() => {
+                const controlsPanel = document.querySelector('.shaka-controls-button-panel');
+                if (controlsPanel && !document.getElementById('btn-menu-custom')) {
+                    controlsPanel.prepend(menuBtn);
+                    clearInterval(interval);
+                }
+            }, 100);
+        }
+
+        // ==========================================
+        // 3. LÓGICA DE CONTROL REMOTO (FLECHAS + MEDIA)
+        // ==========================================
+        function handleRemoteControl(e) {
+            const video = document.getElementById('video');
+
+            // --- A) TECLAS DE REPRODUCCIÓN (PLAY, PAUSE, REWIND, FF) ---
+            
+            // 1. Play / Pause (Teclas Multimedia Físicas)
+            if (e.key === 'MediaPlayPause' || e.keyCode === 179 || e.key === 'MediaPlay' || e.key === 'MediaPause') {
+                e.preventDefault();
+                if (video.paused) video.play(); else video.pause();
+                return;
+            }
+
+            // 2. Rebobinar (Rewind) - 10 segundos
+            if (e.key === 'MediaRewind' || e.keyCode === 227 || e.key === 'MediaTrackPrevious') {
+                e.preventDefault();
+                video.currentTime = Math.max(0, video.currentTime - 10);
+                return;
+            }
+
+            // 3. Adelantar (Fast Forward) - 10 segundos
+            if (e.key === 'MediaFastForward' || e.keyCode === 228 || e.key === 'MediaTrackNext') {
+                e.preventDefault();
+                video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                return;
+            }
+
+
+            // --- B) NAVEGACIÓN (FLECHAS) ---
+
+            // Tecla ATRÁS
+            if (e.key === 'Escape' || e.key === 'Back' || e.keyCode === 10009 || e.keyCode === 27) {
+                if (sidebarOpen) {
+                    toggleSidebar();
+                    e.preventDefault();
+                    return;
+                }
+            }
+
+            const active = document.activeElement;
+            const seekBar = document.querySelector('.shaka-seek-bar-container input');
+            const seekBarContainer = document.querySelector('.shaka-seek-bar-container');
+            const controlsPanel = document.querySelector('.shaka-controls-button-panel');
+            
+            // Puente Barra -> Botones (ABAJO)
+            if (e.key === 'ArrowDown') {
+                if (active === seekBar || active === seekBarContainer) {
+                    e.preventDefault(); 
+                    const btnMenu = document.getElementById('btn-menu-custom');
+                    if (btnMenu) btnMenu.focus();
+                }
+            }
+
+            // Puente Botones -> Barra (ARRIBA)
+            if (e.key === 'ArrowUp') {
+                if (controlsPanel && controlsPanel.contains(active)) {
+                    e.preventDefault();
+                    if(seekBar) seekBar.focus();
+                }
+            }
+
+            // Puente Menú -> Play (DERECHA)
+            if (e.key === 'ArrowRight') {
+                if (active.id === 'btn-menu-custom' && !sidebarOpen) {
+                    e.preventDefault();
+                    const buttons = Array.from(controlsPanel.querySelectorAll('button'));
+                    if (buttons[1]) buttons[1].focus();
+                }
+                if (sidebarOpen) toggleSidebar(); 
+            }
+
+            // Puente Play -> Menú (IZQUIERDA)
+            if (e.key === 'ArrowLeft') {
+                if (active.id !== 'btn-menu-custom' && controlsPanel.contains(active)) {
+                    const buttons = Array.from(controlsPanel.querySelectorAll('button'));
+                    if (buttons[1] === active) {
+                        e.preventDefault();
+                        const btnMenu = document.getElementById('btn-menu-custom');
+                        if (btnMenu) btnMenu.focus();
+                    }
+                }
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebarOpen = !sidebarOpen;
+            
+            if (sidebarOpen) {
+                sidebar.classList.add('open');
+                setTimeout(() => {
+                    const first = document.querySelector('.channel-item');
+                    if(first) first.focus();
+                }, 300);
+            } else {
+                sidebar.classList.remove('open');
+                const btn = document.getElementById('btn-menu-custom');
+                if(btn) btn.focus();
+            }
+        }
+
+        function renderChannelList() {
+            const container = document.getElementById('channel-list');
+            misCanales.forEach(canal => {
+                const div = document.createElement('div');
+                div.className = 'channel-item';
+                div.tabIndex = 0; 
+                div.innerHTML = `<span class="channel-icon">${canal.icono}</span><span class="channel-name">${canal.nombre}</span>`;
+                div.onclick = () => {
+                    const url = `?mpd=${encodeURIComponent(canal.mpd)}&kid=${encodeURIComponent(canal.kid)}&key=${encodeURIComponent(canal.key)}`;
+                    window.location.search = url;
+                };
+                div.addEventListener('keydown', (e) => { if (e.key === 'Enter') div.click(); });
+                container.appendChild(div);
+            });
+        }
+
+        function showMessage(text) {
+            const el = document.getElementById('msg-overlay');
+            el.innerText = text; el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        document.addEventListener('shaka-ui-loaded', init);
+    </script>
+</body>
+</html>
