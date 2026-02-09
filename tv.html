@@ -2,209 +2,152 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>StreamNet TV</title>
+    <title>TV en Vivo</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        /* ESTILOS TV OPTIMIZADOS */
         body { margin: 0; background: #0f0f0f; color: white; font-family: sans-serif; overflow: hidden; }
         .focusable:focus { outline: 4px solid #00A8E8; transform: scale(1.05); z-index: 100; background: #333; }
         
-        /* HEADER */
-        header { position: fixed; top: 0; width: 100%; height: 70px; background: rgba(0,0,0,0.9); display: flex; align-items: center; padding: 0 30px; z-index: 50; }
-        .logo { font-weight: 900; font-size: 24px; color: #00A8E8; margin-right: 20px; }
+        #menu { padding: 50px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .card { aspect-ratio: 16/9; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-direction: column; }
+        .card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
         
-        /* GRID PROVEEDORES */
-        #providers-grid { padding: 90px 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .prov-card { aspect-ratio: 16/9; background: #222; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; }
-        .prov-card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
-        
-        /* EPG & LISTA LATERAL */
-        #channel-list { position: fixed; left: 0; top: 0; bottom: 0; width: 350px; background: rgba(0,0,0,0.95); z-index: 60; transform: translateX(-100%); transition: transform 0.2s; padding-top: 20px; border-right: 1px solid #333; }
-        #channel-list.open { transform: translateX(0); }
-        .ch-item { padding: 15px 20px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 15px; }
-        .ch-item:focus { background: #00A8E8; color: black; }
+        #channels { position: fixed; left: 0; top: 0; bottom: 0; width: 350px; background: rgba(0,0,0,0.95); z-index: 50; transform: translateX(-100%); transition: transform 0.2s; overflow-y: auto; }
+        #channels.open { transform: translateX(0); }
+        .ch-row { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; display: flex; gap: 10px; align-items: center; }
         .ch-logo { width: 40px; height: 30px; object-fit: contain; background: black; }
         
-        /* PLAYER */
-        #player-container { position: fixed; inset: 0; background: black; z-index: 0; display: none; }
-        #video { width: 100%; height: 100%; }
+        #player { position: fixed; inset: 0; background: black; z-index: 0; display: none; }
+        video { width: 100%; height: 100%; }
         
-        /* LOADING */
-        #loading { position: fixed; top: 20px; right: 20px; background: #00A8E8; padding: 5px 15px; border-radius: 4px; display: none; z-index: 9999; font-weight: bold; color: black;}
+        #loading { position: fixed; top: 20px; right: 20px; background: #00A8E8; padding: 5px; border-radius: 4px; display: none; z-index: 999; color: black; }
     </style>
 </head>
 <body>
 
-    <header id="main-header">
-        <div class="logo">TV EN VIVO</div>
-        <div id="clock">00:00</div>
-    </header>
-
     <div id="loading">Cargando...</div>
 
-    <div id="providers-grid"></div>
+    <div id="menu">
+        </div>
 
-    <div id="channel-list"></div>
+    <div id="channels"></div>
 
-    <div id="player-container">
-        <video id="video" autoplay></video>
-    </div>
+    <div id="player"><video id="video" autoplay></video></div>
 
 <script>
-    const PROVIDERS = [
+    const PROVS = [
         { title: 'IZZI TV', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', img: 'https://i.imgur.com/LOGO_IZZI.png' },
         { title: 'DISH', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri&dl=1', img: 'https://i.imgur.com/LOGO_DISH.png' },
-        { title: 'STAR TV', url: 'https://dl.dropboxusercontent.com/s/vnmo8y2l2z25dpzkv52hl/STARTV.m3u?rlkey=d3oj0vqgldbnmuqf30qaeqqti&dl=1', img: 'https://i.imgur.com/LOGO_STARTV.png' },
-        { title: 'CLARO TV', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh&dl=1', img: 'https://i.imgur.com/LOGO_CLARO.png' },
         { title: 'DIRECTV', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5&dl=1', img: 'https://i.imgur.com/LOGO_DIRECTV.png' }
+        // Agrega los demás aquí...
     ];
 
-    let player = null;
-    let currentChannels = [];
+    let player;
+    let currentList = [];
 
     window.onload = () => {
-        initShaka();
-        renderProviders();
-        setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 1000);
+        shaka.polyfill.installAll();
+        if(shaka.Player.isBrowserSupported()) player = new shaka.Player(document.getElementById('video'));
+        
+        const menu = document.getElementById('menu');
+        PROVS.forEach(p => {
+            const c = document.createElement('div');
+            c.className = 'card focusable';
+            c.tabIndex = 0;
+            c.innerHTML = `<img src="${p.img}"><b>${p.title}</b>`;
+            c.onclick = () => loadProvider(p.url);
+            menu.appendChild(c);
+        });
+        document.querySelector('.card').focus();
     };
 
-    function renderProviders() {
-        const grid = document.getElementById('providers-grid');
-        grid.innerHTML = '';
-        PROVIDERS.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'prov-card focusable';
-            card.tabIndex = 0;
-            card.innerHTML = `<img src="${p.img}"><div>${p.title}</div>`;
-            card.onclick = () => loadM3U(p.url);
-            grid.appendChild(card);
-        });
-        setTimeout(() => document.querySelector('.prov-card').focus(), 100);
-    }
-
-    async function loadM3U(url) {
+    async function loadProvider(url) {
         document.getElementById('loading').style.display = 'block';
         try {
             const res = await fetch(url);
             const text = await res.text();
             parseM3U(text);
-            document.getElementById('providers-grid').style.display = 'none';
-            document.getElementById('main-header').style.display = 'none';
-            renderChannelList();
-        } catch (e) {
-            console.log("Error loading M3U");
-        } finally {
-            document.getElementById('loading').style.display = 'none';
-        }
+            document.getElementById('menu').style.display = 'none';
+            renderChannels();
+        } catch(e) { alert("Error al cargar lista"); }
+        finally { document.getElementById('loading').style.display = 'none'; }
     }
 
     function parseM3U(text) {
         const lines = text.split('\n');
-        currentChannels = [];
+        currentList = [];
         let curr = null;
         for(let line of lines) {
             line = line.trim();
             if(line.startsWith('#EXTINF')) {
                 curr = { drm: {} };
                 const parts = line.split(',');
-                curr.title = parts[parts.length-1].trim();
+                curr.title = parts[parts.length-1];
                 const logo = line.match(/tvg-logo="([^"]+)"/);
-                curr.poster = logo ? logo[1] : "";
+                curr.logo = logo ? logo[1] : '';
             } else if(line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
                 if(curr) {
-                    const keys = line.split('=')[1].split(',');
-                    const ck = {};
-                    keys.forEach(k => { const [id,v] = k.split(':'); if(id&&v) ck[id]=v; });
-                    curr.drm.clearKeys = ck;
+                    const k = line.split('=')[1].split(':');
+                    curr.drm.clearKeys = { [k[0]]: k[1] };
                 }
             } else if(line.startsWith('http')) {
                 if(curr) {
-                    curr.mpd = line.split('|')[0];
-                    currentChannels.push(curr);
+                    curr.url = line.split('|')[0];
+                    currentList.push(curr);
                     curr = null;
                 }
             }
         }
     }
 
-    function renderChannelList() {
-        const list = document.getElementById('channel-list');
+    function renderChannels() {
+        const list = document.getElementById('channels');
         list.innerHTML = '';
         list.classList.add('open');
-        
-        currentChannels.forEach(ch => {
-            const item = document.createElement('div');
-            item.className = 'ch-item focusable';
-            item.tabIndex = 0;
-            item.innerHTML = `<img src="${ch.poster}" class="ch-logo"><span>${ch.title}</span>`;
-            item.onclick = () => playChannel(ch);
-            list.appendChild(item);
+        currentList.forEach(ch => {
+            const row = document.createElement('div');
+            row.className = 'ch-row focusable';
+            row.tabIndex = 0;
+            row.innerHTML = `<img src="${ch.logo}" class="ch-logo"> ${ch.title}`;
+            row.onclick = () => playChannel(ch);
+            list.appendChild(row);
         });
-        setTimeout(() => document.querySelector('.ch-item').focus(), 100);
-    }
-
-    function initShaka() {
-        shaka.polyfill.installAll();
-        if (shaka.Player.isBrowserSupported()) {
-            player = new shaka.Player(document.getElementById('video'));
-            player.configure({ streaming: { bufferingGoal: 10, lowLatencyMode: true } }); // Config TV Live
-        }
+        setTimeout(()=>document.querySelector('.ch-row').focus(), 100);
     }
 
     async function playChannel(ch) {
-        document.getElementById('channel-list').classList.remove('open');
-        document.getElementById('player-container').style.display = 'block';
-        
+        document.getElementById('channels').classList.remove('open');
+        document.getElementById('player').style.display = 'block';
         try {
             await player.unload();
-            if(ch.drm.clearKeys) player.configure({ drm: { clearKeys: ch.drm.clearKeys } });
-            else player.configure({ drm: {} });
-            
-            await player.load(ch.mpd);
-            document.getElementById('video').play();
-        } catch(e) { console.log("Error playing"); }
+            if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
+            await player.load(ch.url);
+        } catch(e) { console.log(e); }
     }
 
-    // CONTROLES
-    window.addEventListener('keydown', (e) => {
-        const k = e.keyCode;
-        if([8, 27, 461, 10009].includes(k)) { // BACK
-            e.preventDefault();
-            // Si estamos viendo video -> Abrir lista
-            if(document.getElementById('player-container').style.display === 'block' && !document.getElementById('channel-list').classList.contains('open')) {
-                document.getElementById('channel-list').classList.add('open');
-                document.querySelector('.ch-item').focus();
+    window.addEventListener('keydown', e => {
+        if(e.keyCode===8 || e.keyCode===27) { // BACK
+            if(document.getElementById('player').style.display==='block') {
+                document.getElementById('channels').classList.add('open');
+                document.querySelector('.ch-row').focus();
                 return;
             }
-            // Si la lista está abierta -> Volver a proveedores
-            if(document.getElementById('channel-list').classList.contains('open')) {
-                document.getElementById('channel-list').classList.remove('open');
-                document.getElementById('player-container').style.display = 'none';
-                player.unload();
-                document.getElementById('providers-grid').style.display = 'grid';
-                document.getElementById('main-header').style.display = 'flex';
-                document.querySelector('.prov-card').focus();
+            if(document.getElementById('channels').classList.contains('open')) {
+                document.getElementById('channels').classList.remove('open');
+                document.getElementById('menu').style.display='grid';
+                document.querySelector('.card').focus();
                 return;
             }
-            // Si estamos en proveedores -> Volver al HUB
-            window.location.href = "index.html"; 
+            window.location.href = 'index.html';
         }
-        
-        if(k === 13 || k === 23) document.activeElement.click(); // ENTER
-
-        if([37,38,39,40].includes(k)) { // FLECHAS
+        if(e.keyCode===13) document.activeElement.click();
+        if([38,40].includes(e.keyCode)) {
             e.preventDefault();
-            // Lógica simple de grilla/lista
-            const items = Array.from(document.querySelectorAll('.focusable'));
-            // (Aquí iría la lógica de navegación standard que ya conoces, simplificada por brevedad)
-             const idx = items.indexOf(document.activeElement);
-             if(idx >= 0) {
-                 if(k===40 && idx < items.length-1) items[idx+1].focus(); // Abajo
-                 if(k===38 && idx > 0) items[idx-1].focus(); // Arriba
-                 // Etc para izq/der
-             } else if(items.length > 0) items[0].focus();
+            const items = Array.from(document.querySelectorAll('.focusable')); // visibles
+            const idx = items.indexOf(document.activeElement);
+            if(e.keyCode===40) items[idx+1]?.focus();
+            if(e.keyCode===38) items[idx-1]?.focus();
         }
     });
 </script>
