@@ -16,25 +16,24 @@
         :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
+        /* FOCO: Z-Index alto, pero el reproductor tendrá uno MAYOR */
         .focusable:focus {
             outline: none; border: 3px solid white !important; transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999;
+            box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 100;
             background-color: rgba(255,255,255,0.2); color: white;
         }
 
         /* HEADER */
-        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
+        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 50; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
         
-        /* BREADCRUMB (Ruta de Navegación) */
         .breadcrumb { font-size: 14px; color: #ccc; font-weight: bold; margin-left: 20px; display: flex; align-items: center; gap: 5px; }
         .breadcrumb span { color: var(--primary); }
 
         /* APP CONTAINER */
         #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
         
-        /* GRID VIEW (Carpetas y Contenido) */
         .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 20px 4%; }
         
         .card { 
@@ -44,27 +43,24 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Título de respaldo (Visible si no hay imagen) */
         .card-fallback-title {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
             text-align: center; padding: 10px; font-size: 0.9rem; font-weight: bold; color: #aaa; z-index: 0; 
             word-wrap: break-word;
         }
 
-        /* Imagen (Tapa al título si existe) */
         .card img { 
             width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 10; background: #222; 
         }
 
-        /* Icono de Carpeta Superpuesto */
         .folder-icon {
             position: absolute; top: 10px; right: 10px; z-index: 20;
             background: rgba(0,0,0,0.6); border-radius: 50%; padding: 5px;
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* REPRODUCTOR UI */
-        #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
+        /* REPRODUCTOR UI - Z-INDEX SUPREMO (20000) PARA TAPAR TODO */
+        #player-container { position: fixed; inset: 0; background: black; z-index: 20000; display: none; }
         #video { width: 100%; height: 100%; }
         
         /* ERROR MODAL */
@@ -101,14 +97,12 @@
 
 <script>
     // ================= CONFIGURACIÓN DE PROVEEDORES =================
-    // Nivel 1: Menú Principal
     const MAIN_MENU = [
         { id: 'tv_root', title: 'TV En Vivo', img: 'https://img.icons8.com/color/480/tv.png', type: 'folder' },
         { id: 'movies_root', title: 'Películas', img: 'https://img.icons8.com/color/480/movie-projector.png', type: 'folder' },
         { id: 'series_root', title: 'Series', img: 'https://img.icons8.com/color/480/tv-show.png', type: 'folder' }
     ];
 
-    // Nivel 2: Tus Enlaces (Se cargan al entrar en TV, Pelis, etc.)
     const PROVIDERS_DATA = {
         'tv_root': [
             { title: 'IZZI TV', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', img: 'https://i.imgur.com/LOGO_IZZI.png' },
@@ -136,22 +130,19 @@
         ]
     };
 
-    // ================= VARIABLES GLOBALES =================
-    let navigationStack = []; // Pila de navegación
-    let currentItems = [];    // Elementos actuales en pantalla
+    let navigationStack = [];
+    let currentItems = [];
     let player = null;
     let isPlaying = false;
-    
-    // ================= INICIALIZACIÓN =================
+    const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
+
     window.onload = () => {
         initShaka();
-        // Cargar menú principal al inicio
         openFolder("Inicio", MAIN_MENU);
     };
 
-    // ================= LÓGICA DE NAVEGACIÓN =================
+    // ================= NAVEGACIÓN =================
     function openFolder(title, items) {
-        // Guardamos en el historial
         navigationStack.push({ title: title, items: items });
         renderGrid(items);
         updateBreadcrumb();
@@ -159,13 +150,13 @@
 
     function goBack() {
         if (navigationStack.length > 1) {
-            navigationStack.pop(); // Sacar nivel actual
-            const prev = navigationStack[navigationStack.length - 1]; // Ver anterior
+            navigationStack.pop();
+            const prev = navigationStack[navigationStack.length - 1];
             renderGrid(prev.items);
             updateBreadcrumb();
-            return true; // Se manejó el 'atrás'
+            return true;
         }
-        return false; // Estamos en el inicio
+        return false;
     }
 
     function renderGrid(items) {
@@ -183,7 +174,6 @@
 
         items.forEach((item, index) => {
             const isFolder = item.type === 'folder';
-            // Icono superpuesto si es carpeta
             const iconOverlay = isFolder ? 
                 `<div class="folder-icon"><span class="material-icons-round">folder_open</span></div>` : '';
             
@@ -192,14 +182,7 @@
             card.tabIndex = 0;
             card.onclick = () => handleItemClick(item);
             
-            // Lógica de Imagen y Título de Respaldo:
-            // 1. Ponemos el título en el fondo (card-fallback-title).
-            // 2. Ponemos la imagen encima (z-index superior).
-            // 3. Si la imagen falla (onerror), la ocultamos (display='none') para que se vea el título.
-            
-            const imgSrc = item.poster || item.img || ""; // Si no hay imagen, cadena vacía
-            
-            // Truco: Si no hay URL de imagen, el img tag fallará y se ocultará solo gracias al onerror, mostrando el texto.
+            const imgSrc = item.poster || item.img || ""; 
             
             card.innerHTML = `
                 <div class="card-fallback-title">${item.title}</div>
@@ -211,7 +194,6 @@
         
         app.appendChild(grid);
         
-        // Enfocar primer elemento
         setTimeout(() => {
             const first = document.querySelector('.card');
             if(first) first.focus();
@@ -225,73 +207,52 @@
 
     // ================= MANEJO DE CLICS =================
     async function handleItemClick(item) {
-        // 1. CARPETA LOCAL (Ya tiene hijos)
         if (item.type === 'folder' && item.children) {
             openFolder(item.title, item.children);
             return;
         }
-
-        // 2. ROOT MENU (TV, Pelis, Series)
         if (PROVIDERS_DATA[item.id]) {
             openFolder(item.title, PROVIDERS_DATA[item.id]);
             return;
         }
-
-        // 3. PROVEEDOR REMOTO (Descargar M3U/JSON)
         if (item.type === 'folder' && item.url) {
             showLoading(true);
             const content = await fetchAndParseContent(item);
             showLoading(false);
-            // IMPORTANTE: Si es proveedor de TV, agrupamos por Categorías
-            if(content.length > 0) {
-                 openFolder(item.title, content);
-            } else {
-                 alert("No se pudo cargar contenido de " + item.title);
-            }
+            if(content.length > 0) openFolder(item.title, content);
+            else alert("Error o carpeta vacía: " + item.title);
             return;
         }
-
-        // 4. STREAM (Video)
         if (item.type === 'stream' || item.type === 'movie' || item.type === 'series') {
             startPlayer(item);
         }
     }
 
-    // ================= PARSEADOR INTELIGENTE (M3U -> CARPETAS) =================
+    // ================= PARSEADOR M3U =================
     async function fetchAndParseContent(provider) {
         try {
             const response = await fetch(provider.url);
             const text = await response.text();
 
-            // Si es JSON
             if (provider.source_type === 'json' || text.trim().startsWith('[')) {
                 return JSON.parse(text).map(processJsonItem);
             }
 
-            // Si es M3U
             const lines = text.split('\n');
-            const groups = {}; // Agrupador { 'Deportes': [..], 'Noticias': [..] }
+            const groups = {}; 
             const rootItems = [];
-
             let currentItem = null;
 
             for (let line of lines) {
                 line = line.trim();
                 if (line.startsWith('#EXTINF')) {
                     currentItem = { type: 'stream', drm: {} };
-                    
-                    // Título
                     const titleMatch = line.match(/,(.+)$/);
-                    currentItem.title = titleMatch ? titleMatch[1].trim() : "Canal";
-                    
-                    // Logo
+                    currentItem.title = titleMatch ? titleMatch[1].trim() : "Sin Nombre";
                     const logoMatch = line.match(/tvg-logo="([^"]+)"/);
                     if(logoMatch) currentItem.poster = logoMatch[1];
-                    
-                    // Grupo
                     const groupMatch = line.match(/group-title="([^"]+)"/);
                     currentItem.group = groupMatch ? groupMatch[1].trim() : "General";
-
                 } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
                     if (currentItem) {
                         const keysRaw = line.split('=')[1];
@@ -305,13 +266,10 @@
                     }
                 } else if (line.startsWith('http')) {
                     if (currentItem) {
-                        // Detección de Pipe | (Estilo TiviMate)
                         if (line.includes('|')) {
                             const parts = line.split('|');
                             currentItem.mpd = parts[0];
                             const params = new URLSearchParams(parts[1]);
-                            
-                            // Extraer clearkey del pipe
                             const ck = params.get('clearkey');
                             if(ck) {
                                 const [kid, key] = ck.split(':');
@@ -321,7 +279,6 @@
                             currentItem.mpd = line;
                         }
 
-                        // AGREGAR AL GRUPO CORRESPONDIENTE
                         if (currentItem.group) {
                             if (!groups[currentItem.group]) groups[currentItem.group] = [];
                             groups[currentItem.group].push(currentItem);
@@ -333,17 +290,15 @@
                 }
             }
 
-            // Convertir grupos a estructura de carpetas
             const finalStructure = [];
             for (const [name, items] of Object.entries(groups)) {
                 finalStructure.push({
                     title: name,
                     type: 'folder',
                     children: items,
-                    img: items[0]?.poster // Usar imagen del primer canal como portada
+                    img: items[0]?.poster 
                 });
             }
-
             return [...finalStructure, ...rootItems];
 
         } catch (e) {
@@ -353,17 +308,16 @@
     }
 
     function processJsonItem(item) {
-        // Adaptador para tus JSONs existentes
         return {
             title: item.title || item.titulo,
             poster: item.img || item.poster,
-            type: 'stream', // Asumimos stream directo
+            type: 'stream',
             mpd: item.mpd || item.url,
-            drm: item.drm || {} // Si ya viene drm en el json
+            drm: item.drm || {} 
         };
     }
 
-    // ================= REPRODUCTOR SHAKA =================
+    // ================= REPRODUCTOR HÍBRIDO (SHAKA + NATIVO) =================
     function initShaka() {
         shaka.polyfill.installAll();
         if (shaka.Player.isBrowserSupported()) {
@@ -371,7 +325,6 @@
             player = new shaka.Player(video);
             const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
             
-            // Configuración con idioma español forzado
             player.configure({
                 preferredAudioLanguage: 'es',
                 preferredTextLanguage: 'es',
@@ -383,8 +336,9 @@
             });
 
             player.addEventListener('error', (e) => {
-                if(e.detail.code === 7000) return; // Ignorar error de carga interrumpida
+                if(e.detail.code === 7000) return;
                 console.error(e);
+                // Si Shaka falla, no mostramos error inmediatamente, dejamos que el usuario intente o salga
                 document.getElementById('error-msg').innerText = "Error " + e.detail.code;
                 document.getElementById('error-modal').style.display = 'block';
             });
@@ -393,33 +347,56 @@
 
     async function startPlayer(item) {
         if(!item.mpd) return;
-        
-        document.getElementById('player-container').style.display = 'block';
-        isPlaying = true;
-        
-        try {
-            // Configurar DRM si existe
-            if(item.drm && item.drm.clearKeys) {
-                player.configure({ drm: { clearKeys: item.drm.clearKeys } });
-            } else {
-                player.configure({ drm: {} }); // Limpiar config anterior
-            }
 
-            await player.load(item.mpd);
-            const video = document.getElementById('video');
-            video.play();
+        // ARREGLO ERROR 1: OCULTAR UI
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('main-header').style.display = 'none';
+        document.getElementById('player-container').style.display = 'block';
+        
+        const video = document.getElementById('video');
+        isPlaying = true;
+
+        // ARREGLO ERROR 2: DETECTAR SI ES MP4/AVI/MKV PARA NO USAR SHAKA/DRM
+        const urlLower = item.mpd.toLowerCase().split('?')[0]; // Quitamos parámetros para ver extensión
+        const isNative = urlLower.endsWith('.mp4') || urlLower.endsWith('.mkv') || urlLower.endsWith('.avi') || urlLower.endsWith('.mov');
+
+        try {
+            if (isNative) {
+                // MODO NATIVO (Archivos directos sin DRM)
+                console.log("Modo Nativo detectado para:", item.mpd);
+                await player.unload(); // Desactivar Shaka para que no interfiera
+                video.src = item.mpd;
+                video.play();
+            } else {
+                // MODO SHAKA (Stream DRM o HLS/DASH)
+                console.log("Modo Shaka/DRM detectado");
+                if(item.drm && item.drm.clearKeys) {
+                    player.configure({ drm: { clearKeys: item.drm.clearKeys } });
+                } else {
+                    player.configure({ drm: {} }); // Limpiar DRM anterior
+                }
+                await player.load(item.mpd);
+                video.play();
+            }
         } catch (e) {
-            console.error(e);
+            console.error("Error al iniciar:", e);
         }
     }
 
     function closePlayer() {
         const video = document.getElementById('video');
         video.pause();
-        player.unload();
+        // Detener Shaka o Native
+        player.unload(); 
+        video.src = ""; 
+        
         document.getElementById('player-container').style.display = 'none';
+        
+        // ARREGLO ERROR 1: MOSTRAR UI AL VOLVER
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('main-header').style.display = 'flex';
+        
         isPlaying = false;
-        // Re-enfocar último item
         setTimeout(() => {
             const card = document.querySelector('.card');
             if(card) card.focus();
@@ -435,59 +412,51 @@
         document.getElementById('loading-msg').style.display = show ? 'block' : 'none';
     }
 
-    // ================= CONTROL REMOTO / TECLADO =================
+    // ================= CONTROL REMOTO =================
     window.addEventListener('keydown', (e) => {
         const k = e.keyCode;
 
-        // TECLA ATRÁS (BackSpace, ESC, Back Android)
+        // ATRÁS
         if ([8, 27, 461, 10009, 4].includes(k)) {
             e.preventDefault();
             if (isPlaying) { closePlayer(); return; }
             if (document.getElementById('error-modal').style.display === 'block') { closeError(); return; }
-            
-            // Intentar subir nivel de carpeta
             if (goBack()) return;
         }
         
-        // ENTER (OK)
+        // ENTER
         if (k === 13 || k === 23 || k === 66) {
             const active = document.activeElement;
             if(active && active.classList.contains('card')) active.click();
         }
 
-        // FLECHAS (Navegación espacial simple)
+        // FLECHAS
         if ([37,38,39,40].includes(k)) {
             e.preventDefault();
             navigateGrid(k);
         }
     });
 
-    // Navegación básica en rejilla
     function navigateGrid(key) {
         const cards = Array.from(document.querySelectorAll('.card'));
         if (cards.length === 0) return;
         
         const current = document.activeElement;
         const index = cards.indexOf(current);
-        
         if (index === -1) { cards[0].focus(); return; }
 
         let nextIndex = index;
+        if (key === 39) nextIndex++; 
+        if (key === 37) nextIndex--; 
         
-        if (key === 39) nextIndex++; // Derecha
-        if (key === 37) nextIndex--; // Izquierda
-        
-        // Estimación de columnas para Arriba/Abajo
         const gridWidth = document.querySelector('.grid-view').offsetWidth;
-        const cardWidth = current.offsetWidth + 20; // +gap
+        const cardWidth = current.offsetWidth + 20; 
         const cols = Math.floor(gridWidth / cardWidth) || 1;
 
-        if (key === 40) nextIndex += cols; // Abajo
-        if (key === 38) nextIndex -= cols; // Arriba
+        if (key === 40) nextIndex += cols; 
+        if (key === 38) nextIndex -= cols; 
 
-        if (nextIndex >= 0 && nextIndex < cards.length) {
-            cards[nextIndex].focus();
-        }
+        if (nextIndex >= 0 && nextIndex < cards.length) cards[nextIndex].focus();
     }
 
 </script>
