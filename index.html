@@ -6,48 +6,68 @@
     <title>StreamNet Hub</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .logo { font-size: 50px; font-weight: 900; color: #E50914; margin-bottom: 60px; letter-spacing: 2px; }
-        .menu { display: flex; gap: 30px; }
+        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .logo { font-size: 50px; font-weight: 900; color: #E50914; margin-bottom: 50px; letter-spacing: 2px; text-shadow: 0 0 20px rgba(229, 9, 20, 0.6); }
+        .menu-container { display: flex; gap: 30px; }
         
-        .card { 
+        .card-menu { 
             width: 220px; height: 320px; background: #1a1a1a; border-radius: 12px; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-decoration: none; color: white; border: 3px solid transparent; transition: transform 0.2s;
+            text-decoration: none; color: white; border: 3px solid transparent; 
+            transition: transform 0.2s, background 0.2s, box-shadow 0.2s; cursor: pointer;
         }
         
-        .card:focus, .card:hover { transform: scale(1.1); border-color: white; background: #222; outline: none; }
-        .icon { font-size: 80px; margin-bottom: 20px; color: #ccc; }
-        .label { font-size: 20px; font-weight: bold; text-transform: uppercase; }
+        .card-menu:focus, .card-menu:hover { 
+            transform: scale(1.1); border-color: white; background: #252525; outline: none; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8); z-index: 10;
+        }
         
-        /* Colores */
-        .card:nth-child(1):focus .icon { color: #00A8E8; } /* TV Azul */
-        .card:nth-child(2):focus .icon { color: #E50914; } /* Pelis Roja */
-        .card:nth-child(3):focus .icon { color: #FFD700; } /* Series Amarilla */
+        .icon { font-size: 80px; margin-bottom: 20px; color: #888; transition: color 0.2s; }
+        .label { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Colores Activos */
+        .card-menu:nth-child(1):focus .icon { color: #00A8E8; } /* TV */
+        .card-menu:nth-child(2):focus .icon { color: #E50914; } /* Cine */
+        .card-menu:nth-child(3):focus .icon { color: #FFD700; } /* Series */
     </style>
 </head>
 <body>
+
     <div class="logo">STREAMNET</div>
-    <div class="menu">
-        <a href="tv.html" class="card" id="btn-tv">
+
+    <div class="menu-container">
+        <a href="tv.html" class="card-menu" id="btn-tv">
             <span class="material-icons-round icon">live_tv</span>
             <div class="label">TV en Vivo</div>
         </a>
-        <a href="peliculas.html" class="card">
+        
+        <a href="peliculas.html" class="card-menu">
             <span class="material-icons-round icon">movie</span>
             <div class="label">Películas</div>
         </a>
-        <a href="series.html" class="card">
+        
+        <a href="series.html" class="card-menu">
             <span class="material-icons-round icon">view_list</span>
             <div class="label">Series</div>
         </a>
     </div>
+
     <script>
         document.getElementById('btn-tv').focus();
+
         window.addEventListener('keydown', (e) => {
-            if(e.keyCode === 39) document.activeElement.nextElementSibling?.focus();
-            if(e.keyCode === 37) document.activeElement.previousElementSibling?.focus();
-            if(e.keyCode === 13 || e.keyCode === 23) document.activeElement.click();
+            const k = e.keyCode;
+            if(k === 39) { // Derecha
+                const next = document.activeElement.nextElementSibling;
+                if(next) next.focus();
+            }
+            if(k === 37) { // Izquierda
+                const prev = document.activeElement.previousElementSibling;
+                if(prev) prev.focus();
+            }
+            if(k === 13 || k === 23) { // Enter
+                document.activeElement.click();
+            }
         });
     </script>
 </body>
