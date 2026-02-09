@@ -5,35 +5,46 @@
     <title>Series</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         body { margin: 0; background: #141414; color: white; font-family: sans-serif; overflow: hidden; }
         .focusable:focus { outline: 4px solid white; transform: scale(1.05); z-index: 100; background:#333; }
         
-        #app { padding: 40px; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+        #header { position: fixed; top: 0; width: 100%; padding: 20px; background: linear-gradient(black, transparent); z-index: 50; display: flex; align-items: center; }
+        
+        #app { padding: 80px 40px; height: 100vh; box-sizing: border-box; overflow-y: auto; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
         .card { aspect-ratio: 2/3; background: #222; border-radius: 6px; cursor: pointer; }
-        .card img { width: 100%; height: 100%; object-fit: cover; }
+        .card img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
         
-        #details { position: fixed; inset: 0; background: #141414; z-index: 50; display: none; overflow-y: auto; }
+        #details { position: fixed; inset: 0; background: #141414; z-index: 60; display: none; overflow-y: auto; }
         .hero { width: 100%; height: 50vh; background-size: cover; mask-image: linear-gradient(to bottom, black, transparent); }
-        .content { padding: 20px; }
+        .content { padding: 20px 40px; }
+        .title { font-size: 3rem; font-weight: 900; margin-top: -50px; text-shadow: 2px 2px 10px black; }
         
-        /* EPISODIOS */
+        .season-sel { padding: 10px; font-size: 1.2rem; margin-bottom: 20px; background: #222; color: white; border: 1px solid #555; }
         .ep-row { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; display: flex; align-items: center; gap: 20px; }
-        .ep-thumb { width: 120px; height: 70px; background: black; object-fit: cover; }
+        .ep-thumb { width: 140px; height: 80px; background: black; object-fit: cover; border-radius: 4px; }
         
         #player { position: fixed; inset: 0; background: black; z-index: 100; display: none; }
         video { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
+
+    <div id="header">
+        <span class="material-icons-round" style="font-size:30px; margin-right:10px; cursor:pointer;" onclick="location.href='index.html'">arrow_back</span>
+        <h2 style="margin:0; color:#FFD700;">SERIES</h2>
+    </div>
+
     <div id="app"><div class="grid" id="grid"></div></div>
 
     <div id="details">
         <div class="hero" id="hero"></div>
         <div class="content">
             <h1 id="title"></h1>
-            <select id="season-sel" class="focusable" style="padding:10px; font-size:1.2rem; margin-bottom:20px;"></select>
+            <p id="desc" style="color:#ccc; margin-bottom:20px;"></p>
+            <select id="season-sel" class="season-sel focusable"></select>
             <div id="ep-list"></div>
         </div>
     </div>
@@ -41,9 +52,9 @@
     <div id="player"><video id="video" autoplay controls></video></div>
 
 <script>
-    // TUS LISTAS DE SERIES
     const SOURCES = [
-        { url: 'https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1' }
+        { url: 'https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1' },
+        { url: 'https://raw.githubusercontent.com/TIGRE9725/PELIS/main/netvideo.series.m3u', type: 'm3u' } // Soporte m3u si necesario
     ];
 
     let player;
@@ -57,18 +68,22 @@
         for(const src of SOURCES) {
             try {
                 const res = await fetch(src.url);
-                const data = await res.json();
-                data.forEach(item => {
-                    // FILTRO SOLO SERIES (detectando array de estaciones)
-                    if(item.estaciones || item.seasons || item.tipo === 'series') {
-                        const c = document.createElement('div');
-                        c.className = 'card focusable';
-                        c.tabIndex = 0;
-                        c.innerHTML = `<img src="${item.poster || item.img}">`;
-                        c.onclick = () => openDetails(item);
-                        grid.appendChild(c);
-                    }
-                });
+                const text = await res.text();
+                // Aquí deberías añadir tu parser de series M3U si lo usas, 
+                // por ahora asumo que SERIES es mayormente JSON
+                if(text.trim().startsWith('[')) {
+                    const data = JSON.parse(text);
+                    data.forEach(item => {
+                        if(item.estaciones || item.seasons || item.tipo === 'series') {
+                            const c = document.createElement('div');
+                            c.className = 'card focusable';
+                            c.tabIndex = 0;
+                            c.innerHTML = `<img src="${item.poster || item.img}">`;
+                            c.onclick = () => openDetails(item);
+                            grid.appendChild(c);
+                        }
+                    });
+                }
             } catch(e){}
         }
         setTimeout(()=>document.querySelector('.card')?.focus(), 100);
@@ -77,6 +92,7 @@
     function openDetails(item) {
         currentSeries = item;
         document.getElementById('title').innerText = item.title || item.titulo;
+        document.getElementById('desc').innerText = item.sinopsis || item.description || "";
         document.getElementById('hero').style.backgroundImage = `url('${item.poster || item.img}')`;
         
         const sel = document.getElementById('season-sel');
@@ -86,7 +102,7 @@
         seasons.forEach((s, idx) => {
             const opt = document.createElement('option');
             opt.value = idx;
-            opt.text = `Temporada ${s.numero || idx+1}`;
+            opt.text = `Temporada ${s.numero || s.season_number || idx+1}`;
             sel.appendChild(opt);
         });
         
@@ -107,8 +123,8 @@
             row.className = 'ep-row focusable';
             row.tabIndex = 0;
             const thumb = ep.img || ep.image || currentSeries.poster;
-            row.innerHTML = `<img src="${thumb}" class="ep-thumb"><div>${i+1}. ${ep.title || ep.titulo}</div>`;
-            row.onclick = () => playVideo(ep.url || ep.mpd, ep.drm);
+            row.innerHTML = `<img src="${thumb}" class="ep-thumb"><div><h3>${i+1}. ${ep.title || ep.titulo}</h3></div>`;
+            row.onclick = () => playVideo(ep.url || ep.mpd || ep.source?.url, ep.drm || ep.source?.drm);
             list.appendChild(row);
         });
     }
@@ -116,26 +132,28 @@
     async function playVideo(url, drm) {
         document.getElementById('player').style.display = 'block';
         try {
+            await player.unload();
             await player.load(url);
             if(drm?.clearKeys) player.configure({drm:{clearKeys:drm.clearKeys}});
         } catch(e){}
     }
 
     window.addEventListener('keydown', e => {
-        if(e.keyCode===8 || e.keyCode===27) { // BACK
+        if(e.keyCode===8 || e.keyCode===27 || e.keyCode===461) {
             if(document.getElementById('player').style.display==='block') {
-                player.unload(); document.getElementById('player').style.display='none';
-            } else if(document.getElementById('details').style.display==='block') {
+                player.unload(); document.getElementById('player').style.display='none'; return;
+            }
+            if(document.getElementById('details').style.display==='block') {
                 document.getElementById('details').style.display='none';
                 document.querySelector('.card').focus();
-            } else {
-                window.location.href = 'index.html';
+                return;
             }
+            window.location.href = 'index.html';
         }
-        if(e.keyCode===13) document.activeElement.click();
+        if(e.keyCode===13 || e.keyCode===23) document.activeElement.click();
         if([37,38,39,40].includes(e.keyCode)) {
             e.preventDefault();
-            const items = Array.from(document.querySelectorAll('.focusable')); // visible ones
+            const items = Array.from(document.querySelectorAll('.focusable'));
             const idx = items.indexOf(document.activeElement);
             if(e.keyCode===40) items[idx+1]?.focus();
             if(e.keyCode===38) items[idx-1]?.focus();
