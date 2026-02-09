@@ -2,843 +2,505 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Launcher de Streaming</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StreamNet - Universal Player</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
+    
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <style>
-        /* --- ESTILOS GENERALES --- */
-        :root {
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
-            --text-color: #ffffff;
-            --accent-color: #007bff;
-            --hover-color: #3d3d3d;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 {
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 1.5rem;
-        }
-
-        /* --- GRILLA RESPONSIVA --- */
-        .grid-container {
-            display: grid;
-            /* Esto hace la magia responsive: rellena columnas automáticamente */
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        /* --- TARJETAS (RECTÁNGULOS) --- */
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            text-decoration: none; /* Quitar subrayado del link */
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            aspect-ratio: 1 / 1; /* Mantiene forma cuadrada/rectangular */
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            background-color: var(--hover-color);
-            box-shadow: 0 10px 15px rgba(0,0,0,0.5);
-            border-bottom: 3px solid var(--accent-color);
-        }
-
-        /* --- ICONOS Y TEXTO --- */
-        .card-icon {
-            font-size: 3rem; /* Tamaño del icono/emoji */
-            margin-bottom: 10px;
-        }
+        /* ================= ESTILOS GENERALES ================= */
+        :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        .card-icon img {
-            width: 60px; /* Si usas imágenes en vez de emojis */
-            height: 60px;
-            object-fit: contain;
+        .focusable:focus {
+            outline: none; border: 3px solid white !important; transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999;
+            background-color: rgba(255,255,255,0.2); color: white;
         }
 
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-align: center;
+        /* HEADER */
+        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
+        
+        /* BREADCRUMB (Ruta de Navegación) */
+        .breadcrumb { font-size: 14px; color: #ccc; font-weight: bold; margin-left: 20px; display: flex; align-items: center; gap: 5px; }
+        .breadcrumb span { color: var(--primary); }
+
+        /* APP CONTAINER */
+        #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
+        
+        /* GRID VIEW (Carpetas y Contenido) */
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 20px 4%; }
+        
+        .card { 
+            aspect-ratio: 2/3; background: #222; 
+            border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
+            transition: transform 0.2s; border: 3px solid transparent; 
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* Ajuste para móviles muy pequeños */
-        @media (max-width: 400px) {
-            .grid-container {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            }
+        /* Título de respaldo */
+        .card-fallback-title {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            text-align: center; padding: 10px; font-size: 0.9rem; font-weight: bold; color: #aaa; z-index: 0; 
         }
+
+        .card img { 
+            width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 10; background: #222; 
+        }
+
+        /* Icono de Carpeta Superpuesto */
+        .folder-icon {
+            position: absolute; top: 10px; right: 10px; z-index: 20;
+            background: rgba(0,0,0,0.6); border-radius: 50%; padding: 5px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Barra de Progreso */
+        .progress-track { 
+            position: absolute; bottom: 0; left: 0; right: 0; height: 4px; 
+            background: rgba(255,255,255,0.3); z-index: 20; display: none; 
+        }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; }
+
+        /* REPRODUCTOR UI */
+        #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
+        #video { width: 100%; height: 100%; }
+        .player-ui { position: absolute; inset: 0; pointer-events: none; z-index: 6000; } 
+        /* (Estilos simplificados para el reproductor, Shaka UI hace el resto) */
+
+        /* ERROR MODAL */
+        .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 999999; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
+
+        /* LOADING */
+        #loading-msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; font-weight: bold; color: white; background: rgba(0,0,0,0.8); padding: 20px 40px; border-radius: 10px; z-index: 2000; display: none; }
+
     </style>
 </head>
 <body>
 
-    <h1>Mis Canales</h1>
+    <header id="main-header">
+        <div class="nav-left">
+            <a href="#" class="logo">STREAMNET</a>
+            <div id="breadcrumb" class="breadcrumb">Inicio</div>
+        </div>
+        </header>
 
-<div class="grid-container" id="app-grid"></div>
+    <div id="loading-msg">Cargando...</div>
+
+    <div id="app">
+        </div>
+
+    <div id="player-container">
+        <video id="video" autoplay></video>
+    </div>
+
+    <div id="error-modal" class="error-modal">
+        <h3 style="color:#ff5555; margin-top:0">Error</h3>
+        <p id="error-msg">No se pudo reproducir.</p>
+        <button class="focusable" style="padding:10px 20px; background:white; color:black; border:none; font-weight:bold;" onclick="closeError()">Cerrar</button>
+    </div>
 
 <script>
-    // --- LISTA DE CANALES ---
-    // Aquí solo pones los datos puros.
-    // tipo: 'drm' (para usar tu reproductor) o 'web' (para ir a youtube o google)
-    const canales = [
-        {
-                nombre: "Canal_Local_Gigared_Santa_Fe",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_Local_Gigared_Santa_Fe/sa_live_dash/Canal_Local_Gigared_Santa_Fe.mpd",
-                kid: "c48d578949a3d595c87232a17430e375",
-                key: "6ef34a3ae28d31ddb9e3741fe15e36f8"
-            },
-            {
-                nombre: "Canal_Local_Gigared_Resistencia",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Canal_Local_Gigared_Resistencia/sa_live_dash/Canal_Local_Gigared_Resistencia.mpd",
-                kid: "b7d80939c0ead461d0cf449148e1db45",
-                key: "a5e57ec6360536d2ebc479eab3fda3b9"
-            },
-            {
-                nombre: "Canal_Local_Gigared_Posadas",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_Local_Gigared_Posadas/sa_live_dash/Canal_Local_Gigared_Posadas.mpd",
-                kid: "ced47361cf2f266e0842894d1c925464",
-                key: "3c12297f2cb08d14f30382bcb9e247bf"
-            },
-            {
-                nombre: "AmericaTV",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/AmericaTV/sa_live_dash/AmericaTV.mpd",
-                kid: "32392e5868873c91ca77a0406b3d32d8",
-                key: "0f74f66dbeda0bb43b32445ea74d2087"
-            },
-            {
-                nombre: "Canal_9_Litoral",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_9_Litoral/sa_live_dash/Canal_9_Litoral&kid=a12379137924358ec604d854587a516d",
-                key: "14343b93fa8ecf2eabad85cc295fb46a"
-            },
-            {
-                nombre: "Telefe",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Telefe/sa_live_dash/Telefe.mpd",
-                kid: "865b35fdb4c119f3ccfd4ee392928aef",
-                key: "b43adf6d88b3befbf7f69a71dc273e46"
-            },
-            {
-                nombre: "Telefe_Santa_Fe",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Telefe_Santa_Fe/sa_live_dash/Telefe_Santa_Fe.mpd",
-                kid: "a01eedf6b870a091a049a95ba6f85b15",
-                key: "9f161558348513e5f3ed3a3a3ea2867d"
-            },
-            {
-                nombre: "TV_Publica",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/TV_Publica/sa_live_dash/TV_Publica.mpd",
-                kid: "f50f7ac8cca2bcb40bf4a895b6378cea",
-                key: "0ca9392a44d0c0ff79abc01c15df8888"
-            },
-            {
-                nombre: "Canal_9",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_9/sa_live_dash/Canal_9.mpd",
-                kid: "eaecaad505a66fab4161959099767384",
-                key: "ca66afd7ba0f3ce767b698b5e94c84e3"
-            },
-            {
-                nombre: "TN",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/TN/sa_live_dash/TN.mpd",
-                kid: "c5bb6f9ef3b632b7ba2797048b4941a0",
-                key: "53f33a7ab0729daee5dbe8ecc8ee2c08"
-            },
-            {
-                nombre: "LNmas",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/LNmas/sa_live_dash/LNmas.mpd",
-                kid: "ffbe99278cd1aea87b3506d1c06defd6",
-                key: "fa8d96b8c2d97390ab329241a4e651ae"
-            },
-            {
-                nombre: "C5N",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/C5N/sa_live_dash/C5N.mpd",
-                kid: "a4b47d87494bd17dd7acf86ebb6c3a32",
-                key: "5df76e3d86d8d88799c52eae263d08b0"
-            },
-            {
-                nombre: "CronicaTV",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/CronicaTV/sa_live_dash/CronicaTV.mpd",
-                kid: "2932730b9b35ad5ded0e4d96af122676",
-                key: "57f01dd4f21f8786352399c80d36caf8"
-            },
-            {
-                nombre: "Canal26",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal26/sa_live_dash/Canal26.mpd",
-                kid: "e9a29d60110b731c5f3a141084379a40",
-                key: "8dcb1a09a6007fe72d621a09017276ba"
-            },
-            {
-                nombre: "A24",
-                icono: "🌍",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/A24/sa_live_dash/A24.mpd",
-                kid: "c43779fa115f80c118c29665cc78e4ba",
-                key: "4303ea7157eb2e6f6ce980bb87183825"
-            },
-            {
-                nombre: "DeporTV",
-                icono: "⚽",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/DeporTV/sa_live_dash/DeporTV.mpd",
-                kid: "5f8bcea8ec9fdd5e6927e46ce856824b",
-                key: "3cf09d0c9ebeab2edfe600887e61b368"
-            },
-            {
-                nombre: "TyC_Sports",
-                icono: "⚽",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/TyC_Sports/sa_live_dash/TyC_Sports.mpd",
-                kid: "cac7b52cb14661fe3db0449020791d97",
-                key: "0c2780acce4ef9d7334ef25be445ceb4"
-            },
-            {
-                nombre: "TNT_Sports_Premium",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/TNT_Sports_Premium/sa_live_dash/TNT_Sports_Premium.mpd",
-                kid: "f26eb059fb0854f4d4218c895d7ae803",
-                key: "ffcb3fd4bd5657889215be4cb6275d1b"
-            },
-            {
-                nombre: "ESPN_Premium",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/ESPN_Premium/sa_live_dash/ESPN_Premium.mpd",
-                kid: "dca96877c202470bdad9839bea525c0a",
-                key: "d651871131d4b26f0095bcb9771b8f2f"
-            },
-            {
-                nombre: "ESPN",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/ESPN/sa_live_dash/ESPN.mpd",
-                kid: "8b55a3ba068f882f49b36d216f29506f",
-                key: "77f418bbcfc73739ebca9c52321472d3"
-            },
-            {
-                nombre: "ESPN 2",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/ESPN2/sa_live_dash/ESPN2.mpd",
-                kid: "02819f905f4e126d492693e44c688b82",
-                key: "a12adec960cd1e33ad3b8ddbf0dd22b9"
-            },
-            {
-                nombre: "ESPN 3",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/ESPN3/sa_live_dash/ESPN3.mpd",
-                kid: "ad0c72e30648501377425a62a2bf095c",
-                key: "2cfbc73f423203a9fc8a1d983ec4e8bb"
-            },
-            {
-                nombre: "ESPN 4",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/ESPN4/sa_live_dash/ESPN4.mpd",
-                kid: "ecafef3b8979c737d05ea191a02b7617",
-                key: "f46cd12052b0da221a3a178e2bde0162"
-            },
-            {
-                nombre: "Fox Sports",
-                icono: "⚽",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Fox_Sports/sa_live_dash/Fox_Sports.mpd",
-                kid: "6c0016fff15fcc3cc5d103f821189100",
-                key: "94d789ac388ccbbfbd2cf91d5b7db028"
-            },
-            {
-                nombre: "Fox Sports 2",
-                icono: "⚽",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Fox_Sports_2/sa_live_dash/Fox_Sports_2.mpd",
-                kid: "a2e448d00073c0a66e02caa20a2fe135",
-                key: "70e9e4adfb2f0b5ac127654c1a56d238"
-            },
-            {
-                nombre: "Fox Sports 3",
-                icono: "⚽",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Fox_Sports_3/sa_live_dash/Fox_Sports_3.mpd",
-                kid: "f2f0d2f5e823bf3bd1113ed83b244c57",
-                key: "addd4c11afb303beb21f95f79a935561"
-            },
-            {
-                nombre: "El Garage",
-                icono: "⚽",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/El_Garage/sa_live_dash/El_Garage.mpd",
-                kid: "c44389e1e90fb4d80e0a0d8090f8da1f",
-                key: "7bdf6460869276e70bd3eae576be2286"
-            },
-            {
-                nombre: "Discovery Turbo",
-                icono: "⚽",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Discovery_Turbo/sa_live_dash/Discovery_Turbo.mpd",
-                kid: "55b1aff18cff06f311d2f53145c0a748",
-                key: "7556d7b06fa5f94c7501c8956a764931"
-            },
-            {
-                nombre: "PakaPaka",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/PakaPaka/sa_live_dash/PakaPaka.mpd",
-                kid: "0aa7687e39e7e7e2e3d64d87a2fa1920",
-                key: "523cc84985fadae95289dd88838133c9"
-            },
-            {
-                nombre: "Disney_Channel",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Disney_Channel/sa_live_dash/Disney_Channel.mpd",
-                kid: "629f78368829802ade506b8f03e2d18b",
-                key: "6824ea53d6fd70d146b9e31a57cf3a20"
-            },
-            {
-                nombre: "Disney_Junior",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Disney_Junior/sa_live_dash/Disney_Junior.mpd",
-                kid: "0eabe9f5aee4020c50f52a2bf476ac57",
-                key: "490fc8a1a900893d20631da45412879d"
-            },
-            {
-                nombre: "Nickelodeon",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Nickelodeon/sa_live_dash/Nickelodeon.mpd",
-                kid: "611595b6387cdcfb67ce564768fd61aa",
-                key: "dd5fba9ab529822129c09c029b28651c"
-            },
-            {
-                nombre: "Discovery_Kids",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Discovery_Kids/sa_live_dash/Discovery_Kids.mpd",
-                kid: "1f92dc6055aefecb8a2abdba9ecf65cb",
-                key: "23a68bb309729298ceb3b5fcd3ff174d"
-            },
-            {
-                nombre: "Plim_Plim",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Plim_Plim/sa_live_dash/Plim_Plim.mpd",
-                kid: "44292917d1f5519af4598ccfc66b53dd",
-                key: "f90cee2e43e02176113cff8ccf09465e"
-            },
-            {
-                nombre: "Zoo_Moo",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Zoo_Moo/sa_live_dash/Zoo_Moo.mpd",
-                kid: "8fe8869466801cac2f84dcc6c3584d76",
-                key: "d6c878a3c04face66707d817ec62d628"
-            },
-            {
-                nombre: "Cine_ar",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Cine_ar/sa_live_dash/Cine_ar.mpd",
-                kid: "ff87d23b45efc58ff6a7ad0f5fdef566",
-                key: "0e84fa871d67fede2c5385b54b60b5dc"
-            },
-            {
-                nombre: "Cinecanal",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Cinecanal/sa_live_dash/Cinecanal.mpd",
-                kid: "ed9cb36b2c7ab639bb5b8627b2e980e8",
-                key: "a0d844faf1c31330165393e43e0d3bd8"
-            },
-            {
-                nombre: "TNT",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/TNT/sa_live_dash/TNT.mpd",
-                kid: "9d9e8eb8d97c4ff0dbfb02c3c417ae48",
-                key: "a426cb9e3ff4cac8b2e153ef54e69072"
-            },
-            {
-                nombre: "FX",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/FX/sa_live_dash/FX.mpd",
-                kid: "b060d6864d9b870b3a5f43c10370977c",
-                key: "7a9104e80a2bd14429ad4c877a9926b5"
-            },
-            {
-                nombre: "Star_Channel",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Star_Channel/sa_live_dash/Star_Channel.mpd",
-                kid: "ba8e3594a2280a1f0b749d66dccfab99",
-                key: "efa66c01f0e96775398994f1754be46b"
-            },
-            {
-                nombre: "Sony_Channel",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Sony_Channel/sa_live_dash/Sony_Channel.mpd",
-                kid: "a2e6c6842391fd4d9dfe3c047e286eb4",
-                key: "7d563478e5669d44cec9a6215052fec3"
-            },
-            {
-                nombre: "Universal",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Universal/sa_live_dash/Universal.mpd",
-                kid: "281ed03234dce7e50391f9c4c7c90b48",
-                key: "148c12b5c4526f3f7ab70f385cb36fac"
-            },
-            {
-                nombre: "AXN",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/AXN/sa_live_dash/AXN.mpd",
-                kid: "bac0cdbf2e5a82fb27818e30bc8b75e5",
-                key: "478bda16b7bbb4d01928270159771bd9"
-            },
-            {
-                nombre: "Studio_Universal",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Studio_Universal/sa_live_dash/Studio_Universal.mpd",
-                kid: "68987b791521decfbe5dd633a3c15dc5",
-                key: "cff99d15661b3e8393d9ac9dd9a89869"
-            },
-            {
-                nombre: "A&E",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/AyE/sa_live_dash/AyE.mpd",
-                kid: "0e45fe47af35c23962a3cc0ada9119f0",
-                key: "84f178941bbcedca8d43926b69cca9b1"
-            },
-            {
-                nombre: "USA_Network",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/USA_Network/sa_live_dash/USA_Network.mpd",
-                kid: "072f31c5b5238da0d3b54b2a79e7a7d9",
-                key: "984532822dc6ff3be1ffc56b0686d290"
-            },
-            {
-                nombre: "AMC",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/AMC/sa_live_dash/AMC.mpd",
-                kid: "d60a3128c3cbe6c2728ccca61f55a87f",
-                key: "1cc37b6959b6f9e7f70532604d1e8ed1"
-            },
-            {
-                nombre: "Golden",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Golden/sa_live_dash/Golden.mpd",
-                kid: "384a49756e9d5247537404c487edf312",
-                key: "72e31a1d402eb30584c541736267f478"
-            },
-            {
-                nombre: "Sony_Movies",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Sony_Movies/sa_live_dash/Sony_Movies.mpd",
-                kid: "4201cacd22f7a4f3bb6db354c9ac9d75",
-                key: "f43bbaf105697ac3f8ff4c69ee30967f"
-            },
-            {
-                nombre: "Eurochannel",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Eurochannel/sa_live_dash/Eurochannel.mpd",
-                kid: "ee22649f9cf24a09c8e2d7f527b61ab6",
-                key: "5f4f4cf346468adb895a5b5d5edd9a72"
-            },
-            {
-                nombre: "Golden_Plus",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Golden_Plus/sa_live_dash/Golden_Plus.mpd",
-                kid: "2127eb2cb9152cb1a21815cf423b7114",
-                key: "3a1715592b6916bb3c2e7e477c5441bd"
-            },
-            {
-                nombre: "Investigation_discovery",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Investigation_discovery/sa_live_dash/Investigation_discovery.mpd",
-                kid: "54c693fe580f7a376d3a4ffcbaff2377",
-                key: "64f7f672af645bd14c26f598e65ca686"
-            },
-            {
-                nombre: "Comedy_Central",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Comedy_Central/sa_live_dash/Comedy_Central.mpd",
-                kid: "e2ef982ad8e10b04abb16ecfe4deab17",
-                key: "c9ec0f4087a3cd993de0a0dcb0a8a86b"
-            },
-            {
-                nombre: "Golden_Edge",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Golden_Edge/sa_live_dash/Golden_Edge.mpd",
-                kid: "db61dc785664ffa25a061f2dcbaa5932",
-                key: "94f6b0deb7436265c839d6faf0112f21"
-            },
-            {
-                nombre: "Cine_Familiar",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Cine_Familiar/sa_live_dash/Cine_Familiar.mpd",
-                kid: "721b4557143c8a37ec427423785875e5",
-                key: "3b76efe869910f4d86012915422a5b89"
-            },
-            {
-                nombre: "Cine_Premium",
-                icono: "🎬",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Cine_Premium/sa_live_dash/Cine_Premium.mpd",
-                kid: "670ffd29bd6ada72170188ed785f7e2f",
-                key: "7fa7edadd763531e133bf4a1aef51ce3"
-            },
-            {
-                nombre: "Telenovelas",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Telenovelas/sa_live_dash/Telenovelas.mpd",
-                kid: "214c0efa71c1ac68be8143b18e4a5a52",
-                key: "dbd58022cf2f0f6c69e979a54346cc8b"
-            },
-            {
-                nombre: "El_Gourmet",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/El_Gourmet/sa_live_dash/El_Gourmet.mpd",
-                kid: "a9034121a55c5254270a7fc87e6b933c",
-                key: "630f14e9ca88c92a25af19834bbf01d6"
-            },
-            {
-                nombre: "E_Entertainment",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/E_Entertainment/sa_live_dash/E_Entertainment.mpd",
-                kid: "a67b85023aec0c096831b2b0373715fd",
-                key: "be97d3955e711dfa12237416a1b9ad52"
-            },
-            {
-                nombre: "Discovery_HyH",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Discovery_HyH/sa_live_dash/Discovery_HyH.mpd",
-                kid: "270233c3621c173ad74f16aa6ba367ac",
-                key: "b39c8748f7f7530b1591c3a2ee0a3703"
-            },
-            {
-                nombre: "AMC SERIES",
-                icono: "📺",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Mas_Chic/sa_live_dash/Mas_Chic.mpd",
-                kid: "f4eafc89afd50886c0fc2cc733dc62d8",
-                key: "dd9be06d69c495b23952652b0f765892"
-            },
-            {
-                nombre: "TLC",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/TLC/sa_live_dash/TLC.mpd",
-                kid: "28f91c97b02842d14c2196467d9f22ec",
-                key: "07167c215250ae056a8f5dfb9b80d3a4"
-            },
-            {
-                nombre: "Love_Nature",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Love_Nature/sa_live_dash/Love_Nature.mpd",
-                kid: "30c35033226fea72c04b3fbdd3fe67d5",
-                key: "fbf7d2dffa946cbf38ef329a5f31f795"
-            },
-            {
-                nombre: "Unife",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Unife/sa_live_dash/Unife.mpd",
-                kid: "7213abb07b0ce71bedc6ba337e168fa4",
-                key: "317bc08ed843883a9397c61b22e1b60e"
-            },
-            {
-                nombre: "Discovery_Science",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Discovery_Science/sa_live_dash/Discovery_Science.mpd",
-                kid: "26c0b72d115923133a5a9e4d4011819f",
-                key: "cf04154c74f09b1fd98115a9e04fcec6"
-            },
-            {
-                nombre: "Nat_Geo",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Nat_Geo/sa_live_dash/Nat_Geo.mpd",
-                kid: "aa5e6dae90f144937f1cf638460efe13",
-                key: "284534e78bb04505bae9b484b2dc1537"
-            },
-            {
-                nombre: "Discovery_Channel",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Discovery_Channel/sa_live_dash/Discovery_Channel.mpd",
-                kid: "142c0c050c551486e07bc210a1357da6",
-                key: "0dbbc07185e4650e1a05dbbcb888909f"
-            },
-            {
-                nombre: "Animal_Planet",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Animal_Planet/sa_live_dash/Animal_Planet.mpd",
-                kid: "5eded9e86a760b6e23d1ce1d80b85484",
-                key: "74e74a9ea3933219454c81f28ade93a8"
-            },
-            {
-                nombre: "HGTV",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/HGTV/sa_live_dash/HGTV.mpd",
-                kid: "75dab5c02f8c98acc2a461a99da99b7e",
-                key: "01fbb96e5283f6706b102c8d8ad54c5c"
-            },
-            {
-                nombre: "History_Channel",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/History_Channel/sa_live_dash/History_Channel.mpd",
-                kid: "0c14f56c92a97db5abb4b83da823f81f",
-                key: "143a64606506c57b452bd9c8327bd6ff"
-            },
-            {
-                nombre: "CanalA",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/CanalA/sa_live_dash/CanalA.mpd",
-                kid: "097578fb861438a8deecc5643082997b",
-                key: "3ac02ae9a503e76a58f1e94eebd5f43d"
-            },
-            {
-                nombre: "Film_and_Arts",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Film_and_Arts/sa_live_dash/Film_and_Arts.mpd",
-                kid: "940d79fb1961288803c64e60da991c5a",
-                key: "f55e18690327be6db3a1cf24b5be438b"
-            },
-            {
-                nombre: "Discovery_World",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Discovery_World/sa_live_dash/Discovery_World.mpd",
-                kid: "cea94fefef1ff96d4ab0e27fb846b0c3",
-                key: "634b2496b64bffc426bd4093c5945ec3"
-            },
-            {
-                nombre: "RAI",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/RAI/sa_live_dash/RAI.mpd",
-                kid: "a2e6c6842391fd4d9dfe3c047e286eb4",
-                key: "7d563478e5669d44cec9a6215052fec3"
-            },
-            {
-                nombre: "TVE",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/TVE/sa_live_dash/TVE.mpd",
-                kid: "40d5b3d7302d0d707e88ea1cb4b194b5",
-                key: "b0f99846a1680e9425e8c76aae57fb53"
-            },
-            {
-                nombre: "24H",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/24H/sa_live_dash/24H.mpd",
-                kid: "91978d09e4feadcdcb15c1d670e149d3",
-                key: "83f5a6f07b63a02157fffb9fc83e1c68"
-            },
-            {
-                nombre: "MTV",
-                icono: "🎵",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/MTV/sa_live_dash/MTV.mpd",
-                kid: "92a2837411c8be67f7ec1f79a7996750",
-                key: "1ec313bd01d3f6d306fff11e4b032a1b"
-            },
-            {
-                nombre: "CM",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/CM/sa_live_dash/CM.mpd",
-                kid: "1713f5c8e140bc32fab3893341bd6bf6",
-                key: "85dbe90fab4bca195924b7cb17bfc211"
-            },
-            {
-                nombre: "Quiero_Musica",
-                icono: "🎵",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Quiero_Musica/sa_live_dash/Quiero_Musica.mpd",
-                kid: "8be45f648b2f5a27f6c16a8dce2c92e1",
-                key: "defd91f23137624fec9fe157d6adc1dd"
-            },
-            {
-                nombre: "Telehit_Musica",
-                icono: "🎵",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Telehit_Musica/sa_live_dash/Telehit_Musica.mpd",
-                kid: "f8837e4d7fdfaba5940310e719e12b99",
-                key: "057a34cc85e38471e2a023b78ec79175"
-            },
-            {
-                nombre: "Telehit_Plus",
-                icono: "🎵",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Telehit_Plus/sa_live_dash/Telehit_Plus.mpd",
-                kid: "6dcafee5775552f97891dfdada84df85",
-                key: "089ae50f8036135e7e458292e44676b5"
-            },
-            {
-                nombre: "Canal_9_Resistencia",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/Canal_9_Resistencia/sa_live_dash/Canal_9_Resistencia.mpd",
-                kid: "b8167152c10a91c5dd0059ac5a044c05",
-                key: "0cabfa6c6fca095ca813776d4bec822e"
-            },
-            {
-                nombre: "13_Max_Digital",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/13_Max_Digital/sa_live_dash/13_Max_Digital.mpd",
-                kid: "42c456cdb80d65376b1544925edb20fa",
-                key: "ad416b60ccc666b7dd607a8786c9ed86"
-            },
-            {
-                nombre: "CNN_Espanol",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn03.gigared.com.ar/live/eds/CNN_Espanol/sa_live_dash/CNN_Espanol.mpd",
-                kid: "720688ae8c6fbbcaed67cbb36da828b6",
-                key: "1efa379726cf781346ad761e85dd7dc3"
-            },
-            {
-                nombre: "Museum_TV",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Museum_TV/sa_live_dash/Museum_TV.mpd",
-                kid: "56ec00961b8711a7e39f326c3ed8295d",
-                key: "4e8742a824e7ac6e603ffa58fe821e88"
-            },
-            {
-                nombre: "Allegro",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Allegro_HD/sa_live_dash/Allegro_HD.mpd",
-                kid: "ddf23e1623b6cee24fce26f997230001",
-                key: "eecb79cd14e8b734f03af64c54b7f25c"
-            },
-            {
-                nombre: "Canal_12_Misiones",
-                icono: "🏀",
-                tipo: "drm",
-                mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_12_Misiones/sa_live_dash/Canal_12_Misiones.mpd",
-                kid: "ed6e9faec04aa78f261171d1ace48957",
-                key: "2995fa69fa1158e82547d5d5a22b4e98"
-            }
+    // ================= CONFIGURACIÓN DE PROVEEDORES =================
+    // Nivel 1: Menú Principal
+    const MAIN_MENU = [
+        { id: 'tv_root', title: 'TV En Vivo', img: 'https://img.icons8.com/color/480/tv.png', type: 'folder' },
+        { id: 'movies_root', title: 'Películas', img: 'https://img.icons8.com/color/480/movie-projector.png', type: 'folder' },
+        { id: 'series_root', title: 'Series', img: 'https://img.icons8.com/color/480/tv-show.png', type: 'folder' }
     ];
 
-    const gridContainer = document.getElementById('app-grid');
+    // Nivel 2: Tus Enlaces (Se cargan al entrar en TV, Pelis, etc.)
+    const PROVIDERS_DATA = {
+        'tv_root': [
+            { title: 'IZZI TV', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', img: 'https://i.imgur.com/LOGO_IZZI.png' },
+            { title: 'DISH', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri&dl=1', img: 'https://i.imgur.com/LOGO_DISH.png' },
+            { title: 'STAR TV', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/s/vnmo8y2l2z25dpzkv52hl/STARTV.m3u?rlkey=d3oj0vqgldbnmuqf30qaeqqti&dl=1', img: 'https://i.imgur.com/LOGO_STARTV.png' },
+            { title: 'DIRECTV', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5&dl=1', img: 'https://i.imgur.com/LOGO_DIRECTV.png' },
+            { title: 'CLARO TV', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh&dl=1', img: 'https://i.imgur.com/LOGO_CLARO.png' },
+            { title: 'AMAZON', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/s/agoem2v71esupgmbj1gck/AMAZON.m3u?rlkey=7tzh7zpan9quxz7l019sgndnh&dl=1', img: 'https://i.imgur.com/LOGO_AMAZON.png' },
+            { title: 'SENSA (ARG)', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/s/dv2o6zl6zaekmenag4xkg/ARG.m3u?rlkey=hj1u6yyshizmco48qkrbhkyft&dl=1', img: 'https://i.imgur.com/LOGO_SENSA.png' },
+            { title: 'INTERNET (MX)', type: 'folder', source_type: 'm3u', url: 'https://dl.dropboxusercontent.com/s/q7xiqcsb8ymwo0g/MX-TPLAY.m3u?dl=1', img: 'https://i.imgur.com/LOGO_INTERNET.png' }
+        ],
+        'movies_root': [
+            { title: 'IZZI GO', type: 'folder', source_type: 'json', url: 'https://gist.githubusercontent.com/TIGRE9725/f7c1267ddd3460062c44d6c93e932c95/raw/izzigo.json', img: 'https://i.imgur.com/LOGO_IZZIGO.png' },
+            { title: 'NETVIDEO', type: 'folder', source_type: 'm3u', url: 'https://gist.githubusercontent.com/TIGRE9725/9d495adb5d3737cd9e0ece692aaf1917/raw/netvideo.pelis.m3u', img: 'https://i.imgur.com/LOGO_NETVIDEO.png' },
+            { title: 'SERVIDOR 1', type: 'folder', source_type: 'm3u', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/playlist_peliculas.m3u', img: 'https://via.placeholder.com/300?text=S1' },
+            { title: 'SERVIDOR 2', type: 'folder', source_type: 'm3u', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_server.m3u', img: 'https://via.placeholder.com/300?text=S2' },
+            { title: 'SERVIDOR 3', type: 'folder', source_type: 'm3u', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_dyndns.m3u', img: 'https://via.placeholder.com/300?text=S3' }
+        ],
+        'series_root': [
+            { title: 'IZZI GO', type: 'folder', source_type: 'json', url: 'https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1', img: 'https://i.imgur.com/LOGO_IZZIGO.png' },
+            { title: 'NETVIDEO', type: 'folder', source_type: 'm3u', url: 'https://raw.githubusercontent.com/TIGRE9725/PELIS/main/netvideo.series.m3u', img: 'https://i.imgur.com/LOGO_NETVIDEO.png' },
+            { title: 'SERVER 1', type: 'folder', source_type: 'm3u', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/playlist_series.m3u', img: 'https://via.placeholder.com/300?text=S1' },
+            { title: 'SERVER 2', type: 'folder', source_type: 'm3u', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_server_series.m3u', img: 'https://via.placeholder.com/300?text=S2' },
+            { title: 'SERVER 3', type: 'folder', source_type: 'm3u', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_dyndns_series.m3u', img: 'https://via.placeholder.com/300?text=S3' }
+        ]
+    };
 
-    canales.forEach((canal, index) => {
-        const card = document.createElement('a');
-        card.className = 'card';
+    // ================= VARIABLES GLOBALES =================
+    let navigationStack = []; // Pila de navegación
+    let currentItems = [];    // Elementos actuales en pantalla
+    let player = null;
+    let isPlaying = false;
+    const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
+
+    // ================= INICIALIZACIÓN =================
+    window.onload = () => {
+        initShaka();
+        // Cargar menú principal al inicio
+        openFolder("Inicio", MAIN_MENU);
+    };
+
+    // ================= LÓGICA DE NAVEGACIÓN =================
+    function openFolder(title, items) {
+        // Guardamos en el historial
+        navigationStack.push({ title: title, items: items });
+        renderGrid(items);
+        updateBreadcrumb();
+    }
+
+    function goBack() {
+        if (navigationStack.length > 1) {
+            navigationStack.pop(); // Sacar nivel actual
+            const prev = navigationStack[navigationStack.length - 1]; // Ver anterior
+            renderGrid(prev.items);
+            updateBreadcrumb();
+            return true; // Se manejó el 'atrás'
+        }
+        return false; // Estamos en el inicio
+    }
+
+    function renderGrid(items) {
+        currentItems = items;
+        const app = document.getElementById('app');
+        app.innerHTML = '';
         
-        // tabindex para el control remoto
-        card.setAttribute('tabindex', '0');
-        if(index === 0) card.id = "first-item";
-
-        // --- LÓGICA INTELIGENTE DE LINKS ---
-        if (canal.tipo === 'drm') {
-            // Si es DRM, construimos el link hacia NUESTRO reproductor enviando los datos
-            // Usamos encodeURIComponent para evitar errores con caracteres raros
-            card.href = `reproductor.html?mpd=${encodeURIComponent(canal.mpd)}&kid=${encodeURIComponent(canal.kid)}&key=${encodeURIComponent(canal.key)}`;
-        } else {
-            // Si es web normal, usa la url directa
-            card.href = canal.url;
+        const grid = document.createElement('div');
+        grid.className = 'grid-view';
+        
+        if(!items || items.length === 0) {
+            app.innerHTML = '<h3 style="text-align:center; color:#666; margin-top:50px;">Carpeta Vacía</h3>';
+            return;
         }
 
-        card.innerHTML = `
-            <div class="card-icon">${canal.icono}</div>
-            <div class="card-title">${canal.nombre}</div>
-        `;
-
-        // Soporte para tecla Enter del control remoto
-        card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                window.location.href = card.href;
-            }
+        items.forEach((item, index) => {
+            const isFolder = item.type === 'folder';
+            // Icono superpuesto si es carpeta
+            const iconOverlay = isFolder ? 
+                `<div class="folder-icon"><span class="material-icons-round">folder_open</span></div>` : '';
+            
+            // Barra de progreso (solo simulada o real si guardamos)
+            const card = document.createElement('div');
+            card.className = 'card focusable';
+            card.tabIndex = 0;
+            card.onclick = () => handleItemClick(item);
+            
+            // Imagen con fallback
+            const imgSrc = item.poster || item.img || DEFAULT_IMG;
+            
+            card.innerHTML = `
+                <div class="card-fallback-title">${item.title}</div>
+                <img src="${imgSrc}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
+                ${iconOverlay}
+            `;
+            grid.appendChild(card);
         });
+        
+        app.appendChild(grid);
+        
+        // Enfocar primer elemento
+        setTimeout(() => {
+            const first = document.querySelector('.card');
+            if(first) first.focus();
+        }, 100);
+    }
 
-        gridContainer.appendChild(card);
+    function updateBreadcrumb() {
+        const path = navigationStack.map(x => x.title).join(' <span class="material-icons-round" style="font-size:14px">chevron_right</span> ');
+        document.getElementById('breadcrumb').innerHTML = path;
+    }
+
+    // ================= MANEJO DE CLICS =================
+    async function handleItemClick(item) {
+        // 1. CARPETA LOCAL (Ya tiene hijos)
+        if (item.type === 'folder' && item.children) {
+            openFolder(item.title, item.children);
+            return;
+        }
+
+        // 2. ROOT MENU (TV, Pelis, Series)
+        if (PROVIDERS_DATA[item.id]) {
+            openFolder(item.title, PROVIDERS_DATA[item.id]);
+            return;
+        }
+
+        // 3. PROVEEDOR REMOTO (Descargar M3U/JSON)
+        if (item.type === 'folder' && item.url) {
+            showLoading(true);
+            const content = await fetchAndParseContent(item);
+            showLoading(false);
+            // IMPORTANTE: Si es proveedor de TV, agrupamos por Categorías
+            if(content.length > 0) {
+                 openFolder(item.title, content);
+            } else {
+                 alert("No se pudo cargar contenido de " + item.title);
+            }
+            return;
+        }
+
+        // 4. STREAM (Video)
+        if (item.type === 'stream' || item.type === 'movie' || item.type === 'series') {
+            startPlayer(item);
+        }
+    }
+
+    // ================= PARSEADOR INTELIGENTE (M3U -> CARPETAS) =================
+    async function fetchAndParseContent(provider) {
+        try {
+            const response = await fetch(provider.url);
+            const text = await response.text();
+
+            // Si es JSON
+            if (provider.source_type === 'json' || text.trim().startsWith('[')) {
+                return JSON.parse(text).map(processJsonItem);
+            }
+
+            // Si es M3U
+            const lines = text.split('\n');
+            const groups = {}; // Agrupador { 'Deportes': [..], 'Noticias': [..] }
+            const rootItems = [];
+
+            let currentItem = null;
+
+            for (let line of lines) {
+                line = line.trim();
+                if (line.startsWith('#EXTINF')) {
+                    currentItem = { type: 'stream', drm: {} };
+                    
+                    // Título
+                    const titleMatch = line.match(/,(.+)$/);
+                    currentItem.title = titleMatch ? titleMatch[1].trim() : "Canal";
+                    
+                    // Logo
+                    const logoMatch = line.match(/tvg-logo="([^"]+)"/);
+                    if(logoMatch) currentItem.poster = logoMatch[1];
+                    
+                    // Grupo
+                    const groupMatch = line.match(/group-title="([^"]+)"/);
+                    currentItem.group = groupMatch ? groupMatch[1].trim() : "General";
+
+                } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
+                    if (currentItem) {
+                        // Formato: key1,key2...
+                        // key: KID:KEY
+                        const keysRaw = line.split('=')[1];
+                        const keyPairs = keysRaw.split(',');
+                        const clearKeys = {};
+                        keyPairs.forEach(pair => {
+                            const [kid, key] = pair.split(':');
+                            if(kid && key) clearKeys[kid] = key;
+                        });
+                        currentItem.drm.clearKeys = clearKeys;
+                    }
+                } else if (line.startsWith('http')) {
+                    if (currentItem) {
+                        // Detección de Pipe | (Estilo TiviMate)
+                        if (line.includes('|')) {
+                            const parts = line.split('|');
+                            currentItem.mpd = parts[0];
+                            const params = new URLSearchParams(parts[1]);
+                            
+                            // Extraer clearkey del pipe
+                            const ck = params.get('clearkey');
+                            if(ck) {
+                                const [kid, key] = ck.split(':');
+                                if(kid && key) currentItem.drm.clearKeys = { [kid]: key };
+                            }
+                        } else {
+                            currentItem.mpd = line;
+                        }
+
+                        // AGREGAR AL GRUPO CORRESPONDIENTE
+                        if (currentItem.group) {
+                            if (!groups[currentItem.group]) groups[currentItem.group] = [];
+                            groups[currentItem.group].push(currentItem);
+                        } else {
+                            rootItems.push(currentItem);
+                        }
+                        currentItem = null;
+                    }
+                }
+            }
+
+            // Convertir grupos a estructura de carpetas
+            const finalStructure = [];
+            for (const [name, items] of Object.entries(groups)) {
+                finalStructure.push({
+                    title: name,
+                    type: 'folder',
+                    children: items,
+                    img: items[0]?.poster // Usar imagen del primer canal como portada
+                });
+            }
+
+            return [...finalStructure, ...rootItems];
+
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
+    }
+
+    function processJsonItem(item) {
+        // Adaptador para tus JSONs existentes
+        return {
+            title: item.title || item.titulo,
+            poster: item.img || item.poster,
+            type: 'stream', // Asumimos stream directo
+            mpd: item.mpd || item.url,
+            drm: item.drm || {} // Si ya viene drm en el json
+        };
+    }
+
+    // ================= REPRODUCTOR SHAKA =================
+    function initShaka() {
+        shaka.polyfill.installAll();
+        if (shaka.Player.isBrowserSupported()) {
+            const video = document.getElementById('video');
+            player = new shaka.Player(video);
+            const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
+            
+            // Configuración anti-errores
+            player.configure({
+                streaming: {
+                    bufferingGoal: 60,
+                    rebufferingGoal: 5,
+                    retryParameters: { maxAttempts: 5, baseDelay: 1000, backoffFactor: 2 }
+                }
+            });
+
+            player.addEventListener('error', (e) => {
+                if(e.detail.code === 7000) return; // Ignorar error de carga interrumpida
+                console.error(e);
+                document.getElementById('error-msg').innerText = "Error " + e.detail.code;
+                document.getElementById('error-modal').style.display = 'block';
+            });
+        }
+    }
+
+    async function startPlayer(item) {
+        if(!item.mpd) return;
+        
+        document.getElementById('player-container').style.display = 'block';
+        isPlaying = true;
+        
+        try {
+            // Configurar DRM si existe
+            if(item.drm && item.drm.clearKeys) {
+                player.configure({ drm: { clearKeys: item.drm.clearKeys } });
+            } else {
+                player.configure({ drm: {} }); // Limpiar config anterior
+            }
+
+            await player.load(item.mpd);
+            const video = document.getElementById('video');
+            video.play();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function closePlayer() {
+        const video = document.getElementById('video');
+        video.pause();
+        player.unload();
+        document.getElementById('player-container').style.display = 'none';
+        isPlaying = false;
+        // Re-enfocar último item
+        setTimeout(() => {
+            const card = document.querySelector('.card');
+            if(card) card.focus();
+        }, 100);
+    }
+
+    function closeError() {
+        document.getElementById('error-modal').style.display = 'none';
+        closePlayer();
+    }
+
+    function showLoading(show) {
+        document.getElementById('loading-msg').style.display = show ? 'block' : 'none';
+    }
+
+    // ================= CONTROL REMOTO / TECLADO =================
+    window.addEventListener('keydown', (e) => {
+        const k = e.keyCode;
+
+        // TECLA ATRÁS (BackSpace, ESC, Back Android)
+        if ([8, 27, 461, 10009, 4].includes(k)) {
+            e.preventDefault();
+            if (isPlaying) { closePlayer(); return; }
+            if (document.getElementById('error-modal').style.display === 'block') { closeError(); return; }
+            
+            // Intentar subir nivel de carpeta
+            if (goBack()) return;
+            
+            // Si no, salir de app (opcional)
+        }
+        
+        // ENTER (OK)
+        if (k === 13 || k === 23 || k === 66) {
+            const active = document.activeElement;
+            if(active && active.classList.contains('card')) active.click();
+        }
+
+        // FLECHAS (Navegación espacial simple)
+        if ([37,38,39,40].includes(k)) {
+            e.preventDefault();
+            navigateGrid(k);
+        }
     });
 
-    window.onload = () => {
-        const first = document.getElementById('first-item');
-        if(first) first.focus();
-    };
+    // Navegación básica en rejilla
+    function navigateGrid(key) {
+        const cards = Array.from(document.querySelectorAll('.card'));
+        if (cards.length === 0) return;
+        
+        const current = document.activeElement;
+        const index = cards.indexOf(current);
+        
+        if (index === -1) { cards[0].focus(); return; }
+
+        // Calculamos columnas aproximadas basándonos en posición Y
+        const currentRect = current.getBoundingClientRect();
+        // Buscar tarjeta directamente abajo/arriba
+        
+        let nextIndex = index;
+
+        // Lógica simplificada de grid (asumiendo ancho fijo o flex wrap)
+        // Mejor usar spatial navigation real, pero esto sirve de fallback
+        if (key === 39) nextIndex++; // Derecha
+        if (key === 37) nextIndex--; // Izquierda
+        
+        // Arriba/Abajo es más complejo en grids responsivos, usamos una estimación de columnas
+        const gridWidth = document.querySelector('.grid-view').offsetWidth;
+        const cardWidth = current.offsetWidth + 20; // +gap
+        const cols = Math.floor(gridWidth / cardWidth);
+
+        if (key === 40) nextIndex += cols; // Abajo
+        if (key === 38) nextIndex -= cols; // Arriba
+
+        if (nextIndex >= 0 && nextIndex < cards.length) {
+            cards[nextIndex].focus();
+        }
+    }
+
 </script>
 </body>
 </html>
