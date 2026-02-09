@@ -2,154 +2,452 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>TV en Vivo</title>
+    <title>TV Guide & Catchup</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
     <style>
-        body { margin: 0; background: #0f0f0f; color: white; font-family: sans-serif; overflow: hidden; }
-        .focusable:focus { outline: 4px solid #00A8E8; transform: scale(1.05); z-index: 100; background: #333; }
+        /* ESTILO TIVIMATE OSCURO Y COMPACTO */
+        body { margin: 0; background: #000; color: #ddd; font-family: 'Roboto', sans-serif; overflow: hidden; }
         
-        #menu { padding: 50px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .card { aspect-ratio: 16/9; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-direction: column; }
-        .card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
+        /* FOCO NATIVO (Borde azul) */
+        .focusable:focus {
+            background: #00A8E8 !important;
+            color: black !important;
+            outline: none;
+        }
+
+        /* 1. SELECCIÓN DE PROVEEDOR (Inicio) */
+        #provider-menu {
+            position: fixed; inset: 0; background: #111; z-index: 100;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px; padding: 50px; align-content: center;
+        }
+        .prov-card {
+            background: #222; border-radius: 8px; padding: 20px; text-align: center;
+            cursor: pointer; border: 2px solid transparent; transition: transform 0.2s;
+        }
+        .prov-card img { height: 60px; object-fit: contain; margin-bottom: 10px; }
+        .prov-card:focus { transform: scale(1.05); border-color: white; }
+
+        /* 2. REPRODUCTOR (Fondo) */
+        #player-container { position: fixed; inset: 0; z-index: 0; background: black; }
+        #video { width: 100%; height: 100%; }
+
+        /* 3. INTERFAZ EPG (Overlay) */
+        #ui-layer {
+            position: fixed; inset: 0; z-index: 50; display: none;
+            background: rgba(0,0,0,0.7); /* Fondo semi-transparente */
+            grid-template-columns: 350px 1fr; /* Lista Canales | Info/Catchup */
+        }
         
-        #channels { position: fixed; left: 0; top: 0; bottom: 0; width: 350px; background: rgba(0,0,0,0.95); z-index: 50; transform: translateX(-100%); transition: transform 0.2s; overflow-y: auto; }
-        #channels.open { transform: translateX(0); }
-        .ch-row { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; display: flex; gap: 10px; align-items: center; }
-        .ch-logo { width: 40px; height: 30px; object-fit: contain; background: black; }
+        /* COLUMNA IZQUIERDA: LISTA DE CANALES */
+        #channel-list {
+            background: rgba(15,15,15,0.95); 
+            border-right: 1px solid #333;
+            overflow-y: auto;
+            display: flex; flex-direction: column;
+        }
+        .ch-item {
+            display: flex; align-items: center; gap: 10px; padding: 12px 15px;
+            border-bottom: 1px solid #222; cursor: pointer; font-size: 0.9rem;
+        }
+        .ch-logo { width: 40px; height: 30px; object-fit: contain; background: #000; border-radius: 2px; }
         
-        #player { position: fixed; inset: 0; background: black; z-index: 0; display: none; }
-        video { width: 100%; height: 100%; }
+        /* COLUMNA DERECHA: INFO Y CATCHUP */
+        #info-panel {
+            padding: 40px; display: flex; flex-direction: column; justify-content: flex-end;
+            background: linear-gradient(to top, black 20%, transparent);
+        }
         
-        #loading { position: fixed; top: 20px; right: 20px; background: #00A8E8; padding: 5px; border-radius: 4px; display: none; z-index: 999; color: black; }
+        .prog-title { font-size: 2.5rem; font-weight: bold; color: white; text-shadow: 2px 2px 4px black; margin-bottom: 10px; }
+        .prog-desc { font-size: 1.1rem; color: #ccc; max-width: 800px; margin-bottom: 20px; text-shadow: 1px 1px 2px black; }
+        .prog-time { color: #00A8E8; font-weight: bold; margin-bottom: 20px; }
+
+        /* MENÚ DE GRABACIONES (CATCHUP) */
+        #catchup-menu {
+            display: none; /* Se muestra al dar "Derecha" */
+            margin-top: 20px; 
+            background: rgba(0,0,0,0.8); 
+            padding: 20px; 
+            border-radius: 8px;
+            max-height: 300px; 
+            overflow-y: auto;
+        }
+        .cu-item {
+            padding: 10px; border-bottom: 1px solid #444; cursor: pointer; display: flex; justify-content: space-between;
+        }
+        .cu-item:hover, .cu-item:focus { background: #333; }
+
+        /* LOADING */
+        #loading {
+            position: fixed; top: 20px; right: 20px; 
+            background: #00A8E8; color: black; padding: 5px 15px; 
+            border-radius: 4px; font-weight: bold; z-index: 9999; display: none;
+        }
     </style>
 </head>
 <body>
 
     <div id="loading">Cargando...</div>
 
-    <div id="menu">
+    <div id="provider-menu">
         </div>
 
-    <div id="channels"></div>
+    <div id="player-container">
+        <video id="video" autoplay></video>
+    </div>
 
-    <div id="player"><video id="video" autoplay></video></div>
+    <div id="ui-layer">
+        
+        <div id="channel-list">
+            </div>
+
+        <div id="info-panel">
+            <h1 class="prog-title" id="lbl-title">Selecciona un Canal</h1>
+            <div class="prog-time" id="lbl-time">--:--</div>
+            <p class="prog-desc" id="lbl-desc">Usa las flechas para navegar.</p>
+            
+            <div style="display:flex; gap:10px;">
+                <button id="btn-watch" class="focusable" style="padding:10px 30px; font-weight:bold; border:none; background:white; color:black; border-radius:4px;">VER AHORA</button>
+                <button id="btn-catchup" class="focusable" style="padding:10px 30px; font-weight:bold; border:none; background:#333; color:white; border-radius:4px; display:none;">GRABACIONES</button>
+            </div>
+
+            <div id="catchup-menu"></div>
+        </div>
+    </div>
 
 <script>
-    const PROVS = [
-        { title: 'IZZI TV', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', img: 'https://i.imgur.com/LOGO_IZZI.png' },
-        { title: 'DISH', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri&dl=1', img: 'https://i.imgur.com/LOGO_DISH.png' },
-        { title: 'DIRECTV', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5&dl=1', img: 'https://i.imgur.com/LOGO_DIRECTV.png' }
-        // Agrega los demás aquí...
+    // === 1. CONFIGURACIÓN DE PROVEEDORES ===
+    const PROVIDERS = [
+        { 
+            title: 'IZZI TV', 
+            url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', 
+            epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_izzi.xml',
+            img: 'https://i.imgur.com/LOGO_IZZI.png' 
+        },
+        { 
+            title: 'DISH', 
+            url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri&dl=1', 
+            epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_dish.xml',
+            img: 'https://i.imgur.com/LOGO_DISH.png' 
+        },
+        { 
+            title: 'CLARO TV', 
+            url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh&dl=1',
+            epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_claro.xml',
+            img: 'https://i.imgur.com/LOGO_CLARO.png'
+        }
+        // ... Agrega los demás aquí
     ];
 
-    let player;
-    let currentList = [];
+    let EPG_DATA = {}; // Almacena la guía cargada
+    let channels = []; // Lista de canales actual
+    let selectedChannel = null;
+    let player = null;
 
+    // === 2. INICIO ===
     window.onload = () => {
-        shaka.polyfill.installAll();
-        if(shaka.Player.isBrowserSupported()) player = new shaka.Player(document.getElementById('video'));
-        
-        const menu = document.getElementById('menu');
-        PROVS.forEach(p => {
-            const c = document.createElement('div');
-            c.className = 'card focusable';
-            c.tabIndex = 0;
-            c.innerHTML = `<img src="${p.img}"><b>${p.title}</b>`;
-            c.onclick = () => loadProvider(p.url);
-            menu.appendChild(c);
-        });
-        document.querySelector('.card').focus();
+        initShaka();
+        renderProviders();
     };
 
-    async function loadProvider(url) {
-        document.getElementById('loading').style.display = 'block';
-        try {
-            const res = await fetch(url);
-            const text = await res.text();
-            parseM3U(text);
-            document.getElementById('menu').style.display = 'none';
-            renderChannels();
-        } catch(e) { alert("Error al cargar lista"); }
-        finally { document.getElementById('loading').style.display = 'none'; }
+    function renderProviders() {
+        const menu = document.getElementById('provider-menu');
+        menu.innerHTML = '';
+        PROVIDERS.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'prov-card focusable';
+            card.tabIndex = 0;
+            card.innerHTML = `<img src="${p.img}"><h3>${p.title}</h3>`;
+            card.onclick = () => loadProvider(p);
+            menu.appendChild(card);
+        });
+        document.querySelector('.prov-card').focus();
     }
 
+    // === 3. CARGA DE DATOS (M3U + XMLTV) ===
+    async function loadProvider(provider) {
+        document.getElementById('loading').style.display = 'block';
+        
+        try {
+            // 1. Cargar M3U
+            const m3uRes = await fetch(provider.url);
+            const m3uText = await m3uRes.text();
+            channels = parseM3U(m3uText);
+
+            // 2. Cargar EPG (Si existe)
+            if (provider.epg) {
+                const epgRes = await fetch(provider.epg);
+                const epgText = await epgRes.text();
+                parseEPG(epgText);
+            }
+
+            // 3. Mostrar Interfaz
+            document.getElementById('provider-menu').style.display = 'none';
+            document.getElementById('ui-layer').style.display = 'grid';
+            renderChannels();
+
+        } catch (e) {
+            console.log("Error cargando proveedor");
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    // === 4. PARSERS (ROBUSTOS) ===
     function parseM3U(text) {
         const lines = text.split('\n');
-        currentList = [];
+        const result = [];
         let curr = null;
-        for(let line of lines) {
+
+        for (let line of lines) {
             line = line.trim();
-            if(line.startsWith('#EXTINF')) {
+            if (line.startsWith('#EXTINF')) {
                 curr = { drm: {} };
                 const parts = line.split(',');
-                curr.title = parts[parts.length-1];
+                curr.title = parts[parts.length - 1];
+                
+                // Extraer atributos importantes
                 const logo = line.match(/tvg-logo="([^"]+)"/);
-                curr.logo = logo ? logo[1] : '';
-            } else if(line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
-                if(curr) {
-                    const k = line.split('=')[1].split(':');
-                    curr.drm.clearKeys = { [k[0]]: k[1] };
+                curr.logo = logo ? logo[1] : "";
+                
+                const id = line.match(/tvg-id="([^"]+)"/);
+                curr.tvgId = id ? id[1] : null; // CLAVE PARA EPG
+                
+                const catchup = line.match(/catchup-source="([^"]+)"/);
+                curr.catchupSource = catchup ? catchup[1] : null; // CLAVE PARA DVR
+
+            } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
+                if (curr) {
+                    // Limpieza de keys
+                    const raw = line.split('=')[1];
+                    const keys = raw.split(',');
+                    const ck = {};
+                    keys.forEach(k => {
+                        const [id, key] = k.split(':');
+                        if (id && key) ck[id] = key;
+                    });
+                    curr.drm.clearKeys = ck;
                 }
-            } else if(line.startsWith('http')) {
-                if(curr) {
-                    curr.url = line.split('|')[0];
-                    currentList.push(curr);
+            } else if (line.startsWith('http')) {
+                if (curr) {
+                    curr.url = line.split('|')[0]; // URL limpia
+                    result.push(curr);
                     curr = null;
                 }
             }
         }
+        return result;
     }
 
-    function renderChannels() {
-        const list = document.getElementById('channels');
-        list.innerHTML = '';
-        list.classList.add('open');
-        currentList.forEach(ch => {
-            const row = document.createElement('div');
-            row.className = 'ch-row focusable';
-            row.tabIndex = 0;
-            row.innerHTML = `<img src="${ch.logo}" class="ch-logo"> ${ch.title}`;
-            row.onclick = () => playChannel(ch);
-            list.appendChild(row);
+    function parseEPG(xmlText) {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(xmlText, "text/xml");
+        const progs = xml.querySelectorAll('programme');
+        
+        EPG_DATA = {}; // Reset
+        
+        progs.forEach(p => {
+            const chId = p.getAttribute('channel');
+            if (!EPG_DATA[chId]) EPG_DATA[chId] = [];
+            
+            EPG_DATA[chId].push({
+                title: p.querySelector('title')?.textContent || "Sin Título",
+                desc: p.querySelector('desc')?.textContent || "",
+                start: parseDate(p.getAttribute('start')),
+                end: parseDate(p.getAttribute('stop'))
+            });
         });
-        setTimeout(()=>document.querySelector('.ch-row').focus(), 100);
+    }
+
+    function parseDate(str) {
+        if(!str) return 0;
+        // Formato XMLTV: YYYYMMDDHHMMSS
+        const y = str.substring(0,4), m = str.substring(4,6), d = str.substring(6,8);
+        const h = str.substring(8,10), min = str.substring(10,12), s = str.substring(12,14);
+        return new Date(`${y}-${m}-${d}T${h}:${min}:${s}`).getTime() / 1000;
+    }
+
+    // === 5. INTERFAZ Y LÓGICA ===
+    function renderChannels() {
+        const list = document.getElementById('channel-list');
+        list.innerHTML = '';
+        
+        channels.forEach((ch, index) => {
+            const item = document.createElement('div');
+            item.className = 'ch-item focusable';
+            item.tabIndex = 0;
+            item.innerHTML = `<img src="${ch.logo}" class="ch-logo"> <span>${ch.title}</span>`;
+            
+            // Al hacer foco, actualizar info
+            item.onfocus = () => updateInfoPanel(ch);
+            // Al hacer click, reproducir
+            item.onclick = () => playChannel(ch);
+            
+            list.appendChild(item);
+        });
+        
+        // Foco al primero
+        setTimeout(() => document.querySelector('.ch-item').focus(), 100);
+    }
+
+    function updateInfoPanel(ch) {
+        selectedChannel = ch;
+        document.getElementById('lbl-title').innerText = ch.title;
+        
+        // Buscar programa actual en EPG
+        const now = Date.now() / 1000;
+        let prog = null;
+        
+        if (ch.tvgId && EPG_DATA[ch.tvgId]) {
+            prog = EPG_DATA[ch.tvgId].find(p => p.start <= now && p.end > now);
+        }
+
+        if (prog) {
+            document.getElementById('lbl-title').innerText = prog.title; // Título del programa
+            document.getElementById('lbl-desc').innerText = prog.desc;
+            document.getElementById('lbl-time').innerText = new Date(prog.start*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + " - " + new Date(prog.end*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        } else {
+            document.getElementById('lbl-desc').innerText = "No hay información de guía disponible.";
+            document.getElementById('lbl-time').innerText = "En Vivo";
+        }
+
+        // Botón Grabaciones (Solo si tiene catchup)
+        const btnCatchup = document.getElementById('btn-catchup');
+        if (ch.catchupSource) {
+            btnCatchup.style.display = 'inline-block';
+            btnCatchup.onclick = () => showCatchupList(ch);
+        } else {
+            btnCatchup.style.display = 'none';
+        }
+        
+        // Configurar botón Ver
+        document.getElementById('btn-watch').onclick = () => playChannel(ch);
+        
+        // Ocultar menú de grabaciones si cambiamos de canal
+        document.getElementById('catchup-menu').style.display = 'none';
+    }
+
+    function showCatchupList(ch) {
+        const menu = document.getElementById('catchup-menu');
+        menu.innerHTML = '';
+        menu.style.display = 'block';
+        
+        if (!ch.tvgId || !EPG_DATA[ch.tvgId]) {
+            menu.innerHTML = '<div style="padding:10px">Guía no disponible para calcular grabaciones.</div>';
+            return;
+        }
+
+        const now = Date.now() / 1000;
+        // Filtrar programas pasados (últimos 3 días)
+        const pastProgs = EPG_DATA[ch.tvgId].filter(p => p.end < now).reverse().slice(0, 50);
+
+        pastProgs.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'cu-item focusable';
+            item.tabIndex = 0;
+            const date = new Date(p.start * 1000);
+            item.innerHTML = `
+                <div>${p.title}</div>
+                <div style="color:#00A8E8; font-size:0.8rem">${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+            `;
+            item.onclick = () => playCatchup(ch, p);
+            menu.appendChild(item);
+        });
+        
+        // Foco al primero
+        setTimeout(() => document.querySelector('.cu-item').focus(), 100);
+    }
+
+    // === 6. REPRODUCTOR ===
+    function initShaka() {
+        shaka.polyfill.installAll();
+        if (shaka.Player.isBrowserSupported()) {
+            player = new shaka.Player(document.getElementById('video'));
+            player.configure({ preferredAudioLanguage: 'es' });
+        }
     }
 
     async function playChannel(ch) {
-        document.getElementById('channels').classList.remove('open');
-        document.getElementById('player').style.display = 'block';
+        // Ocultar UI para ver video
+        document.getElementById('ui-layer').style.display = 'none';
+        
         try {
             await player.unload();
-            if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
+            
+            // Configurar DRM
+            if (ch.drm.clearKeys) {
+                player.configure({ drm: { clearKeys: ch.drm.clearKeys } });
+            } else {
+                player.configure({ drm: {} });
+            }
+            
             await player.load(ch.url);
-        } catch(e) { console.log(e); }
+            document.getElementById('video').play();
+        } catch (e) {
+            console.log("Error reproducción");
+        }
     }
 
-    window.addEventListener('keydown', e => {
-        if(e.keyCode===8 || e.keyCode===27) { // BACK
-            if(document.getElementById('player').style.display==='block') {
-                document.getElementById('channels').classList.add('open');
-                document.querySelector('.ch-row').focus();
-                return;
-            }
-            if(document.getElementById('channels').classList.contains('open')) {
-                document.getElementById('channels').classList.remove('open');
-                document.getElementById('menu').style.display='grid';
-                document.querySelector('.card').focus();
-                return;
-            }
-            window.location.href = 'index.html';
-        }
-        if(e.keyCode===13) document.activeElement.click();
-        if([38,40].includes(e.keyCode)) {
+    async function playCatchup(ch, prog) {
+        // Generar URL de catchup
+        // Reemplaza variables {start}, {duration}, {timestamp}
+        let url = ch.catchupSource;
+        const start = prog.start;
+        const duration = prog.end - prog.start;
+        const now = Math.floor(Date.now()/1000);
+
+        url = url.replace(/{utc}/g, start)
+                 .replace(/{start}/g, start)
+                 .replace(/{duration}/g, duration)
+                 .replace(/{timestamp}/g, now);
+
+        console.log("Playing Catchup:", url);
+        
+        // Usamos un objeto temporal para reproducir
+        const tempCh = { url: url, drm: ch.drm };
+        playChannel(tempCh);
+    }
+
+    // === 7. CONTROLES (TECLADO / MANDO) ===
+    window.addEventListener('keydown', (e) => {
+        const k = e.keyCode;
+        
+        // BACK (Volver a lista o salir)
+        if (k === 8 || k === 27 || k === 461 || k === 10009) {
             e.preventDefault();
-            const items = Array.from(document.querySelectorAll('.focusable')); // visibles
-            const idx = items.indexOf(document.activeElement);
-            if(e.keyCode===40) items[idx+1]?.focus();
-            if(e.keyCode===38) items[idx-1]?.focus();
+            // Si el UI está oculto (estamos viendo TV), mostrarlo
+            if (document.getElementById('ui-layer').style.display === 'none') {
+                document.getElementById('ui-layer').style.display = 'grid';
+                document.querySelector('.ch-item').focus(); // Foco a la lista
+            } else {
+                // Si estamos en el UI, volver al menú de proveedores
+                window.location.href = 'index.html';
+            }
+        }
+
+        // ENTER
+        if (k === 13 || k === 23) {
+            document.activeElement.click();
+        }
+
+        // FLECHAS (Navegación básica)
+        if ([37,38,39,40].includes(k)) {
+            // Si estamos viendo video a pantalla completa, cualquier flecha abre la UI
+            if (document.getElementById('ui-layer').style.display === 'none') {
+                document.getElementById('ui-layer').style.display = 'grid';
+                document.querySelector('.ch-item').focus();
+                return;
+            }
+
+            // Navegación normal por foco
+            // (El navegador maneja el foco por defecto si los elementos tienen tabindex, 
+            //  pero para TV a veces es mejor forzarlo. Aquí confíamos en el CSS grid/flex)
         }
     });
+
 </script>
 </body>
 </html>
