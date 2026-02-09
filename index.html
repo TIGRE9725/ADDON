@@ -13,90 +13,129 @@
     
     <style>
         /* ================= ESTILOS GENERALES ================= */
-        :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
+        :root { --primary: #E50914; --bg: #000000; --overlay: rgba(0,0,0,0.7); }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; }
         
-        /* FOCO: Z-Index alto, pero el reproductor tendrá uno MAYOR */
         .focusable:focus {
             outline: none; border: 3px solid white !important; transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 100;
-            background-color: rgba(255,255,255,0.2); color: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 100;
         }
 
         /* HEADER */
-        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 50; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
-        .nav-left { display: flex; align-items: center; gap: 20px; }
-        .logo { color: var(--primary); font-size: 24px; font-weight: 900; text-decoration: none; margin-right: 10px; text-shadow: 2px 2px 4px black; }
-        
-        .breadcrumb { font-size: 14px; color: #ccc; font-weight: bold; margin-left: 20px; display: flex; align-items: center; gap: 5px; }
+        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 50; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); display: flex; align-items: center; padding: 0 4%; }
+        .logo { color: var(--primary); font-size: 24px; font-weight: 900; margin-right: 20px; text-shadow: 2px 2px 4px black; }
+        .breadcrumb { font-size: 14px; color: #ccc; font-weight: bold; display: flex; align-items: center; gap: 5px; }
         .breadcrumb span { color: var(--primary); }
 
-        /* APP CONTAINER */
+        /* GRID VIEW */
         #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
-        
-        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 20px 4%; }
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; padding: 0 4%; }
         
         .card { 
-            aspect-ratio: 2/3; background: #222; 
-            border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
-            transition: transform 0.2s; border: 3px solid transparent; 
+            aspect-ratio: 2/3; background: #222; border-radius: 6px; position: relative; cursor: pointer; border: 3px solid transparent; overflow: hidden; transition: transform 0.2s;
             display: flex; align-items: center; justify-content: center;
         }
+        .card img { width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        .card-title { position: absolute; z-index: 0; text-align: center; color: #777; font-size: 0.9rem; padding: 5px; width: 100%; }
+        .folder-icon { position: absolute; top: 5px; right: 5px; z-index: 2; background: rgba(0,0,0,0.6); border-radius: 50%; padding: 4px; }
 
-        .card-fallback-title {
-            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            text-align: center; padding: 10px; font-size: 0.9rem; font-weight: bold; color: #aaa; z-index: 0; 
-            word-wrap: break-word;
-        }
+        /* VISTA DE DETALLES (RECUPERADA) */
+        #details-view { position: fixed; inset: 0; background: var(--bg); z-index: 200; display: none; overflow-y: auto; }
+        .details-hero { width: 100%; height: 60vh; background-size: cover; background-position: center top; mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); }
+        .details-content { position: absolute; top: 40%; left: 5%; width: 90%; z-index: 10; }
+        .details-title { font-size: 3rem; font-weight: 900; margin-bottom: 10px; text-shadow: 2px 2px 10px black; }
+        .details-desc { font-size: 1.1rem; color: #ddd; max-width: 600px; margin-bottom: 20px; text-shadow: 1px 1px 2px black; }
+        .btn-large { padding: 12px 30px; font-size: 1.2rem; font-weight: bold; background: white; color: black; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; }
+        .btn-secondary { background: rgba(100,100,100,0.6); color: white; margin-left: 15px; }
 
-        .card img { 
-            width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 10; background: #222; 
-        }
-
-        .folder-icon {
-            position: absolute; top: 10px; right: 10px; z-index: 20;
-            background: rgba(0,0,0,0.6); border-radius: 50%; padding: 5px;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        /* REPRODUCTOR UI - Z-INDEX SUPREMO (20000) PARA TAPAR TODO */
-        #player-container { position: fixed; inset: 0; background: black; z-index: 20000; display: none; }
+        /* REPRODUCTOR PERSONALIZADO (RECUPERADO) */
+        #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
         
-        /* ERROR MODAL */
-        .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 999999; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
+        .player-ui { 
+            position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 20%, transparent 80%, rgba(0,0,0,0.8));
+            pointer-events: none; opacity: 1; transition: opacity 0.3s; z-index: 6000;
+        }
+        .ui-hidden { opacity: 0; }
 
-        /* LOADING */
-        #loading-msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; font-weight: bold; color: white; background: rgba(0,0,0,0.8); padding: 20px 40px; border-radius: 10px; z-index: 2000; display: none; }
+        .p-header { padding: 30px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .p-clock { font-size: 1.5rem; font-weight: bold; text-shadow: 2px 2px 4px black; }
+        .p-title { font-size: 1.5rem; font-weight: bold; text-align: right; text-shadow: 2px 2px 4px black; }
 
+        .p-controls { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            display: flex; gap: 40px; align-items: center; pointer-events: auto; 
+        }
+        .ctrl-btn { 
+            width: 70px; height: 70px; border-radius: 50%; background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.3); color: white; 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;
+        }
+        .ctrl-btn:focus { background: var(--primary); transform: scale(1.1); border-color: white; }
+        .ctrl-btn.mini { width: 50px; height: 50px; }
+
+        /* LOADING & ERROR */
+        #loading-msg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; z-index: 2000; display: none; font-weight: bold; }
+        
     </style>
 </head>
 <body>
 
     <header id="main-header">
-        <div class="nav-left">
-            <a href="#" class="logo">STREAMNET</a>
-            <div id="breadcrumb" class="breadcrumb">Inicio</div>
-        </div>
+        <div class="logo">STREAMNET</div>
+        <div id="breadcrumb" class="breadcrumb">Inicio</div>
     </header>
 
     <div id="loading-msg">Cargando...</div>
 
-    <div id="app">
+    <div id="app"></div>
+
+    <div id="details-view">
+        <div class="details-hero" id="det-hero"></div>
+        <div class="details-content">
+            <div class="details-title" id="det-title">Título</div>
+            <div class="details-desc" id="det-desc">Descripción...</div>
+            <div>
+                <button id="btn-play-hero" class="btn-large focusable" onclick="playCurrentItem()">
+                    <span class="material-icons-round">play_arrow</span> Reproducir
+                </button>
+                <button class="btn-large btn-secondary focusable" onclick="closeDetails()">
+                    <span class="material-icons-round">arrow_back</span> Volver
+                </button>
+            </div>
         </div>
+    </div>
 
     <div id="player-container">
         <video id="video" autoplay></video>
-    </div>
+        
+        <div id="player-ui" class="player-ui">
+            <div class="p-header">
+                <button class="ctrl-btn mini focusable" onclick="closePlayer()" style="pointer-events: auto;">
+                    <span class="material-icons-round">arrow_back</span>
+                </button>
+                <div class="p-clock" id="p-clock">00:00</div>
+                <div class="p-title" id="p-title-display">Canal</div>
+            </div>
 
-    <div id="error-modal" class="error-modal">
-        <h3 style="color:#ff5555; margin-top:0">Error</h3>
-        <p id="error-msg">No se pudo reproducir.</p>
-        <button class="focusable" style="padding:10px 20px; background:white; color:black; border:none; font-weight:bold;" onclick="closeError()">Cerrar</button>
+            <div class="p-controls">
+                <button id="btn-prev" class="ctrl-btn mini focusable" style="display:none">
+                    <span class="material-icons-round">skip_previous</span>
+                </button>
+                
+                <button id="btn-play-center" class="ctrl-btn focusable" onclick="togglePlay()">
+                    <span class="material-icons-round" id="icon-play">pause</span>
+                </button>
+                
+                <button id="btn-next" class="ctrl-btn mini focusable" style="display:none">
+                    <span class="material-icons-round">skip_next</span>
+                </button>
+            </div>
+        </div>
     </div>
 
 <script>
-    // ================= CONFIGURACIÓN DE PROVEEDORES =================
+    // ================= CONFIGURACIÓN =================
     const MAIN_MENU = [
         { id: 'tv_root', title: 'TV En Vivo', img: 'https://img.icons8.com/color/480/tv.png', type: 'folder' },
         { id: 'movies_root', title: 'Películas', img: 'https://img.icons8.com/color/480/movie-projector.png', type: 'folder' },
@@ -131,19 +170,24 @@
     };
 
     let navigationStack = [];
-    let currentItems = [];
     let player = null;
     let isPlaying = false;
+    let isLiveContent = false; // Bandera para saber si es TV en Vivo
+    let selectedItem = null;   // Item seleccionado para ver detalles
+    let uiTimer = null;
     const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
 
     window.onload = () => {
         initShaka();
         openFolder("Inicio", MAIN_MENU);
+        setInterval(() => {
+            document.getElementById('p-clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        }, 1000);
     };
 
     // ================= NAVEGACIÓN =================
     function openFolder(title, items) {
-        navigationStack.push({ title: title, items: items });
+        navigationStack.push({ title, items });
         renderGrid(items);
         updateBreadcrumb();
     }
@@ -160,44 +204,37 @@
     }
 
     function renderGrid(items) {
-        currentItems = items;
         const app = document.getElementById('app');
         app.innerHTML = '';
         
         const grid = document.createElement('div');
         grid.className = 'grid-view';
-        
+
         if(!items || items.length === 0) {
             app.innerHTML = '<h3 style="text-align:center; color:#666; margin-top:50px;">Carpeta Vacía</h3>';
             return;
         }
 
-        items.forEach((item, index) => {
-            const isFolder = item.type === 'folder';
-            const iconOverlay = isFolder ? 
-                `<div class="folder-icon"><span class="material-icons-round">folder_open</span></div>` : '';
-            
+        items.forEach((item) => {
             const card = document.createElement('div');
             card.className = 'card focusable';
             card.tabIndex = 0;
             card.onclick = () => handleItemClick(item);
-            
-            const imgSrc = item.poster || item.img || ""; 
-            
+
+            const isFolder = item.type === 'folder';
+            const imgSrc = item.poster || item.img || "";
+            const iconHTML = isFolder ? '<div class="folder-icon"><span class="material-icons-round">folder_open</span></div>' : '';
+
             card.innerHTML = `
-                <div class="card-fallback-title">${item.title}</div>
+                <div class="card-title">${item.title}</div>
                 <img src="${imgSrc}" loading="lazy" onerror="this.style.display='none'">
-                ${iconOverlay}
+                ${iconHTML}
             `;
             grid.appendChild(card);
         });
-        
         app.appendChild(grid);
         
-        setTimeout(() => {
-            const first = document.querySelector('.card');
-            if(first) first.focus();
-        }, 100);
+        setTimeout(() => { const f = document.querySelector('.card'); if(f) f.focus(); }, 100);
     }
 
     function updateBreadcrumb() {
@@ -205,258 +242,299 @@
         document.getElementById('breadcrumb').innerHTML = path;
     }
 
-    // ================= MANEJO DE CLICS =================
+    // ================= MANEJO DE SELECCIÓN =================
     async function handleItemClick(item) {
-        if (item.type === 'folder' && item.children) {
-            openFolder(item.title, item.children);
+        // 1. CARPETAS
+        if (item.type === 'folder') {
+            if (item.children) {
+                openFolder(item.title, item.children);
+            } else if (item.url) {
+                document.getElementById('loading-msg').style.display = 'block';
+                const content = await fetchAndParseContent(item);
+                document.getElementById('loading-msg').style.display = 'none';
+                if(content.length > 0) openFolder(item.title, content);
+            }
             return;
         }
-        if (PROVIDERS_DATA[item.id]) {
-            openFolder(item.title, PROVIDERS_DATA[item.id]);
-            return;
-        }
-        if (item.type === 'folder' && item.url) {
-            showLoading(true);
-            const content = await fetchAndParseContent(item);
-            showLoading(false);
-            if(content.length > 0) openFolder(item.title, content);
-            else alert("Error o carpeta vacía: " + item.title);
-            return;
-        }
-        if (item.type === 'stream' || item.type === 'movie' || item.type === 'series') {
-            startPlayer(item);
+
+        // 2. CONTENIDO (TV, PELIS, SERIES)
+        selectedItem = item;
+
+        // Si es TV EN VIVO -> Reproducir directo
+        // Detectamos si viene de la rama "TV En Vivo" mirando el historial
+        const isTV = navigationStack.some(x => x.title === "TV En Vivo");
+        
+        if (isTV) {
+            startPlayer(item, true); // true = ES LIVE
+        } else {
+            // Si es Película o Serie -> Mostrar Detalles primero
+            openDetails(item);
         }
     }
 
-    // ================= PARSEADOR M3U =================
+    function openDetails(item) {
+        const view = document.getElementById('details-view');
+        document.getElementById('det-hero').style.backgroundImage = `url('${item.poster || DEFAULT_IMG}')`;
+        document.getElementById('det-title').innerText = item.title;
+        document.getElementById('det-desc').innerText = item.desc || "Sin descripción disponible.";
+        
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('main-header').style.display = 'none';
+        view.style.display = 'block';
+        
+        setTimeout(() => document.getElementById('btn-play-hero').focus(), 100);
+    }
+
+    function closeDetails() {
+        document.getElementById('details-view').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('main-header').style.display = 'flex';
+        setTimeout(() => { const f = document.querySelector('.card'); if(f) f.focus(); }, 100);
+    }
+
+    function playCurrentItem() {
+        // Reproducir desde la vista de detalles (VOD)
+        startPlayer(selectedItem, false); // false = NO ES LIVE (es VOD)
+    }
+
+    // ================= REPRODUCTOR =================
+    function initShaka() {
+        shaka.polyfill.installAll();
+        if (shaka.Player.isBrowserSupported()) {
+            const video = document.getElementById('video');
+            player = new shaka.Player(video);
+            // No cargamos UI de Shaka por defecto, usaremos la nuestra
+            player.addEventListener('error', onErrorEvent);
+        }
+    }
+
+    async function startPlayer(item, liveMode) {
+        isLiveContent = liveMode;
+        
+        // Ocultar todo lo demás
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('main-header').style.display = 'none';
+        document.getElementById('details-view').style.display = 'none';
+        document.getElementById('player-container').style.display = 'block';
+
+        // Configurar UI según modo
+        document.getElementById('p-title-display').innerText = item.title;
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        
+        if (isLiveContent) {
+            // MODO LIVE: Ocultar botones de navegar, configurar buffer bajo
+            btnPrev.style.display = 'none';
+            btnNext.style.display = 'none';
+            
+            // CONFIGURACIÓN CLAVE PARA EVITAR CIRCULO DE CARGA EN LIVE
+            player.configure({
+                streaming: {
+                    bufferingGoal: 10, // Solo 10s para live (antes 60s)
+                    rebufferingGoal: 2, // Reanudar rápido
+                    lowLatencyMode: true
+                }
+            });
+        } else {
+            // MODO VOD: Buffer alto
+            btnPrev.style.display = 'flex';
+            btnNext.style.display = 'flex'; // Aquí podrías poner lógica de episodios
+            
+            player.configure({
+                streaming: {
+                    bufferingGoal: 60,
+                    rebufferingGoal: 5,
+                    lowLatencyMode: false
+                }
+            });
+        }
+
+        // Cargar Video
+        const video = document.getElementById('video');
+        isPlaying = true;
+        resetUiTimer();
+
+        try {
+            // Check Nativo vs Shaka
+            const ext = item.mpd.split('?')[0].split('.').pop().toLowerCase();
+            const isNative = ['mp4','mkv','avi','mov'].includes(ext);
+
+            if (isNative) {
+                await player.unload();
+                video.src = item.mpd;
+            } else {
+                if(item.drm && item.drm.clearKeys) {
+                    player.configure({ drm: { clearKeys: item.drm.clearKeys } });
+                } else {
+                    player.configure({ drm: {} });
+                }
+                await player.load(item.mpd);
+            }
+            video.play();
+            document.getElementById('btn-play-center').focus();
+
+        } catch (e) {
+            console.error(e);
+            alert("Error al reproducir");
+            closePlayer();
+        }
+    }
+
+    function togglePlay() {
+        const vid = document.getElementById('video');
+        const icon = document.getElementById('icon-play');
+        
+        if (vid.paused) {
+            vid.play();
+            icon.innerText = 'pause';
+        } else {
+            // SI ES LIVE, NO PAUSAMOS REALMENTE EL BUFFER, SOLO EL VIDEO
+            // O podemos optar por no hacer nada si quieres bloquear pausa total
+            vid.pause();
+            icon.innerText = 'play_arrow';
+        }
+    }
+
+    function closePlayer() {
+        const vid = document.getElementById('video');
+        vid.pause();
+        vid.src = "";
+        player.unload();
+        document.getElementById('player-container').style.display = 'none';
+        isPlaying = false;
+        
+        // Volver a donde estábamos
+        if (document.getElementById('details-view').style.display === 'none') {
+            // Estábamos en grid (TV)
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('main-header').style.display = 'flex';
+        } else {
+            // Estábamos en detalles (Pelis)
+            document.getElementById('details-view').style.display = 'block';
+        }
+    }
+
+    function resetUiTimer() {
+        const ui = document.getElementById('player-ui');
+        ui.classList.remove('ui-hidden');
+        clearTimeout(uiTimer);
+        uiTimer = setTimeout(() => {
+            ui.classList.add('ui-hidden');
+        }, 4000);
+    }
+
+    // Mostrar UI al mover mouse/teclado
+    document.getElementById('player-container').addEventListener('mousemove', resetUiTimer);
+    document.getElementById('player-container').addEventListener('keydown', resetUiTimer);
+
+
+    // ================= PARSER M3U (IGUAL QUE ANTES) =================
     async function fetchAndParseContent(provider) {
         try {
             const response = await fetch(provider.url);
             const text = await response.text();
-
-            if (provider.source_type === 'json' || text.trim().startsWith('[')) {
-                return JSON.parse(text).map(processJsonItem);
-            }
+            if (provider.source_type === 'json' || text.trim().startsWith('[')) return JSON.parse(text).map(processJsonItem);
 
             const lines = text.split('\n');
-            const groups = {}; 
-            const rootItems = [];
+            const groups = {}; const rootItems = [];
             let currentItem = null;
 
             for (let line of lines) {
                 line = line.trim();
                 if (line.startsWith('#EXTINF')) {
                     currentItem = { type: 'stream', drm: {} };
-                    const titleMatch = line.match(/,(.+)$/);
-                    currentItem.title = titleMatch ? titleMatch[1].trim() : "Sin Nombre";
-                    const logoMatch = line.match(/tvg-logo="([^"]+)"/);
-                    if(logoMatch) currentItem.poster = logoMatch[1];
-                    const groupMatch = line.match(/group-title="([^"]+)"/);
-                    currentItem.group = groupMatch ? groupMatch[1].trim() : "General";
+                    const title = line.match(/,(.+)$/);
+                    currentItem.title = title ? title[1].trim() : "Canal";
+                    const logo = line.match(/tvg-logo="([^"]+)"/);
+                    if(logo) currentItem.poster = logo[1];
+                    const group = line.match(/group-title="([^"]+)"/);
+                    currentItem.group = group ? group[1].trim() : "General";
                 } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
                     if (currentItem) {
-                        const keysRaw = line.split('=')[1];
-                        const keyPairs = keysRaw.split(',');
+                        const keys = line.split('=')[1].split(',');
                         const clearKeys = {};
-                        keyPairs.forEach(pair => {
-                            const [kid, key] = pair.split(':');
-                            if(kid && key) clearKeys[kid] = key;
-                        });
+                        keys.forEach(k => { const [id, val] = k.split(':'); if(id&&val) clearKeys[id]=val; });
                         currentItem.drm.clearKeys = clearKeys;
                     }
                 } else if (line.startsWith('http')) {
                     if (currentItem) {
                         if (line.includes('|')) {
-                            const parts = line.split('|');
-                            currentItem.mpd = parts[0];
-                            const params = new URLSearchParams(parts[1]);
-                            const ck = params.get('clearkey');
-                            if(ck) {
-                                const [kid, key] = ck.split(':');
-                                if(kid && key) currentItem.drm.clearKeys = { [kid]: key };
-                            }
-                        } else {
-                            currentItem.mpd = line;
-                        }
-
-                        if (currentItem.group) {
-                            if (!groups[currentItem.group]) groups[currentItem.group] = [];
+                            const [url, params] = line.split('|');
+                            currentItem.mpd = url;
+                            const p = new URLSearchParams(params);
+                            const ck = p.get('clearkey');
+                            if(ck) { const [id, val] = ck.split(':'); if(id&&val) currentItem.drm.clearKeys = {[id]:val}; }
+                        } else { currentItem.mpd = line; }
+                        
+                        if(currentItem.group) {
+                            if(!groups[currentItem.group]) groups[currentItem.group] = [];
                             groups[currentItem.group].push(currentItem);
-                        } else {
-                            rootItems.push(currentItem);
-                        }
+                        } else rootItems.push(currentItem);
                         currentItem = null;
                     }
                 }
             }
-
-            const finalStructure = [];
-            for (const [name, items] of Object.entries(groups)) {
-                finalStructure.push({
-                    title: name,
-                    type: 'folder',
-                    children: items,
-                    img: items[0]?.poster 
-                });
+            const structure = [];
+            for (const [key, val] of Object.entries(groups)) {
+                structure.push({ title: key, type: 'folder', children: val, img: val[0]?.poster });
             }
-            return [...finalStructure, ...rootItems];
-
-        } catch (e) {
-            console.error(e);
-            return [];
-        }
+            return [...structure, ...rootItems];
+        } catch (e) { console.error(e); return []; }
     }
-
+    
     function processJsonItem(item) {
-        return {
-            title: item.title || item.titulo,
-            poster: item.img || item.poster,
-            type: 'stream',
-            mpd: item.mpd || item.url,
-            drm: item.drm || {} 
-        };
+        return { title: item.title||item.titulo, poster: item.img||item.poster, type: 'stream', mpd: item.mpd||item.url, drm: item.drm||{} };
     }
+    function onErrorEvent(e) { console.error("Shaka Error", e); }
 
-    // ================= REPRODUCTOR HÍBRIDO (SHAKA + NATIVO) =================
-    function initShaka() {
-        shaka.polyfill.installAll();
-        if (shaka.Player.isBrowserSupported()) {
-            const video = document.getElementById('video');
-            player = new shaka.Player(video);
-            const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
-            
-            player.configure({
-                preferredAudioLanguage: 'es',
-                preferredTextLanguage: 'es',
-                streaming: {
-                    bufferingGoal: 60,
-                    rebufferingGoal: 5,
-                    retryParameters: { maxAttempts: 5, baseDelay: 1000, backoffFactor: 2 }
-                }
-            });
-
-            player.addEventListener('error', (e) => {
-                if(e.detail.code === 7000) return;
-                console.error(e);
-                // Si Shaka falla, no mostramos error inmediatamente, dejamos que el usuario intente o salga
-                document.getElementById('error-msg').innerText = "Error " + e.detail.code;
-                document.getElementById('error-modal').style.display = 'block';
-            });
-        }
-    }
-
-    async function startPlayer(item) {
-        if(!item.mpd) return;
-
-        // ARREGLO ERROR 1: OCULTAR UI
-        document.getElementById('app').style.display = 'none';
-        document.getElementById('main-header').style.display = 'none';
-        document.getElementById('player-container').style.display = 'block';
-        
-        const video = document.getElementById('video');
-        isPlaying = true;
-
-        // ARREGLO ERROR 2: DETECTAR SI ES MP4/AVI/MKV PARA NO USAR SHAKA/DRM
-        const urlLower = item.mpd.toLowerCase().split('?')[0]; // Quitamos parámetros para ver extensión
-        const isNative = urlLower.endsWith('.mp4') || urlLower.endsWith('.mkv') || urlLower.endsWith('.avi') || urlLower.endsWith('.mov');
-
-        try {
-            if (isNative) {
-                // MODO NATIVO (Archivos directos sin DRM)
-                console.log("Modo Nativo detectado para:", item.mpd);
-                await player.unload(); // Desactivar Shaka para que no interfiera
-                video.src = item.mpd;
-                video.play();
-            } else {
-                // MODO SHAKA (Stream DRM o HLS/DASH)
-                console.log("Modo Shaka/DRM detectado");
-                if(item.drm && item.drm.clearKeys) {
-                    player.configure({ drm: { clearKeys: item.drm.clearKeys } });
-                } else {
-                    player.configure({ drm: {} }); // Limpiar DRM anterior
-                }
-                await player.load(item.mpd);
-                video.play();
-            }
-        } catch (e) {
-            console.error("Error al iniciar:", e);
-        }
-    }
-
-    function closePlayer() {
-        const video = document.getElementById('video');
-        video.pause();
-        // Detener Shaka o Native
-        player.unload(); 
-        video.src = ""; 
-        
-        document.getElementById('player-container').style.display = 'none';
-        
-        // ARREGLO ERROR 1: MOSTRAR UI AL VOLVER
-        document.getElementById('app').style.display = 'block';
-        document.getElementById('main-header').style.display = 'flex';
-        
-        isPlaying = false;
-        setTimeout(() => {
-            const card = document.querySelector('.card');
-            if(card) card.focus();
-        }, 100);
-    }
-
-    function closeError() {
-        document.getElementById('error-modal').style.display = 'none';
-        closePlayer();
-    }
-
-    function showLoading(show) {
-        document.getElementById('loading-msg').style.display = show ? 'block' : 'none';
-    }
-
-    // ================= CONTROL REMOTO =================
+    // ================= INPUTS =================
     window.addEventListener('keydown', (e) => {
         const k = e.keyCode;
-
-        // ATRÁS
+        
+        // BACK
         if ([8, 27, 461, 10009, 4].includes(k)) {
             e.preventDefault();
-            if (isPlaying) { closePlayer(); return; }
-            if (document.getElementById('error-modal').style.display === 'block') { closeError(); return; }
-            if (goBack()) return;
+            if(isPlaying) { closePlayer(); return; }
+            if(document.getElementById('details-view').style.display === 'block') { closeDetails(); return; }
+            if(goBack()) return;
         }
-        
+
         // ENTER
         if (k === 13 || k === 23 || k === 66) {
-            const active = document.activeElement;
-            if(active && active.classList.contains('card')) active.click();
+            const act = document.activeElement;
+            if(act && act.classList.contains('card')) act.click();
         }
 
         // FLECHAS
         if ([37,38,39,40].includes(k)) {
-            e.preventDefault();
-            navigateGrid(k);
+            // BLOQUEO EN VIVO: Si es live, flechas izq/der no hacen nada en el player
+            if (isPlaying && isLiveContent && (k === 37 || k === 39)) {
+                e.preventDefault();
+                return; 
+            }
+            
+            // Navegación normal
+            if (!isPlaying) {
+                e.preventDefault();
+                navigateGrid(k);
+            }
         }
     });
 
     function navigateGrid(key) {
-        const cards = Array.from(document.querySelectorAll('.card'));
-        if (cards.length === 0) return;
+        const cards = Array.from(document.querySelectorAll('.card, .btn-large'));
+        if (!cards.length) return;
+        const cur = document.activeElement;
+        const idx = cards.indexOf(cur);
+        if (idx === -1) { cards[0].focus(); return; }
         
-        const current = document.activeElement;
-        const index = cards.indexOf(current);
-        if (index === -1) { cards[0].focus(); return; }
-
-        let nextIndex = index;
-        if (key === 39) nextIndex++; 
-        if (key === 37) nextIndex--; 
+        let next = idx;
+        if(key === 39) next++;
+        if(key === 37) next--;
+        if(key === 40) next+=4; // Approx cols
+        if(key === 38) next-=4;
         
-        const gridWidth = document.querySelector('.grid-view').offsetWidth;
-        const cardWidth = current.offsetWidth + 20; 
-        const cols = Math.floor(gridWidth / cardWidth) || 1;
-
-        if (key === 40) nextIndex += cols; 
-        if (key === 38) nextIndex -= cols; 
-
-        if (nextIndex >= 0 && nextIndex < cards.length) cards[nextIndex].focus();
+        if(next >= 0 && next < cards.length) cards[next].focus();
     }
 
 </script>
