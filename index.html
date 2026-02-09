@@ -44,12 +44,14 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Título de respaldo */
+        /* Título de respaldo (Visible si no hay imagen) */
         .card-fallback-title {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
             text-align: center; padding: 10px; font-size: 0.9rem; font-weight: bold; color: #aaa; z-index: 0; 
+            word-wrap: break-word;
         }
 
+        /* Imagen (Tapa al título si existe) */
         .card img { 
             width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 10; background: #222; 
         }
@@ -61,19 +63,10 @@
             display: flex; align-items: center; justify-content: center;
         }
 
-        /* Barra de Progreso */
-        .progress-track { 
-            position: absolute; bottom: 0; left: 0; right: 0; height: 4px; 
-            background: rgba(255,255,255,0.3); z-index: 20; display: none; 
-        }
-        .progress-fill { height: 100%; background: var(--primary); width: 0%; }
-
         /* REPRODUCTOR UI */
         #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
-        .player-ui { position: absolute; inset: 0; pointer-events: none; z-index: 6000; } 
-        /* (Estilos simplificados para el reproductor, Shaka UI hace el resto) */
-
+        
         /* ERROR MODAL */
         .error-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 30px; border: 1px solid #555; z-index: 999999; display: none; text-align: center; border-radius: 8px; box-shadow: 0 0 50px black; }
 
@@ -89,7 +82,7 @@
             <a href="#" class="logo">STREAMNET</a>
             <div id="breadcrumb" class="breadcrumb">Inicio</div>
         </div>
-        </header>
+    </header>
 
     <div id="loading-msg">Cargando...</div>
 
@@ -148,8 +141,7 @@
     let currentItems = [];    // Elementos actuales en pantalla
     let player = null;
     let isPlaying = false;
-    const DEFAULT_IMG = "https://via.placeholder.com/300x450/333333/FFFFFF?text=Sin+Imagen";
-
+    
     // ================= INICIALIZACIÓN =================
     window.onload = () => {
         initShaka();
@@ -195,18 +187,23 @@
             const iconOverlay = isFolder ? 
                 `<div class="folder-icon"><span class="material-icons-round">folder_open</span></div>` : '';
             
-            // Barra de progreso (solo simulada o real si guardamos)
             const card = document.createElement('div');
             card.className = 'card focusable';
             card.tabIndex = 0;
             card.onclick = () => handleItemClick(item);
             
-            // Imagen con fallback
-            const imgSrc = item.poster || item.img || DEFAULT_IMG;
+            // Lógica de Imagen y Título de Respaldo:
+            // 1. Ponemos el título en el fondo (card-fallback-title).
+            // 2. Ponemos la imagen encima (z-index superior).
+            // 3. Si la imagen falla (onerror), la ocultamos (display='none') para que se vea el título.
+            
+            const imgSrc = item.poster || item.img || ""; // Si no hay imagen, cadena vacía
+            
+            // Truco: Si no hay URL de imagen, el img tag fallará y se ocultará solo gracias al onerror, mostrando el texto.
             
             card.innerHTML = `
                 <div class="card-fallback-title">${item.title}</div>
-                <img src="${imgSrc}" loading="lazy" onerror="this.src='${DEFAULT_IMG}'">
+                <img src="${imgSrc}" loading="lazy" onerror="this.style.display='none'">
                 ${iconOverlay}
             `;
             grid.appendChild(card);
@@ -297,8 +294,6 @@
 
                 } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
                     if (currentItem) {
-                        // Formato: key1,key2...
-                        // key: KID:KEY
                         const keysRaw = line.split('=')[1];
                         const keyPairs = keysRaw.split(',');
                         const clearKeys = {};
@@ -376,8 +371,10 @@
             player = new shaka.Player(video);
             const ui = new shaka.ui.Overlay(player, document.getElementById('player-container'), video);
             
-            // Configuración anti-errores
+            // Configuración con idioma español forzado
             player.configure({
+                preferredAudioLanguage: 'es',
+                preferredTextLanguage: 'es',
                 streaming: {
                     bufferingGoal: 60,
                     rebufferingGoal: 5,
@@ -450,8 +447,6 @@
             
             // Intentar subir nivel de carpeta
             if (goBack()) return;
-            
-            // Si no, salir de app (opcional)
         }
         
         // ENTER (OK)
@@ -477,21 +472,15 @@
         
         if (index === -1) { cards[0].focus(); return; }
 
-        // Calculamos columnas aproximadas basándonos en posición Y
-        const currentRect = current.getBoundingClientRect();
-        // Buscar tarjeta directamente abajo/arriba
-        
         let nextIndex = index;
-
-        // Lógica simplificada de grid (asumiendo ancho fijo o flex wrap)
-        // Mejor usar spatial navigation real, pero esto sirve de fallback
+        
         if (key === 39) nextIndex++; // Derecha
         if (key === 37) nextIndex--; // Izquierda
         
-        // Arriba/Abajo es más complejo en grids responsivos, usamos una estimación de columnas
+        // Estimación de columnas para Arriba/Abajo
         const gridWidth = document.querySelector('.grid-view').offsetWidth;
         const cardWidth = current.offsetWidth + 20; // +gap
-        const cols = Math.floor(gridWidth / cardWidth);
+        const cols = Math.floor(gridWidth / cardWidth) || 1;
 
         if (key === 40) nextIndex += cols; // Abajo
         if (key === 38) nextIndex -= cols; // Arriba
