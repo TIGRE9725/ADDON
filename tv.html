@@ -2,21 +2,21 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>TV Live</title>
+    <title>TV en Vivo</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        .focusable:focus { outline: 3px solid #00A8E8; z-index: 100; background: #333; transform: scale(1.02); }
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
+        .focusable:focus { outline: 4px solid #00A8E8; transform: scale(1.05); z-index: 100; background: #333; }
         
         /* MENU PROVEEDORES */
-        #menu { padding: 60px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
-        .card { aspect-ratio: 16/9; background: #1a1a1a; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-direction: column; border: 2px solid transparent; transition: transform 0.2s; }
+        #menu { padding: 50px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .card { aspect-ratio: 16/9; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-direction: column; border: 2px solid transparent; }
         .card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
         
         /* UI PRINCIPAL (Lista + Player) */
-        #ui-layer { position: fixed; inset: 0; display: none; grid-template-columns: 320px 1fr; z-index: 50; }
+        #ui-layer { position: fixed; inset: 0; display: none; grid-template-columns: 350px 1fr; z-index: 50; }
         
         /* CANALES (Izquierda) */
         .ch-list { background: rgba(10,10,10,0.95); overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; }
@@ -25,7 +25,7 @@
         .ch-logo { width: 40px; height: 30px; object-fit: contain; background: #000; border-radius: 2px; }
         
         /* INFO BAR (Abajo) */
-        .info-bar { position: absolute; bottom: 0; left: 320px; right: 0; height: 160px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 20px 40px; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+        .info-bar { position: absolute; bottom: 0; left: 350px; right: 0; height: 160px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 20px 40px; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
         .prog-title { font-size: 2rem; font-weight: bold; text-shadow: 2px 2px 4px black; margin-bottom: 5px; }
         .prog-meta { color: #00A8E8; font-weight: bold; font-size: 1rem; margin-bottom: 10px; text-shadow: 1px 1px 2px black; }
         .controls { display: flex; gap: 15px; pointer-events: auto; }
@@ -65,7 +65,7 @@
         </div>
         
         <div id="catchup-menu">
-            <div class="cu-head">ÚLTIMAS 24 HORAS</div>
+            <div class="cu-head">GRABACIONES DISPONIBLES</div>
             <div id="catchup-list"></div>
         </div>
     </div>
@@ -191,18 +191,20 @@
         document.getElementById('info-bar').style.display = 'flex';
         document.getElementById('lbl-title').innerText = ch.title;
         
-        // EPG Info
-        let now = Date.now()/1000;
-        let info = "Sin información de guía";
+        let prog = null;
         if(ch.tvgid && EPG[ch.tvgid]) {
-            const prog = EPG[ch.tvgid].find(p => p.start <= now && p.end > now);
-            if(prog) info = prog.title;
+            const now = Date.now()/1000;
+            prog = EPG[ch.tvgid].find(p => p.start <= now && p.end > now);
         }
-        document.getElementById('lbl-meta').innerText = info;
+        
+        if(prog) {
+            document.getElementById('lbl-meta').innerText = `${new Date(prog.start*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} - ${prog.title}`;
+        } else {
+            document.getElementById('lbl-meta').innerText = "En Vivo";
+        }
 
-        // Catchup Button
         const btnCatch = document.getElementById('btn-catchup');
-        if(ch.catchup) {
+        if(ch.catchup && ch.tvgid && EPG[ch.tvgid]) {
             btnCatch.style.display = 'flex';
         } else {
             btnCatch.style.display = 'none';
@@ -210,6 +212,60 @@
         }
     }
 
+    function showCatchupList(ch) {
+        const menu = document.getElementById('catchup-menu');
+        document.getElementById('catchup-list').innerHTML = '';
+        menu.classList.add('open');
+        const now = Date.now()/1000;
+        
+        // Mostrar programas pasados (hasta 7 días atrás)
+        const past = EPG[ch.tvgid].filter(p => p.end < now && p.start > (now - 604800)).reverse();
+        
+        if(past.length === 0) {
+             document.getElementById('catchup-list').innerHTML = '<div class="cu-item">No hay grabaciones recientes.</div>';
+             return;
+        }
+
+        past.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'cu-item focusable';
+            item.tabIndex = 0;
+            const d = new Date(p.start*1000);
+            item.innerHTML = `<small style="color:#00A8E8">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</small><br>${p.title}`;
+            item.onclick = () => playCatchup(ch, p);
+            document.getElementById('catchup-list').appendChild(item);
+        });
+        setTimeout(()=>menu.querySelector('.cu-item')?.focus(), 100);
+    }
+
+    // === LÓGICA DE REPRODUCCIÓN DE CATCHUP CORREGIDA ===
+    async function playCatchup(ch, prog) {
+        const start = prog.start;
+        const end = prog.end;
+        const dur = end - start;
+        const now = Math.floor(Date.now()/1000);
+        
+        // Reemplazo de variables incluyendo {end} y {utcend}
+        let url = ch.catchup
+            .replace(/{utc}|{start}/g, start)
+            .replace(/{end}|{utcend}/g, end) // <--- CORRECCIÓN CLAVE
+            .replace(/{duration}/g, dur)
+            .replace(/{timestamp}/g, now);
+            
+        console.log("Playing Catchup:", url);
+        
+        // Jugar como VOD (Ocultar UI)
+        document.getElementById('ui-layer').style.display = 'none';
+        document.getElementById('player-container').style.display = 'block';
+        try {
+            await player.unload();
+            if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
+            await player.load(url);
+            document.getElementById('video').play();
+        } catch(e){}
+    }
+
+    // === FUNCIONES PLAYER BÁSICAS ===
     function initShaka() {
         shaka.polyfill.installAll();
         if(shaka.Player.isBrowserSupported()) {
@@ -220,7 +276,6 @@
 
     async function playChannel(ch) {
         document.getElementById('catchup-menu').classList.remove('open');
-        document.getElementById('player-container').style.display = 'block';
         try {
             await player.unload();
             if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
@@ -246,67 +301,8 @@
             menu.classList.remove('open');
             document.getElementById('btn-catchup').focus();
         } else {
-            renderCatchupList();
-            menu.classList.add('open');
+            showCatchupList(activeChannel);
         }
-    }
-
-    function renderCatchupList() {
-        const list = document.getElementById('catchup-list');
-        list.innerHTML = '';
-        if(!activeChannel || !activeChannel.catchup) return;
-
-        // Generar lista ficticia si no hay EPG, o real si hay
-        const now = Math.floor(Date.now()/1000);
-        let items = [];
-        
-        if(activeChannel.tvgid && EPG[activeChannel.tvgid]) {
-            items = EPG[activeChannel.tvgid].filter(p => p.end < now).reverse().slice(0, 20);
-        } else {
-            // Generador fallback (cada hora)
-            for(let i=1; i<=12; i++) {
-                items.push({ 
-                    title: `Grabación hace ${i} hora(s)`, 
-                    start: now - (i*3600), 
-                    end: now - ((i-1)*3600) 
-                });
-            }
-        }
-
-        items.forEach(p => {
-            const item = document.createElement('div');
-            item.className = 'cu-item focusable';
-            item.tabIndex = 0;
-            const d = new Date(p.start*1000);
-            item.innerHTML = `<small style="color:#00A8E8">${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}</small> ${p.title}`;
-            item.onclick = () => playCatchup(activeChannel, p);
-            list.appendChild(item);
-        });
-        setTimeout(()=>list.querySelector('.cu-item')?.focus(), 100);
-    }
-
-    async function playCatchup(ch, p) {
-        const start = p.start;
-        const dur = p.end - p.start;
-        const now = Math.floor(Date.now()/1000);
-        
-        // Reemplazar variables
-        let url = ch.catchup
-            .replace(/{utc}|{start}/g, start)
-            .replace(/{duration}/g, dur)
-            .replace(/{timestamp}/g, now);
-            
-        console.log("Playing Catchup:", url);
-        
-        // Play como VOD
-        document.getElementById('ui-layer').style.display = 'none';
-        document.getElementById('player-container').style.display = 'block';
-        try {
-            await player.unload();
-            if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
-            await player.load(url);
-            document.getElementById('video').play();
-        } catch(e){}
     }
 
     // CONTROLES
@@ -316,13 +312,13 @@
             const ui = document.getElementById('ui-layer');
             const catchup = document.getElementById('catchup-menu');
             
-            // 1. Si Catchup abierto -> Cerrar
+            // 1. Cerrar Catchup si está abierto
             if(catchup.classList.contains('open')) { toggleCatchup(); return; }
             
             // 2. Si Player full -> Abrir Lista (UI)
             if(ui.style.display === 'none') { toggleFullScreen(); return; }
             
-            // 3. Si en Lista -> Salir al Hub
+            // 3. Salir al Hub
             window.location.href = 'index.html';
         }
         
@@ -341,12 +337,10 @@
                 if(e.keyCode===40 && idx < items.length-1) items[idx+1].focus(); // Abajo
                 if(e.keyCode===38 && idx > 0) items[idx-1].focus(); // Arriba
                 
-                // Navegación Lateral Específica
+                // Navegación Lateral
                 if(e.keyCode===39) {
                     if(document.getElementById('channel-list').contains(document.activeElement)) {
                         document.getElementById('btn-fs').focus();
-                    } else if(document.getElementById('catchup-menu').classList.contains('open') === false) {
-                        // Si estamos en botones y hay catchup, ir a catchup?
                     }
                 }
                 if(e.keyCode===37) {
