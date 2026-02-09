@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>StreamNet VOD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        /* ESTILOS VOD (NETFLIX STYLE) */
+        body { margin: 0; background: #141414; color: white; font-family: sans-serif; overflow: hidden; }
+        .focusable:focus { outline: 4px solid white; transform: scale(1.05); z-index: 100; background: #333; }
+        
+        /* HEADER */
+        header { position: fixed; top: 0; width: 100%; height: 70px; background: linear-gradient(to bottom, black, transparent); display: flex; align-items: center; padding: 0 40px; z-index: 50; }
+        .logo { font-weight: 900; font-size: 28px; color: #E50914; }
+        
+        /* GRID */
+        #app { padding: 90px 40px; height: 100vh; overflow-y: auto; box-sizing: border-box; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+        .card { aspect-ratio: 2/3; background: #222; border-radius: 6px; cursor: pointer; position: relative; }
+        .card img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+        
+        /* DETALLES */
+        #details { position: fixed; inset: 0; background: #141414; z-index: 60; display: none; overflow-y: auto; }
+        .hero { width: 100%; height: 60vh; background-size: cover; mask-image: linear-gradient(to bottom, black 50%, transparent); }
+        .info { position: absolute; top: 30%; left: 5%; width: 50%; }
+        .title { font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; }
+        .desc { font-size: 1.1rem; color: #ccc; margin-bottom: 30px; }
+        .btn { padding: 12px 30px; font-size: 1.2rem; font-weight: bold; background: white; color: black; border: none; cursor: pointer; margin-right: 15px; }
+        
+        /* SERIES */
+        #episodes { margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; display: none; }
+        .ep-row { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; }
+        .ep-row:focus { background: #333; }
+        
+        /* PLAYER */
+        #video-container { position: fixed; inset: 0; background: black; z-index: 1000; display: none; }
+        #video { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+
+    <header><div class="logo">PELÍCULAS Y SERIES</div></header>
+
+    <div id="app"><div class="grid" id="grid"></div></div>
+
+    <div id="details">
+        <div class="hero" id="hero"></div>
+        <div class="info">
+            <div class="title" id="title"></div>
+            <div class="desc" id="desc"></div>
+            <button class="btn focusable" id="btn-play">REPRODUCIR</button>
+            <div id="episodes">
+                <select id="season-sel" class="focusable" style="margin-bottom:15px; padding:10px;"></select>
+                <div id="ep-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="video-container">
+        <video id="video" autoplay controls></video> </div>
+
+<script>
+    const SOURCES = [
+        { title: 'IZZI GO', url: 'https://gist.githubusercontent.com/TIGRE9725/f7c1267ddd3460062c44d6c93e932c95/raw/izzigo.json' },
+        // ... AGREGA AQUÍ TUS OTRAS URLS DE PELIS/SERIES ...
+    ];
+
+    let player;
+    let currentItem;
+
+    window.onload = async () => {
+        shaka.polyfill.installAll();
+        if(shaka.Player.isBrowserSupported()) {
+            player = new shaka.Player(document.getElementById('video'));
+        }
+        
+        // Cargar todo el contenido junto (Mezcla Pelis y Series)
+        const grid = document.getElementById('grid');
+        for(const src of SOURCES) {
+            try {
+                const res = await fetch(src.url);
+                const data = await res.json();
+                data.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card focusable';
+                    card.tabIndex = 0;
+                    card.innerHTML = `<img src="${item.poster || item.img}">`;
+                    card.onclick = () => openDetails(item);
+                    grid.appendChild(card);
+                });
+            } catch(e) {}
+        }
+        setTimeout(()=>document.querySelector('.card')?.focus(), 100);
+    };
+
+    function openDetails(item) {
+        currentItem = item;
+        document.getElementById('title').innerText = item.title || item.titulo;
+        document.getElementById('desc').innerText = item.description || item.sinopsis || "";
+        document.getElementById('hero').style.backgroundImage = `url('${item.poster || item.img}')`;
+        document.getElementById('details').style.display = 'block';
+        document.getElementById('app').style.display = 'none';
+
+        const epBox = document.getElementById('episodes');
+        const btnPlay = document.getElementById('btn-play');
+
+        // DETECTAR SERIE
+        if (item.estaciones || item.seasons || item.tipo === 'series') {
+            epBox.style.display = 'block';
+            btnPlay.style.display = 'none'; // Ocultar play general
+            renderSeasons(item);
+        } else {
+            epBox.style.display = 'none';
+            btnPlay.style.display = 'inline-block';
+            btnPlay.onclick = () => playVideo(item.mpd || item.url || item.source?.url, item.drm || item.source?.drm);
+            setTimeout(()=>btnPlay.focus(), 100);
+        }
+    }
+
+    function renderSeasons(item) {
+        const seasons = item.estaciones || item.seasons;
+        const sel = document.getElementById('season-sel');
+        sel.innerHTML = '';
+        seasons.forEach((s, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.text = `Temporada ${s.numero || s.season_number || idx+1}`;
+            sel.appendChild(opt);
+        });
+        sel.onchange = () => renderEpisodes(seasons, sel.value);
+        renderEpisodes(seasons, 0);
+        setTimeout(()=>sel.focus(), 100);
+    }
+
+    function renderEpisodes(seasons, idx) {
+        const list = document.getElementById('ep-list');
+        list.innerHTML = '';
+        const eps = seasons[idx].episodios || seasons[idx].episodes;
+        eps.forEach((ep, i) => {
+            const div = document.createElement('div');
+            div.className = 'ep-row focusable';
+            div.tabIndex = 0;
+            div.innerText = `${i+1}. ${ep.title || ep.titulo}`;
+            div.onclick = () => playVideo(ep.url || ep.mpd || ep.source?.url, ep.drm || ep.source?.drm);
+            list.appendChild(div);
+        });
+    }
+
+    async function playVideo(url, drm) {
+        if(!url) return;
+        document.getElementById('video-container').style.display = 'block';
+        try {
+            await player.unload();
+            if(drm?.clearKeys) player.configure({ drm: { clearKeys: drm.clearKeys } });
+            else player.configure({drm:{}});
+            await player.load(url);
+            document.getElementById('video').play();
+        } catch(e) { console.log(e); }
+    }
+
+    // CONTROLES
+    window.addEventListener('keydown', (e) => {
+        const k = e.keyCode;
+        if([8, 27, 461, 10009].includes(k)) { // BACK
+            e.preventDefault();
+            if(document.getElementById('video-container').style.display === 'block') {
+                player.unload();
+                document.getElementById('video-container').style.display = 'none';
+                return;
+            }
+            if(document.getElementById('details').style.display === 'block') {
+                document.getElementById('details').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                document.querySelector('.card').focus();
+                return;
+            }
+            // VOLVER AL HUB
+            window.location.href = "index.html";
+        }
+        
+        // NAV BÁSICA (Simplificada)
+        if(k === 13 || k === 23) document.activeElement.click();
+        
+        if([37,38,39,40].includes(k)) {
+            e.preventDefault();
+            const items = Array.from(document.querySelectorAll('.focusable'));
+            // Lógica de navegación...
+             // ... (Usa la misma lógica de navegación simple del index anterior)
+             const current = document.activeElement;
+             const idx = items.indexOf(current);
+             if(idx === -1 && items.length) items[0].focus();
+             else if(idx >= 0) {
+                 if(k===39 && idx < items.length-1) items[idx+1].focus();
+                 if(k===37 && idx > 0) items[idx-1].focus();
+                 // Para arriba/abajo en grid, sumar columnas
+             }
+        }
+    });
+</script>
+</body>
+</html>
