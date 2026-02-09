@@ -2,452 +2,363 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>TV Guide & Catchup</title>
+    <title>TV Live</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    
     <style>
-        /* ESTILO TIVIMATE OSCURO Y COMPACTO */
-        body { margin: 0; background: #000; color: #ddd; font-family: 'Roboto', sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        .focusable:focus { outline: 3px solid #00A8E8; z-index: 100; background: #333; transform: scale(1.02); }
         
-        /* FOCO NATIVO (Borde azul) */
-        .focusable:focus {
-            background: #00A8E8 !important;
-            color: black !important;
-            outline: none;
-        }
-
-        /* 1. SELECCIÓN DE PROVEEDOR (Inicio) */
-        #provider-menu {
-            position: fixed; inset: 0; background: #111; z-index: 100;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px; padding: 50px; align-content: center;
-        }
-        .prov-card {
-            background: #222; border-radius: 8px; padding: 20px; text-align: center;
-            cursor: pointer; border: 2px solid transparent; transition: transform 0.2s;
-        }
-        .prov-card img { height: 60px; object-fit: contain; margin-bottom: 10px; }
-        .prov-card:focus { transform: scale(1.05); border-color: white; }
-
-        /* 2. REPRODUCTOR (Fondo) */
-        #player-container { position: fixed; inset: 0; z-index: 0; background: black; }
-        #video { width: 100%; height: 100%; }
-
-        /* 3. INTERFAZ EPG (Overlay) */
-        #ui-layer {
-            position: fixed; inset: 0; z-index: 50; display: none;
-            background: rgba(0,0,0,0.7); /* Fondo semi-transparente */
-            grid-template-columns: 350px 1fr; /* Lista Canales | Info/Catchup */
-        }
+        /* MENU PROVEEDORES */
+        #menu { padding: 60px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; }
+        .card { aspect-ratio: 16/9; background: #1a1a1a; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-direction: column; border: 2px solid transparent; transition: transform 0.2s; }
+        .card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
         
-        /* COLUMNA IZQUIERDA: LISTA DE CANALES */
-        #channel-list {
-            background: rgba(15,15,15,0.95); 
-            border-right: 1px solid #333;
-            overflow-y: auto;
-            display: flex; flex-direction: column;
-        }
-        .ch-item {
-            display: flex; align-items: center; gap: 10px; padding: 12px 15px;
-            border-bottom: 1px solid #222; cursor: pointer; font-size: 0.9rem;
-        }
+        /* UI PRINCIPAL (Lista + Player) */
+        #ui-layer { position: fixed; inset: 0; display: none; grid-template-columns: 320px 1fr; z-index: 50; }
+        
+        /* CANALES (Izquierda) */
+        .ch-list { background: rgba(10,10,10,0.95); overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; }
+        .ch-item { padding: 12px 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; color: #ccc; }
+        .ch-item:focus { background: #00A8E8; color: black; font-weight: bold; }
         .ch-logo { width: 40px; height: 30px; object-fit: contain; background: #000; border-radius: 2px; }
         
-        /* COLUMNA DERECHA: INFO Y CATCHUP */
-        #info-panel {
-            padding: 40px; display: flex; flex-direction: column; justify-content: flex-end;
-            background: linear-gradient(to top, black 20%, transparent);
-        }
+        /* INFO BAR (Abajo) */
+        .info-bar { position: absolute; bottom: 0; left: 320px; right: 0; height: 160px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 20px 40px; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+        .prog-title { font-size: 2rem; font-weight: bold; text-shadow: 2px 2px 4px black; margin-bottom: 5px; }
+        .prog-meta { color: #00A8E8; font-weight: bold; font-size: 1rem; margin-bottom: 10px; text-shadow: 1px 1px 2px black; }
+        .controls { display: flex; gap: 15px; pointer-events: auto; }
+        .btn-action { padding: 8px 25px; border: none; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.2); color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(5px); }
+        .btn-action:focus { background: white; color: black; }
+
+        /* CATCHUP MENU (Flotante derecha) */
+        #catchup-menu { position: absolute; right: 0; top: 0; bottom: 0; width: 300px; background: #111; border-left: 1px solid #333; z-index: 60; transform: translateX(100%); transition: transform 0.2s; overflow-y: auto; }
+        #catchup-menu.open { transform: translateX(0); }
+        .cu-head { padding: 20px; background: #00A8E8; color: black; font-weight: bold; }
+        .cu-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; }
+        .cu-item:focus { background: #333; color: white; border-left: 4px solid #00A8E8; }
+
+        /* PLAYER */
+        #player-container { position: fixed; inset: 0; background: black; z-index: 0; display: none; }
+        #video { width: 100%; height: 100%; }
         
-        .prog-title { font-size: 2.5rem; font-weight: bold; color: white; text-shadow: 2px 2px 4px black; margin-bottom: 10px; }
-        .prog-desc { font-size: 1.1rem; color: #ccc; max-width: 800px; margin-bottom: 20px; text-shadow: 1px 1px 2px black; }
-        .prog-time { color: #00A8E8; font-weight: bold; margin-bottom: 20px; }
-
-        /* MENÚ DE GRABACIONES (CATCHUP) */
-        #catchup-menu {
-            display: none; /* Se muestra al dar "Derecha" */
-            margin-top: 20px; 
-            background: rgba(0,0,0,0.8); 
-            padding: 20px; 
-            border-radius: 8px;
-            max-height: 300px; 
-            overflow-y: auto;
-        }
-        .cu-item {
-            padding: 10px; border-bottom: 1px solid #444; cursor: pointer; display: flex; justify-content: space-between;
-        }
-        .cu-item:hover, .cu-item:focus { background: #333; }
-
-        /* LOADING */
-        #loading {
-            position: fixed; top: 20px; right: 20px; 
-            background: #00A8E8; color: black; padding: 5px 15px; 
-            border-radius: 4px; font-weight: bold; z-index: 9999; display: none;
-        }
+        #loading { position: fixed; top: 20px; right: 20px; background: #00A8E8; padding: 5px 15px; border-radius: 4px; display: none; z-index: 9999; color: black; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="loading">Cargando...</div>
 
-    <div id="provider-menu">
-        </div>
-
-    <div id="player-container">
-        <video id="video" autoplay></video>
-    </div>
+    <div id="menu"></div>
 
     <div id="ui-layer">
+        <div class="ch-list" id="channel-list"></div>
         
-        <div id="channel-list">
+        <div class="info-bar" id="info-bar" style="display:none">
+            <div class="prog-title" id="lbl-title">Canal</div>
+            <div class="prog-meta" id="lbl-meta">En Vivo</div>
+            <div class="controls">
+                <button id="btn-fs" class="btn-action focusable" onclick="toggleFullScreen()"><span class="material-icons-round">fullscreen</span> Pantalla</button>
+                <button id="btn-catchup" class="btn-action focusable" onclick="toggleCatchup()" style="display:none"><span class="material-icons-round">history</span> Grabaciones</button>
             </div>
-
-        <div id="info-panel">
-            <h1 class="prog-title" id="lbl-title">Selecciona un Canal</h1>
-            <div class="prog-time" id="lbl-time">--:--</div>
-            <p class="prog-desc" id="lbl-desc">Usa las flechas para navegar.</p>
-            
-            <div style="display:flex; gap:10px;">
-                <button id="btn-watch" class="focusable" style="padding:10px 30px; font-weight:bold; border:none; background:white; color:black; border-radius:4px;">VER AHORA</button>
-                <button id="btn-catchup" class="focusable" style="padding:10px 30px; font-weight:bold; border:none; background:#333; color:white; border-radius:4px; display:none;">GRABACIONES</button>
-            </div>
-
-            <div id="catchup-menu"></div>
+        </div>
+        
+        <div id="catchup-menu">
+            <div class="cu-head">ÚLTIMAS 24 HORAS</div>
+            <div id="catchup-list"></div>
         </div>
     </div>
 
+    <div id="player-container"><video id="video" autoplay></video></div>
+
 <script>
-    // === 1. CONFIGURACIÓN DE PROVEEDORES ===
-    const PROVIDERS = [
-        { 
-            title: 'IZZI TV', 
-            url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', 
-            epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_izzi.xml',
-            img: 'https://i.imgur.com/LOGO_IZZI.png' 
-        },
-        { 
-            title: 'DISH', 
-            url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri&dl=1', 
-            epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_dish.xml',
-            img: 'https://i.imgur.com/LOGO_DISH.png' 
-        },
-        { 
-            title: 'CLARO TV', 
-            url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh&dl=1',
-            epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_claro.xml',
-            img: 'https://i.imgur.com/LOGO_CLARO.png'
-        }
-        // ... Agrega los demás aquí
+    const PROVS = [
+        { title: 'IZZI TV', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', img: 'https://i.imgur.com/LOGO_IZZI.png', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_izzi.xml' },
+        { title: 'DISH', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri&dl=1', img: 'https://i.imgur.com/LOGO_DISH.png' },
+        { title: 'STAR TV', url: 'https://dl.dropboxusercontent.com/s/vnmo8y2l2z25dpzkv52hl/STARTV.m3u?rlkey=d3oj0vqgldbnmuqf30qaeqqti&dl=1', img: 'https://i.imgur.com/LOGO_STARTV.png' },
+        { title: 'DIRECTV', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5&dl=1', img: 'https://i.imgur.com/LOGO_DIRECTV.png' },
+        { title: 'CLARO TV', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh&dl=1', img: 'https://i.imgur.com/LOGO_CLARO.png' },
+        { title: 'AMAZON', url: 'https://dl.dropboxusercontent.com/s/agoem2v71esupgmbj1gck/AMAZON.m3u?rlkey=7tzh7zpan9quxz7l019sgndnh&dl=1', img: 'https://i.imgur.com/LOGO_AMAZON.png' },
+        { title: 'SENSA', url: 'https://dl.dropboxusercontent.com/s/dv2o6zl6zaekmenag4xkg/ARG.m3u?rlkey=hj1u6yyshizmco48qkrbhkyft&dl=1', img: 'https://i.imgur.com/LOGO_SENSA.png' },
+        { title: 'INTERNET', url: 'https://dl.dropboxusercontent.com/s/q7xiqcsb8ymwo0g/MX-TPLAY.m3u?dl=1', img: 'https://i.imgur.com/LOGO_INTERNET.png' }
     ];
 
-    let EPG_DATA = {}; // Almacena la guía cargada
-    let channels = []; // Lista de canales actual
-    let selectedChannel = null;
-    let player = null;
+    let player;
+    let currentList = [];
+    let EPG = {};
+    let activeChannel = null;
 
-    // === 2. INICIO ===
     window.onload = () => {
         initShaka();
-        renderProviders();
+        const menu = document.getElementById('menu');
+        PROVS.forEach(p => {
+            const c = document.createElement('div');
+            c.className = 'card focusable';
+            c.tabIndex = 0;
+            c.innerHTML = `<img src="${p.img}"><b>${p.title}</b>`;
+            c.onclick = () => loadProvider(p);
+            menu.appendChild(c);
+        });
+        setTimeout(()=>document.querySelector('.card')?.focus(), 100);
     };
 
-    function renderProviders() {
-        const menu = document.getElementById('provider-menu');
-        menu.innerHTML = '';
-        PROVIDERS.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'prov-card focusable';
-            card.tabIndex = 0;
-            card.innerHTML = `<img src="${p.img}"><h3>${p.title}</h3>`;
-            card.onclick = () => loadProvider(p);
-            menu.appendChild(card);
-        });
-        document.querySelector('.prov-card').focus();
-    }
-
-    // === 3. CARGA DE DATOS (M3U + XMLTV) ===
-    async function loadProvider(provider) {
+    async function loadProvider(p) {
         document.getElementById('loading').style.display = 'block';
-        
         try {
-            // 1. Cargar M3U
-            const m3uRes = await fetch(provider.url);
-            const m3uText = await m3uRes.text();
-            channels = parseM3U(m3uText);
-
-            // 2. Cargar EPG (Si existe)
-            if (provider.epg) {
-                const epgRes = await fetch(provider.epg);
-                const epgText = await epgRes.text();
-                parseEPG(epgText);
-            }
-
-            // 3. Mostrar Interfaz
-            document.getElementById('provider-menu').style.display = 'none';
+            const resM3u = await fetch(p.url).then(r=>r.text());
+            if(p.epg) fetch(p.epg).then(r=>r.text()).then(parseEPG).catch(e=>console.log("EPG Fail"));
+            
+            parseM3U(resM3u);
+            document.getElementById('menu').style.display = 'none';
             document.getElementById('ui-layer').style.display = 'grid';
             renderChannels();
-
-        } catch (e) {
-            console.log("Error cargando proveedor");
-        } finally {
-            document.getElementById('loading').style.display = 'none';
-        }
+        } catch(e) { console.log(e); }
+        finally { document.getElementById('loading').style.display = 'none'; }
     }
 
-    // === 4. PARSERS (ROBUSTOS) ===
     function parseM3U(text) {
         const lines = text.split('\n');
-        const result = [];
+        currentList = [];
         let curr = null;
-
-        for (let line of lines) {
+        for(let line of lines) {
             line = line.trim();
-            if (line.startsWith('#EXTINF')) {
+            if(line.startsWith('#EXTINF')) {
                 curr = { drm: {} };
                 const parts = line.split(',');
-                curr.title = parts[parts.length - 1];
-                
-                // Extraer atributos importantes
+                curr.title = parts[parts.length-1].trim();
                 const logo = line.match(/tvg-logo="([^"]+)"/);
-                curr.logo = logo ? logo[1] : "";
-                
+                curr.logo = logo ? logo[1] : '';
                 const id = line.match(/tvg-id="([^"]+)"/);
-                curr.tvgId = id ? id[1] : null; // CLAVE PARA EPG
-                
+                curr.tvgid = id ? id[1] : null;
                 const catchup = line.match(/catchup-source="([^"]+)"/);
-                curr.catchupSource = catchup ? catchup[1] : null; // CLAVE PARA DVR
-
-            } else if (line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
-                if (curr) {
-                    // Limpieza de keys
-                    const raw = line.split('=')[1];
-                    const keys = raw.split(',');
+                curr.catchup = catchup ? catchup[1] : null;
+            } else if(line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
+                if(curr) {
+                    const k = line.split('=')[1].split(',');
                     const ck = {};
-                    keys.forEach(k => {
-                        const [id, key] = k.split(':');
-                        if (id && key) ck[id] = key;
-                    });
+                    k.forEach(p => { const s=p.split(':'); if(s[0]&&s[1]) ck[s[0]]=s[1]; });
                     curr.drm.clearKeys = ck;
                 }
-            } else if (line.startsWith('http')) {
-                if (curr) {
-                    curr.url = line.split('|')[0]; // URL limpia
-                    result.push(curr);
+            } else if(line.startsWith('http')) {
+                if(curr) {
+                    curr.url = line.split('|')[0];
+                    currentList.push(curr);
                     curr = null;
                 }
             }
         }
-        return result;
     }
 
-    function parseEPG(xmlText) {
+    function parseEPG(xml) {
         const parser = new DOMParser();
-        const xml = parser.parseFromString(xmlText, "text/xml");
-        const progs = xml.querySelectorAll('programme');
-        
-        EPG_DATA = {}; // Reset
-        
-        progs.forEach(p => {
-            const chId = p.getAttribute('channel');
-            if (!EPG_DATA[chId]) EPG_DATA[chId] = [];
-            
-            EPG_DATA[chId].push({
-                title: p.querySelector('title')?.textContent || "Sin Título",
-                desc: p.querySelector('desc')?.textContent || "",
+        const doc = parser.parseFromString(xml, "text/xml");
+        EPG = {};
+        doc.querySelectorAll('programme').forEach(p => {
+            const ch = p.getAttribute('channel');
+            if(!EPG[ch]) EPG[ch] = [];
+            EPG[ch].push({
+                title: p.querySelector('title')?.textContent || "Sin título",
                 start: parseDate(p.getAttribute('start')),
                 end: parseDate(p.getAttribute('stop'))
             });
         });
     }
 
-    function parseDate(str) {
-        if(!str) return 0;
-        // Formato XMLTV: YYYYMMDDHHMMSS
-        const y = str.substring(0,4), m = str.substring(4,6), d = str.substring(6,8);
-        const h = str.substring(8,10), min = str.substring(10,12), s = str.substring(12,14);
-        return new Date(`${y}-${m}-${d}T${h}:${min}:${s}`).getTime() / 1000;
+    function parseDate(s) {
+        if(!s) return 0;
+        const y=s.substr(0,4), m=s.substr(4,2), d=s.substr(6,2), h=s.substr(8,2), min=s.substr(10,2), sec=s.substr(12,2);
+        return new Date(`${y}-${m}-${d}T${h}:${min}:${sec}`).getTime()/1000;
     }
 
-    // === 5. INTERFAZ Y LÓGICA ===
     function renderChannels() {
         const list = document.getElementById('channel-list');
         list.innerHTML = '';
-        
-        channels.forEach((ch, index) => {
-            const item = document.createElement('div');
-            item.className = 'ch-item focusable';
-            item.tabIndex = 0;
-            item.innerHTML = `<img src="${ch.logo}" class="ch-logo"> <span>${ch.title}</span>`;
-            
-            // Al hacer foco, actualizar info
-            item.onfocus = () => updateInfoPanel(ch);
-            // Al hacer click, reproducir
-            item.onclick = () => playChannel(ch);
-            
-            list.appendChild(item);
+        currentList.forEach(ch => {
+            const row = document.createElement('div');
+            row.className = 'ch-item focusable';
+            row.tabIndex = 0;
+            row.innerHTML = `<img src="${ch.logo}" class="ch-logo"> ${ch.title}`;
+            row.onclick = () => playChannel(ch);
+            row.onfocus = () => updateInfo(ch);
+            list.appendChild(row);
         });
-        
-        // Foco al primero
-        setTimeout(() => document.querySelector('.ch-item').focus(), 100);
+        setTimeout(()=>document.querySelector('.ch-item').focus(), 100);
     }
 
-    function updateInfoPanel(ch) {
-        selectedChannel = ch;
+    function updateInfo(ch) {
+        activeChannel = ch;
+        document.getElementById('info-bar').style.display = 'flex';
         document.getElementById('lbl-title').innerText = ch.title;
         
-        // Buscar programa actual en EPG
-        const now = Date.now() / 1000;
-        let prog = null;
-        
-        if (ch.tvgId && EPG_DATA[ch.tvgId]) {
-            prog = EPG_DATA[ch.tvgId].find(p => p.start <= now && p.end > now);
+        // EPG Info
+        let now = Date.now()/1000;
+        let info = "Sin información de guía";
+        if(ch.tvgid && EPG[ch.tvgid]) {
+            const prog = EPG[ch.tvgid].find(p => p.start <= now && p.end > now);
+            if(prog) info = prog.title;
         }
+        document.getElementById('lbl-meta').innerText = info;
 
-        if (prog) {
-            document.getElementById('lbl-title').innerText = prog.title; // Título del programa
-            document.getElementById('lbl-desc').innerText = prog.desc;
-            document.getElementById('lbl-time').innerText = new Date(prog.start*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + " - " + new Date(prog.end*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        // Catchup Button
+        const btnCatch = document.getElementById('btn-catchup');
+        if(ch.catchup) {
+            btnCatch.style.display = 'flex';
         } else {
-            document.getElementById('lbl-desc').innerText = "No hay información de guía disponible.";
-            document.getElementById('lbl-time').innerText = "En Vivo";
+            btnCatch.style.display = 'none';
+            document.getElementById('catchup-menu').classList.remove('open');
         }
-
-        // Botón Grabaciones (Solo si tiene catchup)
-        const btnCatchup = document.getElementById('btn-catchup');
-        if (ch.catchupSource) {
-            btnCatchup.style.display = 'inline-block';
-            btnCatchup.onclick = () => showCatchupList(ch);
-        } else {
-            btnCatchup.style.display = 'none';
-        }
-        
-        // Configurar botón Ver
-        document.getElementById('btn-watch').onclick = () => playChannel(ch);
-        
-        // Ocultar menú de grabaciones si cambiamos de canal
-        document.getElementById('catchup-menu').style.display = 'none';
     }
 
-    function showCatchupList(ch) {
-        const menu = document.getElementById('catchup-menu');
-        menu.innerHTML = '';
-        menu.style.display = 'block';
-        
-        if (!ch.tvgId || !EPG_DATA[ch.tvgId]) {
-            menu.innerHTML = '<div style="padding:10px">Guía no disponible para calcular grabaciones.</div>';
-            return;
-        }
-
-        const now = Date.now() / 1000;
-        // Filtrar programas pasados (últimos 3 días)
-        const pastProgs = EPG_DATA[ch.tvgId].filter(p => p.end < now).reverse().slice(0, 50);
-
-        pastProgs.forEach(p => {
-            const item = document.createElement('div');
-            item.className = 'cu-item focusable';
-            item.tabIndex = 0;
-            const date = new Date(p.start * 1000);
-            item.innerHTML = `
-                <div>${p.title}</div>
-                <div style="color:#00A8E8; font-size:0.8rem">${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-            `;
-            item.onclick = () => playCatchup(ch, p);
-            menu.appendChild(item);
-        });
-        
-        // Foco al primero
-        setTimeout(() => document.querySelector('.cu-item').focus(), 100);
-    }
-
-    // === 6. REPRODUCTOR ===
     function initShaka() {
         shaka.polyfill.installAll();
-        if (shaka.Player.isBrowserSupported()) {
+        if(shaka.Player.isBrowserSupported()) {
             player = new shaka.Player(document.getElementById('video'));
             player.configure({ preferredAudioLanguage: 'es' });
         }
     }
 
     async function playChannel(ch) {
-        // Ocultar UI para ver video
-        document.getElementById('ui-layer').style.display = 'none';
-        
+        document.getElementById('catchup-menu').classList.remove('open');
+        document.getElementById('player-container').style.display = 'block';
         try {
             await player.unload();
-            
-            // Configurar DRM
-            if (ch.drm.clearKeys) {
-                player.configure({ drm: { clearKeys: ch.drm.clearKeys } });
-            } else {
-                player.configure({ drm: {} });
-            }
-            
+            if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
+            else player.configure({drm:{}});
             await player.load(ch.url);
             document.getElementById('video').play();
-        } catch (e) {
-            console.log("Error reproducción");
+        } catch(e){}
+    }
+
+    function toggleFullScreen() {
+        const ui = document.getElementById('ui-layer');
+        if(ui.style.display === 'none') {
+            ui.style.display = 'grid';
+            document.querySelector('.ch-item').focus();
+        } else {
+            ui.style.display = 'none';
         }
     }
 
-    async function playCatchup(ch, prog) {
-        // Generar URL de catchup
-        // Reemplaza variables {start}, {duration}, {timestamp}
-        let url = ch.catchupSource;
-        const start = prog.start;
-        const duration = prog.end - prog.start;
+    function toggleCatchup() {
+        const menu = document.getElementById('catchup-menu');
+        if(menu.classList.contains('open')) {
+            menu.classList.remove('open');
+            document.getElementById('btn-catchup').focus();
+        } else {
+            renderCatchupList();
+            menu.classList.add('open');
+        }
+    }
+
+    function renderCatchupList() {
+        const list = document.getElementById('catchup-list');
+        list.innerHTML = '';
+        if(!activeChannel || !activeChannel.catchup) return;
+
+        // Generar lista ficticia si no hay EPG, o real si hay
         const now = Math.floor(Date.now()/1000);
+        let items = [];
+        
+        if(activeChannel.tvgid && EPG[activeChannel.tvgid]) {
+            items = EPG[activeChannel.tvgid].filter(p => p.end < now).reverse().slice(0, 20);
+        } else {
+            // Generador fallback (cada hora)
+            for(let i=1; i<=12; i++) {
+                items.push({ 
+                    title: `Grabación hace ${i} hora(s)`, 
+                    start: now - (i*3600), 
+                    end: now - ((i-1)*3600) 
+                });
+            }
+        }
 
-        url = url.replace(/{utc}/g, start)
-                 .replace(/{start}/g, start)
-                 .replace(/{duration}/g, duration)
-                 .replace(/{timestamp}/g, now);
+        items.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'cu-item focusable';
+            item.tabIndex = 0;
+            const d = new Date(p.start*1000);
+            item.innerHTML = `<small style="color:#00A8E8">${d.getHours()}:${d.getMinutes().toString().padStart(2,'0')}</small> ${p.title}`;
+            item.onclick = () => playCatchup(activeChannel, p);
+            list.appendChild(item);
+        });
+        setTimeout(()=>list.querySelector('.cu-item')?.focus(), 100);
+    }
 
+    async function playCatchup(ch, p) {
+        const start = p.start;
+        const dur = p.end - p.start;
+        const now = Math.floor(Date.now()/1000);
+        
+        // Reemplazar variables
+        let url = ch.catchup
+            .replace(/{utc}|{start}/g, start)
+            .replace(/{duration}/g, dur)
+            .replace(/{timestamp}/g, now);
+            
         console.log("Playing Catchup:", url);
         
-        // Usamos un objeto temporal para reproducir
-        const tempCh = { url: url, drm: ch.drm };
-        playChannel(tempCh);
+        // Play como VOD
+        document.getElementById('ui-layer').style.display = 'none';
+        document.getElementById('player-container').style.display = 'block';
+        try {
+            await player.unload();
+            if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
+            await player.load(url);
+            document.getElementById('video').play();
+        } catch(e){}
     }
 
-    // === 7. CONTROLES (TECLADO / MANDO) ===
-    window.addEventListener('keydown', (e) => {
-        const k = e.keyCode;
-        
-        // BACK (Volver a lista o salir)
-        if (k === 8 || k === 27 || k === 461 || k === 10009) {
+    // CONTROLES
+    window.addEventListener('keydown', e => {
+        if(e.keyCode===8 || e.keyCode===27 || e.keyCode===461 || e.keyCode===10009) {
             e.preventDefault();
-            // Si el UI está oculto (estamos viendo TV), mostrarlo
-            if (document.getElementById('ui-layer').style.display === 'none') {
-                document.getElementById('ui-layer').style.display = 'grid';
-                document.querySelector('.ch-item').focus(); // Foco a la lista
-            } else {
-                // Si estamos en el UI, volver al menú de proveedores
-                window.location.href = 'index.html';
-            }
+            const ui = document.getElementById('ui-layer');
+            const catchup = document.getElementById('catchup-menu');
+            
+            // 1. Si Catchup abierto -> Cerrar
+            if(catchup.classList.contains('open')) { toggleCatchup(); return; }
+            
+            // 2. Si Player full -> Abrir Lista (UI)
+            if(ui.style.display === 'none') { toggleFullScreen(); return; }
+            
+            // 3. Si en Lista -> Salir al Hub
+            window.location.href = 'index.html';
         }
-
-        // ENTER
-        if (k === 13 || k === 23) {
-            document.activeElement.click();
-        }
-
-        // FLECHAS (Navegación básica)
-        if ([37,38,39,40].includes(k)) {
-            // Si estamos viendo video a pantalla completa, cualquier flecha abre la UI
-            if (document.getElementById('ui-layer').style.display === 'none') {
-                document.getElementById('ui-layer').style.display = 'grid';
-                document.querySelector('.ch-item').focus();
-                return;
+        
+        if(e.keyCode===13 || e.keyCode===23) document.activeElement.click();
+        
+        if([37,38,39,40].includes(e.keyCode)) {
+            e.preventDefault();
+            // Si estamos en Fullscreen, cualquier flecha abre la UI
+            if(document.getElementById('ui-layer').style.display === 'none') {
+                toggleFullScreen(); return;
             }
-
-            // Navegación normal por foco
-            // (El navegador maneja el foco por defecto si los elementos tienen tabindex, 
-            //  pero para TV a veces es mejor forzarlo. Aquí confíamos en el CSS grid/flex)
+            
+            const items = Array.from(document.querySelectorAll('.focusable:not([style*="display:none"])'));
+            const idx = items.indexOf(document.activeElement);
+            if(idx > -1) {
+                if(e.keyCode===40 && idx < items.length-1) items[idx+1].focus(); // Abajo
+                if(e.keyCode===38 && idx > 0) items[idx-1].focus(); // Arriba
+                
+                // Navegación Lateral Específica
+                if(e.keyCode===39) {
+                    if(document.getElementById('channel-list').contains(document.activeElement)) {
+                        document.getElementById('btn-fs').focus();
+                    } else if(document.getElementById('catchup-menu').classList.contains('open') === false) {
+                        // Si estamos en botones y hay catchup, ir a catchup?
+                    }
+                }
+                if(e.keyCode===37) {
+                    if(document.getElementById('info-bar').contains(document.activeElement)) {
+                        document.querySelector('.ch-item').focus();
+                    } else if(document.getElementById('catchup-menu').contains(document.activeElement)) {
+                        document.getElementById('btn-catchup').focus();
+                    }
+                }
+            }
         }
     });
-
 </script>
 </body>
 </html>
