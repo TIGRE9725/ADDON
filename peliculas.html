@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Películas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        /* ESTILOS NETFLIX */
+        body { margin: 0; background: #141414; color: white; font-family: sans-serif; overflow: hidden; }
+        .focusable:focus { outline: 4px solid white; transform: scale(1.05); z-index: 100; }
+        
+        #app { padding: 40px; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+        .card { aspect-ratio: 2/3; background: #222; border-radius: 6px; cursor: pointer; }
+        .card img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+        
+        #details { position: fixed; inset: 0; background: #141414; z-index: 50; display: none; }
+        .hero { width: 100%; height: 60vh; background-size: cover; mask-image: linear-gradient(to bottom, black 50%, transparent); }
+        .info { position: absolute; top: 30%; left: 5%; width: 50%; }
+        .title { font-size: 3rem; font-weight: 900; }
+        .btn { padding: 10px 30px; font-size: 1.2rem; background: white; color: black; border: none; margin-right: 10px; cursor: pointer; }
+        
+        #player { position: fixed; inset: 0; background: black; z-index: 100; display: none; }
+        video { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="app"><div class="grid" id="grid"></div></div>
+
+    <div id="details">
+        <div class="hero" id="hero"></div>
+        <div class="info">
+            <h1 class="title" id="title"></h1>
+            <p id="desc"></p>
+            <button class="btn focusable" id="btn-play">REPRODUCIR</button>
+            <button class="btn focusable" onclick="closeDetails()" style="background:#333; color:white">CERRAR</button>
+        </div>
+    </div>
+
+    <div id="player"><video id="video" autoplay controls></video></div>
+
+<script>
+    // TUS LISTAS DE PELICULAS AQUÍ
+    const SOURCES = [
+        { url: 'https://gist.githubusercontent.com/TIGRE9725/f7c1267ddd3460062c44d6c93e932c95/raw/izzigo.json' },
+        { url: 'https://gist.githubusercontent.com/TIGRE9725/9d495adb5d3737cd9e0ece692aaf1917/raw/netvideo.pelis.m3u', isM3u: true }
+    ];
+
+    let player;
+    let currentItem;
+
+    window.onload = async () => {
+        shaka.polyfill.installAll();
+        if(shaka.Player.isBrowserSupported()) player = new shaka.Player(document.getElementById('video'));
+        
+        const grid = document.getElementById('grid');
+        for(const src of SOURCES) {
+            try {
+                const res = await fetch(src.url);
+                const text = await res.text();
+                let items = [];
+                if(text.trim().startsWith('[')) items = JSON.parse(text);
+                // Si es M3U puedes agregar tu parser aquí, por ahora asumo JSON limpio
+                
+                items.forEach(item => {
+                    if(item.tipo === 'movies' || !item.estaciones) { // FILTRO SOLO PELIS
+                        const c = document.createElement('div');
+                        c.className = 'card focusable';
+                        c.tabIndex = 0;
+                        c.innerHTML = `<img src="${item.poster || item.img}">`;
+                        c.onclick = () => openDetails(item);
+                        grid.appendChild(c);
+                    }
+                });
+            } catch(e){}
+        }
+        setTimeout(()=>document.querySelector('.card')?.focus(), 100);
+    };
+
+    function openDetails(item) {
+        currentItem = item;
+        document.getElementById('title').innerText = item.title || item.titulo;
+        document.getElementById('desc').innerText = item.description || item.sinopsis || "";
+        document.getElementById('hero').style.backgroundImage = `url('${item.poster || item.img}')`;
+        document.getElementById('details').style.display = 'block';
+        document.getElementById('btn-play').onclick = () => playVideo(item);
+        setTimeout(()=>document.getElementById('btn-play').focus(), 100);
+    }
+
+    async function playVideo(item) {
+        document.getElementById('player').style.display = 'block';
+        try {
+            await player.load(item.mpd || item.url || item.source?.url);
+            // Configurar DRM si existe
+            if(item.drm?.clearKeys) player.configure({drm:{clearKeys:item.drm.clearKeys}});
+        } catch(e){}
+    }
+
+    function closeDetails() { document.getElementById('details').style.display = 'none'; }
+    
+    window.addEventListener('keydown', e => {
+        if(e.keyCode===8 || e.keyCode===27) { // BACK
+            if(document.getElementById('player').style.display==='block') {
+                player.unload(); document.getElementById('player').style.display='none';
+            } else if(document.getElementById('details').style.display==='block') {
+                closeDetails();
+            } else {
+                window.location.href = 'index.html'; // VOLVER AL HUB
+            }
+        }
+        if(e.keyCode===13) document.activeElement.click();
+        // Flechas básicas
+        if([37,38,39,40].includes(e.keyCode)) {
+            e.preventDefault();
+            const items = Array.from(document.querySelectorAll('.focusable'));
+            const idx = items.indexOf(document.activeElement);
+            if(e.keyCode===39) items[idx+1]?.focus();
+            if(e.keyCode===37) items[idx-1]?.focus();
+            if(e.keyCode===40) items[idx+5]?.focus(); // Grid approx
+            if(e.keyCode===38) items[idx-5]?.focus();
+        }
+    });
+</script>
+</body>
+</html>
