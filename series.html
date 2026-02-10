@@ -14,23 +14,28 @@
         
         #app { padding: 80px 40px; height: 100vh; box-sizing: border-box; overflow-y: auto; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
-        .card { aspect-ratio: 2/3; background: #222; border-radius: 6px; cursor: pointer; }
-        .card img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+        .card { aspect-ratio: 2/3; background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; }
+        .card img { width: 100%; height: 100%; object-fit: cover; }
+        .card-title { position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.8); text-align: center; padding: 5px; font-size: 0.9rem; }
         
-        #details { position: fixed; inset: 0; background: #141414; z-index: 60; display: none; overflow-y: auto; }
+        #details { position: fixed; inset: 0; background: #141414; z-index: 50; display: none; overflow-y: auto; }
         .hero { width: 100%; height: 50vh; background-size: cover; mask-image: linear-gradient(to bottom, black, transparent); }
         .content { padding: 20px 40px; }
         .title { font-size: 3rem; font-weight: 900; margin-top: -50px; text-shadow: 2px 2px 10px black; }
         
         .season-sel { padding: 10px; font-size: 1.2rem; margin-bottom: 20px; background: #222; color: white; border: 1px solid #555; }
         .ep-row { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; display: flex; align-items: center; gap: 20px; }
-        .ep-thumb { width: 140px; height: 80px; background: black; object-fit: cover; border-radius: 4px; }
+        .ep-thumb { width: 140px; height: 70px; background: black; object-fit: cover; border-radius: 4px; }
         
         #player { position: fixed; inset: 0; background: black; z-index: 100; display: none; }
         video { width: 100%; height: 100%; }
+        
+        #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #E50914; padding: 10px; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
+
+    <div id="loading">Cargando Series...</div>
 
     <div id="header">
         <span class="material-icons-round" style="font-size:30px; margin-right:10px; cursor:pointer;" onclick="location.href='index.html'">arrow_back</span>
@@ -44,6 +49,8 @@
         <div class="content">
             <h1 id="title"></h1>
             <p id="desc" style="color:#ccc; margin-bottom:20px;"></p>
+            <button class="focusable" onclick="closeDetails()" style="padding:10px 20px; margin-bottom:20px; background:#333; color:white; border:none;">VOLVER</button>
+            <br>
             <select id="season-sel" class="season-sel focusable"></select>
             <div id="ep-list"></div>
         </div>
@@ -53,61 +60,140 @@
 
 <script>
     const SOURCES = [
-        { url: 'https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1' },
-        { url: 'https://raw.githubusercontent.com/TIGRE9725/PELIS/main/netvideo.series.m3u', type: 'm3u' } // Soporte m3u si necesario
+        { url: 'https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1', type: 'json' },
+        { url: 'https://raw.githubusercontent.com/TIGRE9725/PELIS/main/netvideo.series.m3u', type: 'm3u' },
+        { url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/playlist_series.m3u', type: 'm3u' },
+        { url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_server_series.m3u', type: 'm3u' },
+        { url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_dyndns_series.m3u', type: 'm3u' }
     ];
 
     let player;
     let currentSeries;
+    const DEFAULT_IMG = "https://via.placeholder.com/200x300?text=Serie";
 
     window.onload = async () => {
         shaka.polyfill.installAll();
         if(shaka.Player.isBrowserSupported()) player = new shaka.Player(document.getElementById('video'));
         
         const grid = document.getElementById('grid');
+        document.getElementById('loading').style.display = 'block';
+
         for(const src of SOURCES) {
             try {
                 const res = await fetch(src.url);
                 const text = await res.text();
-                // Aquí deberías añadir tu parser de series M3U si lo usas, 
-                // por ahora asumo que SERIES es mayormente JSON
-                if(text.trim().startsWith('[')) {
+                let seriesList = [];
+
+                if(src.type === 'json' || text.trim().startsWith('[')) {
+                    // JSON PARSER (IzziGo)
                     const data = JSON.parse(text);
-                    data.forEach(item => {
-                        if(item.estaciones || item.seasons || item.tipo === 'series') {
-                            const c = document.createElement('div');
-                            c.className = 'card focusable';
-                            c.tabIndex = 0;
-                            c.innerHTML = `<img src="${item.poster || item.img}">`;
-                            c.onclick = () => openDetails(item);
-                            grid.appendChild(c);
-                        }
-                    });
+                    seriesList = data.map(item => ({
+                        title: item.title || item.titulo,
+                        img: item.poster || item.img,
+                        desc: item.sinopsis || item.description,
+                        seasons: (item.estaciones || item.seasons || []).map((s,i) => ({
+                            num: s.numero || s.season_number || i+1,
+                            episodes: (s.episodios || s.episodes || []).map(e => ({
+                                title: e.title || e.titulo,
+                                img: e.img || e.image,
+                                url: e.url || e.mpd || e.source?.url,
+                                drm: e.drm || e.source?.drm
+                            }))
+                        }))
+                    }));
+                } else {
+                    // M3U PARSER (Netvideo/Servers) - Agrupa por 'group-title'
+                    seriesList = parseM3USeries(text);
                 }
-            } catch(e){}
+
+                seriesList.forEach(item => {
+                    if(item.seasons && item.seasons.length > 0) {
+                        const c = document.createElement('div');
+                        c.className = 'card focusable';
+                        c.tabIndex = 0;
+                        c.innerHTML = `
+                            <img src="${item.img || DEFAULT_IMG}">
+                            <div class="card-title">${item.title}</div>
+                        `;
+                        c.onclick = () => openDetails(item);
+                        grid.appendChild(c);
+                    }
+                });
+            } catch(e){ console.log("Error cargando fuente:", src.url); }
         }
+        document.getElementById('loading').style.display = 'none';
         setTimeout(()=>document.querySelector('.card')?.focus(), 100);
     };
 
+    function parseM3USeries(text) {
+        const lines = text.split('\n');
+        const groups = {}; // { "Nombre Serie": [ep1, ep2...] }
+        let curr = null;
+
+        for(let l of lines) {
+            l = l.trim();
+            if(l.startsWith('#EXTINF')) {
+                curr = {};
+                const grp = l.match(/group-title="([^"]+)"/);
+                const logo = l.match(/tvg-logo="([^"]+)"/);
+                curr.seriesName = grp ? grp[1] : "Otras Series";
+                curr.img = logo ? logo[1] : null;
+                curr.title = l.split(',')[1];
+            } else if(l.startsWith('http')) {
+                if(curr) {
+                    curr.url = l;
+                    if(!groups[curr.seriesName]) {
+                        groups[curr.seriesName] = { 
+                            title: curr.seriesName, 
+                            img: curr.img, 
+                            desc: "Serie importada de M3U", 
+                            episodes: [] 
+                        };
+                    }
+                    // Si el logo de la serie es nulo, usar el del episodio
+                    if(!groups[curr.seriesName].img && curr.img) groups[curr.seriesName].img = curr.img;
+                    
+                    groups[curr.seriesName].episodes.push(curr);
+                    curr = null;
+                }
+            }
+        }
+
+        // Convertir grupos a formato de serie estandarizado
+        return Object.values(groups).map(g => ({
+            title: g.title,
+            img: g.img,
+            desc: g.desc,
+            seasons: [{
+                num: 1, // M3U plano se asume Temporada 1
+                episodes: g.episodes.map(e => ({
+                    title: e.title,
+                    img: e.img || g.img,
+                    url: e.url,
+                    drm: {} // M3U usualmente no lleva DRM complejo aqui
+                }))
+            }]
+        }));
+    }
+
     function openDetails(item) {
         currentSeries = item;
-        document.getElementById('title').innerText = item.title || item.titulo;
-        document.getElementById('desc').innerText = item.sinopsis || item.description || "";
-        document.getElementById('hero').style.backgroundImage = `url('${item.poster || item.img}')`;
+        document.getElementById('title').innerText = item.title;
+        document.getElementById('desc').innerText = item.desc || "";
+        document.getElementById('hero').style.backgroundImage = `url('${item.img || DEFAULT_IMG}')`;
         
         const sel = document.getElementById('season-sel');
         sel.innerHTML = '';
-        const seasons = item.estaciones || item.seasons;
         
-        seasons.forEach((s, idx) => {
+        item.seasons.forEach((s, idx) => {
             const opt = document.createElement('option');
             opt.value = idx;
-            opt.text = `Temporada ${s.numero || s.season_number || idx+1}`;
+            opt.text = `Temporada ${s.num}`;
             sel.appendChild(opt);
         });
         
-        sel.onchange = () => renderEpisodes(seasons[sel.value]);
-        renderEpisodes(seasons[0]);
+        sel.onchange = () => renderEpisodes(item.seasons[sel.value]);
+        renderEpisodes(item.seasons[0]);
         
         document.getElementById('details').style.display = 'block';
         setTimeout(()=>sel.focus(), 100);
@@ -116,15 +202,19 @@
     function renderEpisodes(season) {
         const list = document.getElementById('ep-list');
         list.innerHTML = '';
-        const eps = season.episodios || season.episodes;
         
-        eps.forEach((ep, i) => {
+        season.episodes.forEach((ep, i) => {
             const row = document.createElement('div');
             row.className = 'ep-row focusable';
             row.tabIndex = 0;
-            const thumb = ep.img || ep.image || currentSeries.poster;
-            row.innerHTML = `<img src="${thumb}" class="ep-thumb"><div><h3>${i+1}. ${ep.title || ep.titulo}</h3></div>`;
-            row.onclick = () => playVideo(ep.url || ep.mpd || ep.source?.url, ep.drm || ep.source?.drm);
+            const thumb = ep.img || currentSeries.img || DEFAULT_IMG;
+            row.innerHTML = `
+                <img src="${thumb}" class="ep-thumb">
+                <div style="flex:1">
+                    <h3>${i+1}. ${ep.title}</h3>
+                </div>
+            `;
+            row.onclick = () => playVideo(ep.url, ep.drm);
             list.appendChild(row);
         });
     }
@@ -135,7 +225,13 @@
             await player.unload();
             await player.load(url);
             if(drm?.clearKeys) player.configure({drm:{clearKeys:drm.clearKeys}});
-        } catch(e){}
+            document.getElementById('video').play();
+        } catch(e){ console.log(e); }
+    }
+    
+    function closeDetails() {
+        document.getElementById('details').style.display = 'none';
+        document.querySelector('.card').focus();
     }
 
     window.addEventListener('keydown', e => {
@@ -144,9 +240,7 @@
                 player.unload(); document.getElementById('player').style.display='none'; return;
             }
             if(document.getElementById('details').style.display==='block') {
-                document.getElementById('details').style.display='none';
-                document.querySelector('.card').focus();
-                return;
+                closeDetails(); return;
             }
             window.location.href = 'index.html';
         }
