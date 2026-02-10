@@ -7,43 +7,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
-        .focusable:focus { outline: 4px solid #00A8E8; transform: scale(1.05); z-index: 100; background: #333; }
+        /* ESTILO TIVIMATE */
+        body { margin: 0; background: #000; color: #eee; font-family: sans-serif; overflow: hidden; }
+        .focusable:focus { outline: 4px solid #00A8E8; background: #333; transform: scale(1.05); z-index: 100; }
         
-        /* MENU PROVEEDORES */
         #menu { padding: 50px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .card { aspect-ratio: 16/9; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-direction: column; border: 2px solid transparent; }
-        .card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
+        .prov-card { aspect-ratio: 16/9; background: #1a1a1a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; }
+        .prov-card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
         
-        /* UI PRINCIPAL (Lista + Player) */
         #ui-layer { position: fixed; inset: 0; display: none; grid-template-columns: 350px 1fr; z-index: 50; }
-        
-        /* CANALES (Izquierda) */
-        .ch-list { background: rgba(10,10,10,0.95); overflow-y: auto; border-right: 1px solid #333; display: flex; flex-direction: column; }
-        .ch-item { padding: 12px 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; color: #ccc; }
+        .ch-list { background: rgba(15,15,15,0.95); overflow-y: auto; border-right: 1px solid #333; }
+        .ch-item { padding: 12px; border-bottom: 1px solid #222; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
         .ch-item:focus { background: #00A8E8; color: black; font-weight: bold; }
-        .ch-logo { width: 40px; height: 30px; object-fit: contain; background: #000; border-radius: 2px; }
+        .ch-logo { width: 40px; height: 30px; object-fit: contain; background: black; }
         
-        /* INFO BAR (Abajo) */
-        .info-bar { position: absolute; bottom: 0; left: 350px; right: 0; height: 160px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 20px 40px; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
-        .prog-title { font-size: 2rem; font-weight: bold; text-shadow: 2px 2px 4px black; margin-bottom: 5px; }
-        .prog-meta { color: #00A8E8; font-weight: bold; font-size: 1rem; margin-bottom: 10px; text-shadow: 1px 1px 2px black; }
-        .controls { display: flex; gap: 15px; pointer-events: auto; }
-        .btn-action { padding: 8px 25px; border: none; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.2); color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(5px); }
-        .btn-action:focus { background: white; color: black; }
-
-        /* CATCHUP MENU (Flotante derecha) */
-        #catchup-menu { position: absolute; right: 0; top: 0; bottom: 0; width: 300px; background: #111; border-left: 1px solid #333; z-index: 60; transform: translateX(100%); transition: transform 0.2s; overflow-y: auto; }
-        #catchup-menu.open { transform: translateX(0); }
-        .cu-head { padding: 20px; background: #00A8E8; color: black; font-weight: bold; }
-        .cu-item { padding: 15px; border-bottom: 1px solid #333; cursor: pointer; color: #aaa; }
-        .cu-item:focus { background: #333; color: white; border-left: 4px solid #00A8E8; }
-
-        /* PLAYER */
+        .info-bar { position: absolute; bottom: 0; left: 350px; right: 0; height: 180px; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 20px 40px; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+        .prog-title { font-size: 2rem; font-weight: bold; margin-bottom: 5px; text-shadow: 2px 2px 4px black; }
+        .prog-meta { color: #00A8E8; font-weight: bold; margin-bottom: 10px; text-shadow: 1px 1px 2px black; }
+        
         #player-container { position: fixed; inset: 0; background: black; z-index: 0; display: none; }
         #video { width: 100%; height: 100%; }
-        
-        #loading { position: fixed; top: 20px; right: 20px; background: #00A8E8; padding: 5px 15px; border-radius: 4px; display: none; z-index: 9999; color: black; font-weight: bold; }
+        #loading { position: fixed; top: 20px; right: 20px; background: #00A8E8; color: black; padding: 5px 15px; border-radius: 4px; display: none; z-index: 9999; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -54,98 +38,85 @@
 
     <div id="ui-layer">
         <div class="ch-list" id="channel-list"></div>
-        
-        <div class="info-bar" id="info-bar" style="display:none">
+        <div class="info-bar">
             <div class="prog-title" id="lbl-title">Canal</div>
             <div class="prog-meta" id="lbl-meta">En Vivo</div>
-            <div class="controls">
-                <button id="btn-fs" class="btn-action focusable" onclick="toggleFullScreen()"><span class="material-icons-round">fullscreen</span> Pantalla</button>
-                <button id="btn-catchup" class="btn-action focusable" onclick="toggleCatchup()" style="display:none"><span class="material-icons-round">history</span> Grabaciones</button>
-            </div>
-        </div>
-        
-        <div id="catchup-menu">
-            <div class="cu-head">GRABACIONES DISPONIBLES</div>
-            <div id="catchup-list"></div>
         </div>
     </div>
 
     <div id="player-container"><video id="video" autoplay></video></div>
 
 <script>
+    // TUS ENLACES REALES (TV)
     const PROVS = [
-        { title: 'IZZI TV', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=1', img: 'https://i.imgur.com/LOGO_IZZI.png', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_izzi.xml' },
-        { title: 'DISH', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri&dl=1', img: 'https://i.imgur.com/LOGO_DISH.png' },
-        { title: 'STAR TV', url: 'https://dl.dropboxusercontent.com/s/vnmo8y2l2z25dpzkv52hl/STARTV.m3u?rlkey=d3oj0vqgldbnmuqf30qaeqqti&dl=1', img: 'https://i.imgur.com/LOGO_STARTV.png' },
-        { title: 'DIRECTV', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5&dl=1', img: 'https://i.imgur.com/LOGO_DIRECTV.png' },
-        { title: 'CLARO TV', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh&dl=1', img: 'https://i.imgur.com/LOGO_CLARO.png' },
-        { title: 'AMAZON', url: 'https://dl.dropboxusercontent.com/s/agoem2v71esupgmbj1gck/AMAZON.m3u?rlkey=7tzh7zpan9quxz7l019sgndnh&dl=1', img: 'https://i.imgur.com/LOGO_AMAZON.png' },
-        { title: 'SENSA', url: 'https://dl.dropboxusercontent.com/s/dv2o6zl6zaekmenag4xkg/ARG.m3u?rlkey=hj1u6yyshizmco48qkrbhkyft&dl=1', img: 'https://i.imgur.com/LOGO_SENSA.png' },
-        { title: 'INTERNET', url: 'https://dl.dropboxusercontent.com/s/q7xiqcsb8ymwo0g/MX-TPLAY.m3u?dl=1', img: 'https://i.imgur.com/LOGO_INTERNET.png' }
+        { title: 'IZZI TV', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=0', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_izzi.xml', img: 'https://i.imgur.com/LOGO_IZZI.png' },
+        { title: 'DISH', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_dish.xml', img: 'https://i.imgur.com/LOGO_DISH.png' },
+        { title: 'STARTV', url: 'https://dl.dropboxusercontent.com/s/vnmo8y2l2z25dpzkv52hl/STARTV.m3u?rlkey=d3oj0vqgldbnmuqf30qaeqqti', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_startv.xml', img: 'https://i.imgur.com/LOGO_STARTV.png' },
+        { title: 'DIRECTV', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5', img: 'https://i.imgur.com/LOGO_DIRECTV.png' },
+        { title: 'CLARO', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_claro.xml', img: 'https://i.imgur.com/LOGO_CLARO.png' },
+        { title: 'AMAZON', url: 'https://dl.dropboxusercontent.com/s/agoem2v71esupgmbj1gck/AMAZON.m3u?rlkey=7tzh7zpan9quxz7l019sgndnh', img: 'https://i.imgur.com/LOGO_AMAZON.png' },
+        { title: 'SENSA', url: 'https://dl.dropboxusercontent.com/s/dv2o6zl6zaekmenag4xkg/ARG.m3u?rlkey=hj1u6yyshizmco48qkrbhkyft', img: 'https://i.imgur.com/LOGO_SENSA.png' },
+        { title: 'INTERNET', url: 'https://dl.dropboxusercontent.com/s/q7xiqcsb8ymwo0g/MX-TPLAY.m3u?dl=0', img: 'https://i.imgur.com/LOGO_INTERNET.png' }
     ];
 
     let player;
     let currentList = [];
     let EPG = {};
-    let activeChannel = null;
 
     window.onload = () => {
         initShaka();
         const menu = document.getElementById('menu');
         PROVS.forEach(p => {
             const c = document.createElement('div');
-            c.className = 'card focusable';
+            c.className = 'prov-card focusable';
             c.tabIndex = 0;
             c.innerHTML = `<img src="${p.img}"><b>${p.title}</b>`;
             c.onclick = () => loadProvider(p);
             menu.appendChild(c);
         });
-        setTimeout(()=>document.querySelector('.card')?.focus(), 100);
+        setTimeout(()=>document.querySelector('.prov-card')?.focus(), 100);
     };
 
     async function loadProvider(p) {
         document.getElementById('loading').style.display = 'block';
         try {
-            const resM3u = await fetch(p.url).then(r=>r.text());
-            if(p.epg) fetch(p.epg).then(r=>r.text()).then(parseEPG).catch(e=>console.log("EPG Fail"));
+            const [m3uData, epgData] = await Promise.all([
+                fetch(p.url).then(r=>r.text()),
+                p.epg ? fetch(p.epg).then(r=>r.text()) : Promise.resolve(null)
+            ]);
             
-            parseM3U(resM3u);
+            parseM3U(m3uData);
+            if(epgData) parseEPG(epgData);
+            
             document.getElementById('menu').style.display = 'none';
             document.getElementById('ui-layer').style.display = 'grid';
             renderChannels();
-        } catch(e) { console.log(e); }
+        } catch(e){}
         finally { document.getElementById('loading').style.display = 'none'; }
     }
 
     function parseM3U(text) {
-        const lines = text.split('\n');
         currentList = [];
+        const lines = text.split('\n');
         let curr = null;
-        for(let line of lines) {
-            line = line.trim();
-            if(line.startsWith('#EXTINF')) {
+        for(let l of lines) {
+            l = l.trim();
+            if(l.startsWith('#EXTINF')) {
                 curr = { drm: {} };
-                const parts = line.split(',');
-                curr.title = parts[parts.length-1].trim();
-                const logo = line.match(/tvg-logo="([^"]+)"/);
+                const logo = l.match(/tvg-logo="([^"]+)"/);
                 curr.logo = logo ? logo[1] : '';
-                const id = line.match(/tvg-id="([^"]+)"/);
-                curr.tvgid = id ? id[1] : null;
-                const catchup = line.match(/catchup-source="([^"]+)"/);
-                curr.catchup = catchup ? catchup[1] : null;
-            } else if(line.startsWith('#KODIPROP:inputstream.adaptive.license_key=')) {
+                const tvgid = l.match(/tvg-id="([^"]+)"/);
+                curr.tvgid = tvgid ? tvgid[1] : null;
+                curr.title = l.split(',')[1];
+            } else if(l.startsWith('#KODIPROP')) {
                 if(curr) {
-                    const k = line.split('=')[1].split(',');
+                    const keys = l.split('=')[1].split(',');
                     const ck = {};
-                    k.forEach(p => { const s=p.split(':'); if(s[0]&&s[1]) ck[s[0]]=s[1]; });
+                    keys.forEach(k => { const p=k.split(':'); if(p[0]&&p[1]) ck[p[0]]=p[1]; });
                     curr.drm.clearKeys = ck;
                 }
-            } else if(line.startsWith('http')) {
-                if(curr) {
-                    curr.url = line.split('|')[0];
-                    currentList.push(curr);
-                    curr = null;
-                }
+            } else if(l.startsWith('http')) {
+                if(curr) { curr.url = l; currentList.push(curr); curr = null; }
             }
         }
     }
@@ -155,10 +126,10 @@
         const doc = parser.parseFromString(xml, "text/xml");
         EPG = {};
         doc.querySelectorAll('programme').forEach(p => {
-            const ch = p.getAttribute('channel');
-            if(!EPG[ch]) EPG[ch] = [];
-            EPG[ch].push({
-                title: p.querySelector('title')?.textContent || "Sin título",
+            const id = p.getAttribute('channel');
+            if(!EPG[id]) EPG[id] = [];
+            EPG[id].push({
+                title: p.querySelector('title')?.textContent,
                 start: parseDate(p.getAttribute('start')),
                 end: parseDate(p.getAttribute('stop'))
             });
@@ -166,9 +137,8 @@
     }
 
     function parseDate(s) {
-        if(!s) return 0;
-        const y=s.substr(0,4), m=s.substr(4,2), d=s.substr(6,2), h=s.substr(8,2), min=s.substr(10,2), sec=s.substr(12,2);
-        return new Date(`${y}-${m}-${d}T${h}:${min}:${sec}`).getTime()/1000;
+        const y=s.substr(0,4), m=s.substr(4,2), d=s.substr(6,2), h=s.substr(8,2), min=s.substr(10,2);
+        return new Date(`${y}-${m}-${d}T${h}:${min}:00`).getTime()/1000;
     }
 
     function renderChannels() {
@@ -183,99 +153,28 @@
             row.onfocus = () => updateInfo(ch);
             list.appendChild(row);
         });
-        setTimeout(()=>document.querySelector('.ch-item').focus(), 100);
+        setTimeout(()=>document.querySelector('.ch-item')?.focus(), 100);
     }
 
     function updateInfo(ch) {
-        activeChannel = ch;
-        document.getElementById('info-bar').style.display = 'flex';
         document.getElementById('lbl-title').innerText = ch.title;
-        
-        let prog = null;
+        let info = "En Vivo";
         if(ch.tvgid && EPG[ch.tvgid]) {
             const now = Date.now()/1000;
-            prog = EPG[ch.tvgid].find(p => p.start <= now && p.end > now);
+            const prog = EPG[ch.tvgid].find(p => p.start <= now && p.end > now);
+            if(prog) info = prog.title;
         }
-        
-        if(prog) {
-            document.getElementById('lbl-meta').innerText = `${new Date(prog.start*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} - ${prog.title}`;
-        } else {
-            document.getElementById('lbl-meta').innerText = "En Vivo";
-        }
-
-        const btnCatch = document.getElementById('btn-catchup');
-        if(ch.catchup && ch.tvgid && EPG[ch.tvgid]) {
-            btnCatch.style.display = 'flex';
-        } else {
-            btnCatch.style.display = 'none';
-            document.getElementById('catchup-menu').classList.remove('open');
-        }
+        document.getElementById('lbl-meta').innerText = info;
     }
 
-    function showCatchupList(ch) {
-        const menu = document.getElementById('catchup-menu');
-        document.getElementById('catchup-list').innerHTML = '';
-        menu.classList.add('open');
-        const now = Date.now()/1000;
-        
-        // Mostrar programas pasados (hasta 7 días atrás)
-        const past = EPG[ch.tvgid].filter(p => p.end < now && p.start > (now - 604800)).reverse();
-        
-        if(past.length === 0) {
-             document.getElementById('catchup-list').innerHTML = '<div class="cu-item">No hay grabaciones recientes.</div>';
-             return;
-        }
-
-        past.forEach(p => {
-            const item = document.createElement('div');
-            item.className = 'cu-item focusable';
-            item.tabIndex = 0;
-            const d = new Date(p.start*1000);
-            item.innerHTML = `<small style="color:#00A8E8">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</small><br>${p.title}`;
-            item.onclick = () => playCatchup(ch, p);
-            document.getElementById('catchup-list').appendChild(item);
-        });
-        setTimeout(()=>menu.querySelector('.cu-item')?.focus(), 100);
-    }
-
-    // === LÓGICA DE REPRODUCCIÓN DE CATCHUP CORREGIDA ===
-    async function playCatchup(ch, prog) {
-        const start = prog.start;
-        const end = prog.end;
-        const dur = end - start;
-        const now = Math.floor(Date.now()/1000);
-        
-        // Reemplazo de variables incluyendo {end} y {utcend}
-        let url = ch.catchup
-            .replace(/{utc}|{start}/g, start)
-            .replace(/{end}|{utcend}/g, end) // <--- CORRECCIÓN CLAVE
-            .replace(/{duration}/g, dur)
-            .replace(/{timestamp}/g, now);
-            
-        console.log("Playing Catchup:", url);
-        
-        // Jugar como VOD (Ocultar UI)
-        document.getElementById('ui-layer').style.display = 'none';
-        document.getElementById('player-container').style.display = 'block';
-        try {
-            await player.unload();
-            if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
-            await player.load(url);
-            document.getElementById('video').play();
-        } catch(e){}
-    }
-
-    // === FUNCIONES PLAYER BÁSICAS ===
     function initShaka() {
         shaka.polyfill.installAll();
-        if(shaka.Player.isBrowserSupported()) {
-            player = new shaka.Player(document.getElementById('video'));
-            player.configure({ preferredAudioLanguage: 'es' });
-        }
+        if(shaka.Player.isBrowserSupported()) player = new shaka.Player(document.getElementById('video'));
     }
 
     async function playChannel(ch) {
-        document.getElementById('catchup-menu').classList.remove('open');
+        document.getElementById('ui-layer').style.display = 'none';
+        document.getElementById('player-container').style.display = 'block';
         try {
             await player.unload();
             if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
@@ -285,72 +184,21 @@
         } catch(e){}
     }
 
-    function toggleFullScreen() {
-        const ui = document.getElementById('ui-layer');
-        if(ui.style.display === 'none') {
-            ui.style.display = 'grid';
-            document.querySelector('.ch-item').focus();
-        } else {
-            ui.style.display = 'none';
-        }
-    }
-
-    function toggleCatchup() {
-        const menu = document.getElementById('catchup-menu');
-        if(menu.classList.contains('open')) {
-            menu.classList.remove('open');
-            document.getElementById('btn-catchup').focus();
-        } else {
-            showCatchupList(activeChannel);
-        }
-    }
-
-    // CONTROLES
     window.addEventListener('keydown', e => {
-        if(e.keyCode===8 || e.keyCode===27 || e.keyCode===461 || e.keyCode===10009) {
-            e.preventDefault();
-            const ui = document.getElementById('ui-layer');
-            const catchup = document.getElementById('catchup-menu');
-            
-            // 1. Cerrar Catchup si está abierto
-            if(catchup.classList.contains('open')) { toggleCatchup(); return; }
-            
-            // 2. Si Player full -> Abrir Lista (UI)
-            if(ui.style.display === 'none') { toggleFullScreen(); return; }
-            
-            // 3. Salir al Hub
-            window.location.href = 'index.html';
+        if(e.keyCode===8 || e.keyCode===27 || e.keyCode===461) {
+            if(document.getElementById('player-container').style.display==='block') {
+                document.getElementById('player-container').style.display='none';
+                document.getElementById('ui-layer').style.display='grid';
+                document.querySelector('.ch-item').focus();
+            } else window.location.href='index.html';
         }
-        
         if(e.keyCode===13 || e.keyCode===23) document.activeElement.click();
-        
-        if([37,38,39,40].includes(e.keyCode)) {
+        if([38,40].includes(e.keyCode)) {
             e.preventDefault();
-            // Si estamos en Fullscreen, cualquier flecha abre la UI
-            if(document.getElementById('ui-layer').style.display === 'none') {
-                toggleFullScreen(); return;
-            }
-            
-            const items = Array.from(document.querySelectorAll('.focusable:not([style*="display:none"])'));
+            const items = Array.from(document.querySelectorAll('.focusable'));
             const idx = items.indexOf(document.activeElement);
-            if(idx > -1) {
-                if(e.keyCode===40 && idx < items.length-1) items[idx+1].focus(); // Abajo
-                if(e.keyCode===38 && idx > 0) items[idx-1].focus(); // Arriba
-                
-                // Navegación Lateral
-                if(e.keyCode===39) {
-                    if(document.getElementById('channel-list').contains(document.activeElement)) {
-                        document.getElementById('btn-fs').focus();
-                    }
-                }
-                if(e.keyCode===37) {
-                    if(document.getElementById('info-bar').contains(document.activeElement)) {
-                        document.querySelector('.ch-item').focus();
-                    } else if(document.getElementById('catchup-menu').contains(document.activeElement)) {
-                        document.getElementById('btn-catchup').focus();
-                    }
-                }
-            }
+            if(e.keyCode===40) items[idx+1]?.focus();
+            if(e.keyCode===38) items[idx-1]?.focus();
         }
     });
 </script>
