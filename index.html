@@ -7,46 +7,46 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .logo { font-size: 50px; font-weight: 900; color: #E50914; margin-bottom: 50px; letter-spacing: 2px; text-shadow: 0 0 20px rgba(229, 9, 20, 0.6); }
-        .menu-container { display: flex; gap: 30px; }
+        .logo { font-size: 60px; font-weight: 900; color: #E50914; margin-bottom: 60px; letter-spacing: 4px; text-shadow: 0 0 30px rgba(229, 9, 20, 0.6); }
+        .menu { display: flex; gap: 40px; }
         
-        .card-menu { 
-            width: 220px; height: 320px; background: #1a1a1a; border-radius: 12px; 
+        .card { 
+            width: 260px; height: 380px; background: #111; border-radius: 16px; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-decoration: none; color: white; border: 3px solid transparent; 
-            transition: transform 0.2s, background 0.2s, box-shadow 0.2s; cursor: pointer;
+            text-decoration: none; color: #888; border: 3px solid transparent; 
+            transition: transform 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s;
         }
         
-        .card-menu:focus, .card-menu:hover { 
-            transform: scale(1.1); border-color: white; background: #252525; outline: none; 
-            box-shadow: 0 15px 40px rgba(0,0,0,0.8); z-index: 10;
+        .card:focus, .card:hover { 
+            transform: scale(1.1); border-color: #eee; background: #222; color: white; outline: none; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9); z-index: 10;
         }
         
-        .icon { font-size: 80px; margin-bottom: 20px; color: #888; transition: color 0.2s; }
-        .label { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .icon { font-size: 100px; margin-bottom: 30px; transition: color 0.2s; }
+        .label { font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         
         /* Colores Activos */
-        .card-menu:nth-child(1):focus .icon { color: #00A8E8; } /* TV */
-        .card-menu:nth-child(2):focus .icon { color: #E50914; } /* Cine */
-        .card-menu:nth-child(3):focus .icon { color: #FFD700; } /* Series */
+        .card:nth-child(1):focus .icon { color: #00A8E8; } /* TV Azul */
+        .card:nth-child(2):focus .icon { color: #E50914; } /* Cine Rojo */
+        .card:nth-child(3):focus .icon { color: #FFD700; } /* Series Amarilla */
     </style>
 </head>
 <body>
 
     <div class="logo">STREAMNET</div>
 
-    <div class="menu-container">
-        <a href="tv.html" class="card-menu" id="btn-tv">
+    <div class="menu">
+        <a href="tv.html" class="card" id="btn-tv">
             <span class="material-icons-round icon">live_tv</span>
             <div class="label">TV en Vivo</div>
         </a>
         
-        <a href="peliculas.html" class="card-menu">
+        <a href="peliculas.html" class="card">
             <span class="material-icons-round icon">movie</span>
             <div class="label">Películas</div>
         </a>
         
-        <a href="series.html" class="card-menu">
+        <a href="series.html" class="card">
             <span class="material-icons-round icon">view_list</span>
             <div class="label">Series</div>
         </a>
@@ -54,20 +54,10 @@
 
     <script>
         document.getElementById('btn-tv').focus();
-
         window.addEventListener('keydown', (e) => {
-            const k = e.keyCode;
-            if(k === 39) { // Derecha
-                const next = document.activeElement.nextElementSibling;
-                if(next) next.focus();
-            }
-            if(k === 37) { // Izquierda
-                const prev = document.activeElement.previousElementSibling;
-                if(prev) prev.focus();
-            }
-            if(k === 13 || k === 23) { // Enter
-                document.activeElement.click();
-            }
+            if(e.keyCode === 39) document.activeElement.nextElementSibling?.focus();
+            if(e.keyCode === 37) document.activeElement.previousElementSibling?.focus();
+            if(e.keyCode === 13 || e.keyCode === 23) document.activeElement.click();
         });
     </script>
 </body>
