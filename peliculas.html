@@ -7,81 +7,134 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        body { margin: 0; background: #141414; color: white; font-family: sans-serif; overflow: hidden; }
-        .focusable:focus { outline: 4px solid white; transform: scale(1.05); z-index: 100; }
+        body { margin: 0; background: #141414; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        .focusable:focus { outline: 4px solid white; transform: scale(1.05); z-index: 100; background: #333; }
         
-        #app { padding: 40px; height: 100vh; box-sizing: border-box; overflow-y: auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
-        .card { aspect-ratio: 2/3; background: #222; border-radius: 6px; cursor: pointer; }
-        .card img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+        /* HEADER */
+        #header { position: fixed; top: 0; width: 100%; padding: 20px 40px; background: linear-gradient(black, transparent); z-index: 50; display: flex; align-items: center; box-sizing: border-box; }
+        .logo { font-size: 24px; font-weight: 900; color: #E50914; margin-left: 10px; }
+
+        /* GRID GENERAL */
+        #app { padding: 90px 40px; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 25px; }
         
-        #details { position: fixed; inset: 0; background: #141414; z-index: 50; display: none; }
+        /* MENU PROVEEDORES (Estilo Carpeta) */
+        .prov-card { aspect-ratio: 16/9; background: #222; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; }
+        .prov-card img { height: 60px; object-fit: contain; margin-bottom: 10px; }
+        .prov-title { font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* TARJETAS CONTENIDO */
+        .card { aspect-ratio: 2/3; background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; border: 2px solid transparent; }
+        .card img { width: 100%; height: 100%; object-fit: cover; }
+        .card-title { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px; font-weight: bold; background: rgba(0,0,0,0.7); opacity: 0; transition: opacity 0.2s; }
+        .card:focus .card-title { opacity: 1; }
+
+        /* DETALLES */
+        #details { position: fixed; inset: 0; background: #141414; z-index: 60; display: none; overflow-y: auto; }
         .hero { width: 100%; height: 60vh; background-size: cover; mask-image: linear-gradient(to bottom, black 50%, transparent); }
         .info { position: absolute; top: 30%; left: 5%; width: 50%; }
-        .title { font-size: 3rem; font-weight: 900; margin-bottom: 20px; }
-        .desc { font-size: 1.1rem; color: #ccc; margin-bottom: 30px; }
-        .btn { padding: 10px 30px; font-size: 1.2rem; background: white; color: black; border: none; margin-right: 10px; cursor: pointer; }
+        .title { font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; line-height: 1; }
+        .desc { font-size: 1.1rem; color: #ccc; margin-bottom: 30px; max-width: 800px; }
+        .btn { padding: 12px 30px; font-size: 1.2rem; background: white; color: black; border: none; margin-right: 15px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .btn-sec { background: rgba(255,255,255,0.2); color: white; backdrop-filter: blur(5px); }
         
         #player { position: fixed; inset: 0; background: black; z-index: 100; display: none; }
         video { width: 100%; height: 100%; }
+        #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #E50914; padding: 10px 20px; border-radius: 5px; font-weight: bold; display: none; z-index: 999; }
     </style>
 </head>
 <body>
-    <div id="app"><div class="grid" id="grid"></div></div>
+
+    <div id="loading">Cargando...</div>
+
+    <div id="header">
+        <span class="material-icons-round" style="font-size:30px; cursor:pointer;" onclick="goBack()">arrow_back</span>
+        <div class="logo">PELÍCULAS</div>
+    </div>
+
+    <div id="app">
+        <div class="grid" id="prov-grid"></div>
+        <div class="grid" id="content-grid" style="display:none"></div>
+    </div>
+
     <div id="details">
         <div class="hero" id="hero"></div>
         <div class="info">
             <h1 class="title" id="title"></h1>
             <p class="desc" id="desc"></p>
             <button class="btn focusable" id="btn-play">REPRODUCIR</button>
-            <button class="btn focusable" onclick="closeDetails()" style="background:#333; color:white">VOLVER</button>
+            <button class="btn btn-sec focusable" onclick="closeDetails()">CERRAR</button>
         </div>
     </div>
+
     <div id="player"><video id="video" autoplay controls></video></div>
+
 <script>
-    // TUS ENLACES REALES (PELÍCULAS)
-    const SOURCES = [
-        { url: 'https://gist.githubusercontent.com/TIGRE9725/f7c1267ddd3460062c44d6c93e932c95/raw/izzigo.json', type: 'json' },
-        { url: 'https://gist.githubusercontent.com/TIGRE9725/9d495adb5d3737cd9e0ece692aaf1917/raw/netvideo.pelis.m3u', type: 'm3u' },
-        { url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/playlist_peliculas.m3u', type: 'm3u' },
-        { url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_server.m3u', type: 'm3u' },
-        { url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_dyndns.m3u', type: 'm3u' }
+    const PROVIDERS = [
+        { title: 'IZZI GO', url: 'https://gist.githubusercontent.com/TIGRE9725/f7c1267ddd3460062c44d6c93e932c95/raw/izzigo.json', type: 'json', img: 'https://i.imgur.com/LOGO_IZZIGO.png' },
+        { title: 'NETVIDEO', url: 'https://gist.githubusercontent.com/TIGRE9725/9d495adb5d3737cd9e0ece692aaf1917/raw/netvideo.pelis.m3u', type: 'm3u', img: 'https://i.imgur.com/LOGO_NETVIDEO.png' },
+        { title: 'SERVIDOR 1', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/playlist_peliculas.m3u', type: 'm3u', img: 'https://via.placeholder.com/300?text=S1' },
+        { title: 'SERVIDOR 2', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_server.m3u', type: 'm3u', img: 'https://via.placeholder.com/300?text=S2' },
+        { title: 'SERVIDOR 3', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/lista_dyndns.m3u', type: 'm3u', img: 'https://via.placeholder.com/300?text=S3' }
     ];
 
     let player;
-    window.onload = async () => {
+
+    window.onload = () => {
         shaka.polyfill.installAll();
         if(shaka.Player.isBrowserSupported()) player = new shaka.Player(document.getElementById('video'));
-        const grid = document.getElementById('grid');
-        
-        for(const src of SOURCES) {
-            try {
-                const res = await fetch(src.url);
-                const text = await res.text();
-                let items = [];
-                
-                // Parser inteligente: Detecta si es JSON o M3U
-                if(src.type === 'm3u' || text.trim().startsWith('#')) {
-                    items = parseM3U(text);
-                } else {
-                    items = JSON.parse(text);
-                }
-
-                items.forEach(item => {
-                    // Filtrar solo pelis
-                    if(item.tipo === 'movies' || (!item.estaciones && !item.seasons)) {
-                        const c = document.createElement('div');
-                        c.className = 'card focusable';
-                        c.tabIndex = 0;
-                        c.innerHTML = `<img src="${item.poster || item.img || 'https://via.placeholder.com/200x300'}">`;
-                        c.onclick = () => openDetails(item);
-                        grid.appendChild(c);
-                    }
-                });
-            } catch(e){}
-        }
-        setTimeout(()=>document.querySelector('.card')?.focus(), 100);
+        renderProviders();
     };
+
+    function renderProviders() {
+        const grid = document.getElementById('prov-grid');
+        grid.innerHTML = '';
+        PROVIDERS.forEach(p => {
+            const c = document.createElement('div');
+            c.className = 'prov-card focusable';
+            c.tabIndex = 0;
+            c.innerHTML = `<img src="${p.img}"><div class="prov-title">${p.title}</div>`;
+            c.onclick = () => loadProvider(p);
+            grid.appendChild(c);
+        });
+        setTimeout(()=>document.querySelector('.prov-card')?.focus(), 100);
+    }
+
+    async function loadProvider(p) {
+        document.getElementById('loading').style.display = 'block';
+        try {
+            const res = await fetch(p.url);
+            const text = await res.text();
+            let items = [];
+            
+            if(p.type === 'json' || text.trim().startsWith('[')) {
+                items = JSON.parse(text);
+            } else {
+                items = parseM3U(text);
+            }
+            
+            renderItems(items);
+            document.getElementById('prov-grid').style.display = 'none';
+            document.getElementById('content-grid').style.display = 'grid';
+        } catch(e) { alert("Error cargando lista"); }
+        finally { document.getElementById('loading').style.display = 'none'; }
+    }
+
+    function renderItems(items) {
+        const grid = document.getElementById('content-grid');
+        grid.innerHTML = '';
+        items.forEach(item => {
+            if(item.tipo === 'movies' || (!item.estaciones && !item.seasons)) {
+                const c = document.createElement('div');
+                c.className = 'card focusable';
+                c.tabIndex = 0;
+                c.innerHTML = `<div class="card-title">${item.title||item.titulo}</div><img src="${item.poster||item.img||'https://via.placeholder.com/200x300'}">`;
+                c.onclick = () => openDetails(item);
+                grid.appendChild(c);
+            }
+        });
+        setTimeout(()=>document.querySelector('#content-grid .card')?.focus(), 100);
+    }
 
     function parseM3U(text) {
         const lines = text.split('\n');
@@ -110,7 +163,7 @@
 
     function openDetails(item) {
         document.getElementById('title').innerText = item.title || item.titulo;
-        document.getElementById('desc').innerText = item.description || item.sinopsis || "";
+        document.getElementById('desc').innerText = item.description || item.sinopsis || "Sin descripción";
         document.getElementById('hero').style.backgroundImage = `url('${item.poster || item.img}')`;
         document.getElementById('details').style.display = 'block';
         document.getElementById('btn-play').onclick = () => playVideo(item);
@@ -120,29 +173,47 @@
     async function playVideo(item) {
         document.getElementById('player').style.display = 'block';
         try {
-            await player.unload();
             await player.load(item.mpd || item.url || item.source?.url);
-            if(item.drm?.clearKeys) player.configure({drm:{clearKeys:item.drm.clearKeys}});
+            const drm = item.drm || item.source?.drm;
+            if(drm?.clearKeys) player.configure({drm:{clearKeys:drm.clearKeys}});
         } catch(e){}
     }
 
-    function closeDetails() { document.getElementById('details').style.display = 'none'; }
+    function closeDetails() { document.getElementById('details').style.display = 'none'; document.querySelector('#content-grid .card').focus(); }
+
+    function goBack() {
+        if(document.getElementById('player').style.display==='block') {
+            player.unload(); document.getElementById('player').style.display='none'; return;
+        }
+        if(document.getElementById('details').style.display==='block') {
+            closeDetails(); return;
+        }
+        if(document.getElementById('content-grid').style.display==='grid') {
+            document.getElementById('content-grid').style.display='none';
+            document.getElementById('prov-grid').style.display='grid';
+            document.querySelector('.prov-card').focus();
+            return;
+        }
+        window.location.href = 'index.html';
+    }
 
     window.addEventListener('keydown', e => {
-        if(e.keyCode===8 || e.keyCode===27 || e.keyCode===461) {
-            if(document.getElementById('player').style.display==='block') { player.unload(); document.getElementById('player').style.display='none'; }
-            else if(document.getElementById('details').style.display==='block') closeDetails();
-            else window.location.href = 'index.html';
-        }
+        if(e.keyCode===8 || e.keyCode===27 || e.keyCode===461 || e.keyCode===10009) { e.preventDefault(); goBack(); }
         if(e.keyCode===13 || e.keyCode===23) document.activeElement.click();
         if([37,38,39,40].includes(e.keyCode)) {
             e.preventDefault();
-            const items = Array.from(document.querySelectorAll('.focusable'));
+            const items = Array.from(document.querySelectorAll('.focusable:not([style*="display:none"])')); // Solo visibles
             const idx = items.indexOf(document.activeElement);
-            if(e.keyCode===39) items[idx+1]?.focus();
-            if(e.keyCode===37) items[idx-1]?.focus();
-            if(e.keyCode===40) items[idx+5]?.focus();
-            if(e.keyCode===38) items[idx-5]?.focus();
+            if(e.keyCode===39 && idx < items.length-1) items[idx+1].focus();
+            if(e.keyCode===37 && idx > 0) items[idx-1].focus();
+            if(e.keyCode===40) { // Abajo inteligente
+                const cols = Math.floor(document.body.clientWidth / 200); 
+                if(idx+cols < items.length) items[idx+cols].focus();
+            }
+            if(e.keyCode===38) { // Arriba inteligente
+                const cols = Math.floor(document.body.clientWidth / 200);
+                if(idx-cols >= 0) items[idx-cols].focus();
+            }
         }
     });
 </script>
