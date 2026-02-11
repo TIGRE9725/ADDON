@@ -7,66 +7,68 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #E50914; --bg: #000000; }
-        body { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        /* TUS ESTILOS ORIGINALES */
+        :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; }
         
         .focusable:focus {
             outline: none; border: 3px solid white !important; transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999;
-            background-color: rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.2); color: white;
         }
 
-        .logo { font-size: 50px; font-weight: 900; color: var(--primary); margin-bottom: 50px; letter-spacing: 2px; text-shadow: 2px 2px 4px black; }
-        .menu-container { display: flex; gap: 30px; }
+        .container { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .logo { color: var(--primary); font-size: 50px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 4px black; margin-bottom: 50px; }
+        .menu { display: flex; gap: 40px; }
         
         .card-menu { 
-            width: 220px; height: 320px; background: #222; border-radius: 12px; 
+            width: 240px; height: 340px; background: #222; border-radius: 12px; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-decoration: none; color: white; border: 3px solid transparent; 
             transition: transform 0.2s; cursor: pointer;
         }
         
         .icon { font-size: 80px; margin-bottom: 20px; color: #ccc; }
-        .label { font-size: 20px; font-weight: bold; text-transform: uppercase; }
+        .label { font-size: 22px; font-weight: bold; text-transform: uppercase; }
         
         .card-menu:focus .icon { color: var(--primary); }
     </style>
 </head>
 <body>
 
-    <div class="logo">STREAMNET</div>
-
-    <div class="menu-container">
-        <a href="tv.html" class="card-menu focusable" id="btn-tv">
-            <span class="material-icons-round icon">live_tv</span>
-            <div class="label">TV en Vivo</div>
-        </a>
-        
-        <a href="peliculas.html" class="card-menu focusable">
-            <span class="material-icons-round icon">movie</span>
-            <div class="label">Películas</div>
-        </a>
-        
-        <a href="series.html" class="card-menu focusable">
-            <span class="material-icons-round icon">view_list</span>
-            <div class="label">Series</div>
-        </a>
+    <div class="container">
+        <div class="logo">STREAMNET</div>
+        <div class="menu">
+            <a href="tv.html" class="card-menu focusable" id="btn-tv">
+                <span class="material-icons-round icon">live_tv</span>
+                <div class="label">TV en Vivo</div>
+            </a>
+            <a href="peliculas.html" class="card-menu focusable">
+                <span class="material-icons-round icon">movie</span>
+                <div class="label">Películas</div>
+            </a>
+            <a href="series.html" class="card-menu focusable">
+                <span class="material-icons-round icon">view_list</span>
+                <div class="label">Series</div>
+            </a>
+        </div>
     </div>
 
     <script>
         document.getElementById('btn-tv').focus();
-
+        
+        // TU LOGICA DE TECLAS ORIGINAL (Simplificada para el menú)
         window.addEventListener('keydown', (e) => {
             const k = e.keyCode;
-            if(k === 39) { // Derecha
+            if (k === 39) { // Right
                 const next = document.activeElement.nextElementSibling;
                 if(next) next.focus();
             }
-            if(k === 37) { // Izquierda
+            if (k === 37) { // Left
                 const prev = document.activeElement.previousElementSibling;
                 if(prev) prev.focus();
             }
-            if(k === 13 || k === 23 || k === 66) { // Enter
+            if (k === 13 || k === 23 || k === 66) { // Enter
                 document.activeElement.click();
             }
         });
