@@ -3,75 +3,513 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamNet Hub</title>
+    <title>StreamNet Ultimate</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* TUS ESTILOS ORIGINALES */
-        :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; }
+        /* --- ESTÉTICA OSCURA PREMIUM --- */
+        :root { --primary: #00A8E8; --bg: #0f0f0f; --card: #1a1a1a; --focus: #eee; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none; }
         
-        .focusable:focus {
-            outline: none; border: 3px solid white !important; transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999;
-            background-color: rgba(255,255,255,0.2); color: white;
+        /* SISTEMA DE FOCO */
+        .focusable:focus { 
+            outline: 4px solid var(--focus); 
+            transform: scale(1.05); 
+            z-index: 100; 
+            background: #333 !important; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
-        .container { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .logo { color: var(--primary); font-size: 50px; font-weight: 900; letter-spacing: 2px; text-shadow: 2px 2px 4px black; margin-bottom: 50px; }
-        .menu { display: flex; gap: 40px; }
+        /* HEADER */
+        #header { position: fixed; top: 0; left: 0; right: 0; height: 70px; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; z-index: 50; border-bottom: 1px solid #333; }
+        .logo { font-size: 24px; font-weight: 900; color: #E50914; letter-spacing: 1px; }
+        .clock { font-size: 1.2rem; font-weight: bold; color: #ccc; }
+
+        /* VISTAS (SECCIONES) */
+        .view { display: none; padding: 100px 40px 40px 40px; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+        .view.active { display: block; }
+
+        /* 1. MENU PRINCIPAL */
+        #home-grid { display: flex; justify-content: center; gap: 40px; align-items: center; height: 80%; }
+        .menu-card { width: 220px; height: 320px; background: var(--card); border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
+        .menu-card .icon { font-size: 80px; margin-bottom: 20px; color: #555; }
+        .menu-card .label { font-size: 1.5rem; font-weight: bold; text-transform: uppercase; }
+        /* Colores Menu */
+        #btn-tv:focus .icon { color: #00A8E8; }
+        #btn-movies:focus .icon { color: #E50914; }
+        #btn-series:focus .icon { color: #FFD700; }
+
+        /* 2. GRID DE CONTENIDO (TV, PELIS, SERIES) */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding-bottom: 100px; }
         
-        .card-menu { 
-            width: 240px; height: 340px; background: #222; border-radius: 12px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-decoration: none; color: white; border: 3px solid transparent; 
-            transition: transform 0.2s; cursor: pointer;
-        }
+        /* Tarjetas de Proveedores */
+        .prov-card { aspect-ratio: 16/9; background: #222; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; cursor: pointer; }
+        .prov-card img { height: 50px; object-fit: contain; margin-bottom: 10px; }
+
+        /* Tarjetas de Contenido */
+        .content-card { background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; border: 2px solid transparent; display: flex; flex-direction: column; }
+        /* TV es Cuadrada */
+        .tv-card { aspect-ratio: 1/1; } 
+        .tv-card img { max-width: 70%; max-height: 70%; object-fit: contain; margin: auto; }
+        .tv-info { background: rgba(0,0,0,0.8); padding: 5px; text-align: center; font-size: 0.9rem; font-weight: bold; }
         
-        .icon { font-size: 80px; margin-bottom: 20px; color: #ccc; }
-        .label { font-size: 22px; font-weight: bold; text-transform: uppercase; }
+        /* Pelis/Series son Poster */
+        .vod-card { aspect-ratio: 2/3; }
+        .vod-card img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 3. REPRODUCTOR / DETALLES */
+        #player-overlay { position: fixed; inset: 0; background: black; z-index: 1000; display: none; }
+        #video { width: 100%; height: 100%; }
         
-        .card-menu:focus .icon { color: var(--primary); }
+        /* UI DEL PLAYER (BARRA INFERIOR) */
+        .player-ui { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 30px 50px; pointer-events: none; transition: opacity 0.5s; opacity: 0; }
+        .player-ui.visible { opacity: 1; }
+        
+        .p-title { font-size: 2.5rem; font-weight: 900; margin-bottom: 5px; text-shadow: 2px 2px 4px black; }
+        .p-meta { color: var(--primary); font-weight: bold; font-size: 1.2rem; display: flex; gap: 20px; }
+        
+        /* CARGANDO */
+        #loading { position: fixed; top: 20px; right: 20px; background: var(--primary); color: black; padding: 5px 15px; border-radius: 4px; font-weight: bold; display: none; z-index: 2000; }
+        
+        /* MODAL DETALLES VOD */
+        #modal-vod { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 500; display: none; padding: 50px; align-items: center; }
+        .modal-content { display: flex; gap: 40px; width: 100%; max-width: 1000px; margin: auto; }
+        .modal-poster { width: 300px; border-radius: 10px; box-shadow: 0 0 30px rgba(255,255,255,0.1); }
+        .modal-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .modal-title { font-size: 3rem; font-weight: 900; margin-bottom: 20px; }
+        .modal-desc { font-size: 1.1rem; color: #ccc; margin-bottom: 30px; }
+        .btn { padding: 12px 30px; font-size: 1.2rem; background: white; color: black; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; margin-right: 15px; }
+        .btn-sec { background: #333; color: white; }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <div id="header">
         <div class="logo">STREAMNET</div>
-        <div class="menu">
-            <a href="tv.html" class="card-menu focusable" id="btn-tv">
+        <div class="clock" id="clock">00:00</div>
+    </div>
+
+    <div id="loading">Cargando...</div>
+
+    <div id="view-home" class="view active">
+        <div id="home-grid">
+            <div class="menu-card focusable" tabindex="0" onclick="openSection('tv')" id="btn-tv">
                 <span class="material-icons-round icon">live_tv</span>
                 <div class="label">TV en Vivo</div>
-            </a>
-            <a href="peliculas.html" class="card-menu focusable">
+            </div>
+            <div class="menu-card focusable" tabindex="0" onclick="openSection('movies')">
                 <span class="material-icons-round icon">movie</span>
                 <div class="label">Películas</div>
-            </a>
-            <a href="series.html" class="card-menu focusable">
+            </div>
+            <div class="menu-card focusable" tabindex="0" onclick="openSection('series')">
                 <span class="material-icons-round icon">view_list</span>
                 <div class="label">Series</div>
-            </a>
+            </div>
         </div>
     </div>
 
-    <script>
+    <div id="view-grid" class="view">
+        <h2 id="section-title" style="margin-bottom:20px; margin-top:0;">SECCIÓN</h2>
+        <div id="grid-container" class="grid"></div>
+    </div>
+
+    <div id="modal-vod">
+        <div class="modal-content">
+            <img id="m-poster" class="modal-poster" src="">
+            <div class="modal-info">
+                <h1 id="m-title" class="modal-title">Título</h1>
+                <p id="m-desc" class="modal-desc">Descripción...</p>
+                <div id="m-actions">
+                    <button id="btn-play" class="btn focusable">REPRODUCIR</button>
+                    <button class="btn btn-sec focusable" onclick="closeModal()">CERRAR</button>
+                </div>
+                <div id="series-ui" style="display:none; margin-top:20px;">
+                    <select id="season-sel" class="focusable" style="padding:10px; font-size:1.1rem; background:#222; color:white; border:1px solid #555;"></select>
+                    <div id="ep-list" style="margin-top:10px; max-height:200px; overflow-y:auto; border:1px solid #333; padding:10px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="player-overlay">
+        <video id="video" autoplay></video>
+        <div id="player-ui" class="player-ui">
+            <div class="p-title" id="p-title">Canal</div>
+            <div class="p-meta">
+                <span id="p-prog">Programa Actual</span>
+                <span id="p-next" style="color:#aaa;">Siguiente...</span>
+                <span id="p-time" style="margin-left:auto; color:white;">00:00</span>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- DATOS MAESTROS ---
+    const DATA = {
+        tv: [
+            { title: 'IZZI TV', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=0', img: 'https://i.imgur.com/LOGO_IZZI.png', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_izzi.xml' },
+            { title: 'DISH', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_dish.xml', img: 'https://i.imgur.com/LOGO_DISH.png' },
+            { title: 'DIRECTV', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5', img: 'https://i.imgur.com/LOGO_DIRECTV.png' },
+            { title: 'CLARO', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_claro.xml', img: 'https://i.imgur.com/LOGO_CLARO.png' }
+        ],
+        movies: [
+            { title: 'IZZI GO', url: 'https://gist.githubusercontent.com/TIGRE9725/f7c1267ddd3460062c44d6c93e932c95/raw/izzigo.json', type: 'json', img: 'https://i.imgur.com/LOGO_IZZIGO.png' },
+            { title: 'NETVIDEO', url: 'https://gist.githubusercontent.com/TIGRE9725/9d495adb5d3737cd9e0ece692aaf1917/raw/netvideo.pelis.m3u', type: 'm3u', img: 'https://i.imgur.com/LOGO_NETVIDEO.png' },
+            { title: 'SERVER 1', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/playlist_peliculas.m3u', type: 'm3u', img: 'https://via.placeholder.com/300?text=S1' }
+        ],
+        series: [
+            { title: 'IZZI GO', url: 'https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1', type: 'json', img: 'https://i.imgur.com/LOGO_IZZIGO.png' },
+            { title: 'NETVIDEO', url: 'https://raw.githubusercontent.com/TIGRE9725/PELIS/main/netvideo.series.m3u', type: 'm3u', img: 'https://i.imgur.com/LOGO_NETVIDEO.png' },
+            { title: 'SERVER 1', url: 'https://raw.githubusercontent.com/TIGRE9725/btv-auto/main/playlist_series.m3u', type: 'm3u', img: 'https://via.placeholder.com/300?text=S1' }
+        ]
+    };
+
+    let player;
+    let currentMode = 'home'; // home, providers, content, details, player
+    let currentCategory = ''; // tv, movies, series
+    let EPG = {}; 
+    let uiTimer;
+    let currentSeriesItem = null;
+
+    const DEFAULT_IMG = "https://via.placeholder.com/300?text=No+Image";
+
+    // --- INICIO ---
+    window.onload = () => {
+        initShaka();
+        setInterval(updateClock, 1000);
         document.getElementById('btn-tv').focus();
+    };
+
+    function updateClock() {
+        const t = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('clock').innerText = t;
+        document.getElementById('p-time').innerText = t;
+    }
+
+    // --- NAVEGACIÓN ---
+    function switchView(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    }
+
+    function openSection(cat) {
+        currentCategory = cat;
+        currentMode = 'providers';
+        renderProviders(DATA[cat]);
+        switchView('view-grid');
+        document.getElementById('section-title').innerText = cat === 'tv' ? "PROVEEDORES TV" : (cat === 'movies' ? "PROVEEDORES PELÍCULAS" : "PROVEEDORES SERIES");
+    }
+
+    function goBack() {
+        if(currentMode === 'player') { closePlayer(); return; }
+        if(currentMode === 'details') { closeModal(); return; }
+        if(currentMode === 'content') { openSection(currentCategory); return; } // Volver a providers
+        if(currentMode === 'providers') { 
+            currentMode = 'home'; 
+            switchView('view-home'); 
+            document.getElementById('btn-tv').focus(); 
+            return; 
+        }
+    }
+
+    // --- RENDERIZADO ---
+    function renderProviders(list) {
+        const grid = document.getElementById('grid-container');
+        grid.innerHTML = '';
+        grid.className = 'grid'; // Reset class
         
-        // TU LOGICA DE TECLAS ORIGINAL (Simplificada para el menú)
-        window.addEventListener('keydown', (e) => {
-            const k = e.keyCode;
-            if (k === 39) { // Right
-                const next = document.activeElement.nextElementSibling;
-                if(next) next.focus();
-            }
-            if (k === 37) { // Left
-                const prev = document.activeElement.previousElementSibling;
-                if(prev) prev.focus();
-            }
-            if (k === 13 || k === 23 || k === 66) { // Enter
-                document.activeElement.click();
-            }
+        list.forEach(p => {
+            const c = document.createElement('div');
+            c.className = 'prov-card focusable';
+            c.tabIndex = 0;
+            c.innerHTML = `<img src="${p.img}"><div>${p.title}</div>`;
+            c.onclick = () => loadContent(p);
+            grid.appendChild(c);
         });
-    </script>
+        setTimeout(()=>document.querySelector('.prov-card')?.focus(), 100);
+    }
+
+    async function loadContent(p) {
+        document.getElementById('loading').style.display = 'block';
+        try {
+            // Carga EPG si es TV
+            if(currentCategory === 'tv' && p.epg) {
+                fetch(p.epg).then(r=>r.text()).then(parseEPG).catch(e=>console.log("EPG Error"));
+            }
+
+            const res = await fetch(p.url);
+            const text = await res.text();
+            let items = [];
+
+            if(currentCategory === 'tv') {
+                items = parseM3U(text); // TV siempre es M3U
+            } else {
+                if(p.type === 'json' || text.trim().startsWith('[')) items = JSON.parse(text);
+                else items = parseM3UVOD(text); // VOD M3U
+            }
+
+            renderContent(items);
+            currentMode = 'content';
+        } catch(e) { alert("Error cargando lista"); }
+        finally { document.getElementById('loading').style.display = 'none'; }
+    }
+
+    function renderContent(items) {
+        const grid = document.getElementById('grid-container');
+        grid.innerHTML = '';
+        
+        items.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'content-card focusable';
+            el.tabIndex = 0;
+
+            if(currentCategory === 'tv') {
+                // TV ES CUADRADA Y CON PROGRAMA
+                el.classList.add('tv-card');
+                let prog = "Sin Info";
+                if(item.tvgid && EPG[item.tvgid]) {
+                    const now = Date.now()/1000;
+                    const p = EPG[item.tvgid].find(x => x.start <= now && x.end > now);
+                    if(p) prog = p.title;
+                }
+                el.innerHTML = `<img src="${item.logo || DEFAULT_IMG}"><div class="tv-info">${item.title}<br><small style="color:#aaa">${prog}</small></div>`;
+                el.onclick = () => playStream(item);
+            } else {
+                // VOD ES POSTER
+                // Filtro básico para separar Series de Pelis si vienen mezcladas
+                if(currentCategory === 'movies' && (item.estaciones || item.seasons)) return;
+                if(currentCategory === 'series' && (!item.estaciones && !item.seasons && !item.seriesName)) return;
+
+                el.classList.add('vod-card');
+                el.innerHTML = `<img src="${item.poster || item.img || DEFAULT_IMG}">`;
+                el.onclick = () => openModal(item);
+            }
+            grid.appendChild(el);
+        });
+        setTimeout(()=>document.querySelector('.content-card')?.focus(), 100);
+    }
+
+    // --- PARSERS ---
+    function parseM3U(text) { // Para TV
+        const lines = text.split('\n'); const list = []; let curr = null;
+        for(let l of lines) {
+            l = l.trim();
+            if(l.startsWith('#EXTINF')) {
+                curr = { drm: {} };
+                curr.title = l.split(',')[1];
+                const logo = l.match(/tvg-logo="([^"]+)"/); curr.logo = logo ? logo[1] : '';
+                const id = l.match(/tvg-id="([^"]+)"/); curr.tvgid = id ? id[1] : null;
+            } else if(l.startsWith('#KODIPROP')) {
+                if(curr) {
+                    const k = l.split('=')[1].split(',');
+                    const ck = {}; k.forEach(pair => { const s=pair.split(':'); if(s[0]&&s[1]) ck[s[0]]=s[1]; });
+                    curr.drm.clearKeys = ck;
+                }
+            } else if(l.startsWith('http')) {
+                if(curr) { curr.url = l; list.push(curr); curr = null; }
+            }
+        }
+        return list;
+    }
+
+    function parseM3UVOD(text) { // Para Pelis/Series
+        // Simplificado: detecta group-title para series
+        const lines = text.split('\n'); const list = []; const groups = {}; let curr = null;
+        for(let l of lines) {
+            l = l.trim();
+            if(l.startsWith('#EXTINF')) {
+                curr = { drm: {} };
+                const logo = l.match(/tvg-logo="([^"]+)"/); curr.poster = logo ? logo[1] : '';
+                const grp = l.match(/group-title="([^"]+)"/); curr.group = grp ? grp[1] : null;
+                curr.title = l.split(',')[1];
+            } else if(l.startsWith('http')) {
+                if(curr) {
+                    curr.url = l;
+                    if(currentCategory === 'series' && curr.group) {
+                        // Agrupar Series
+                        if(!groups[curr.group]) groups[curr.group] = { title: curr.group, poster: curr.poster, seasons: [{num:1, episodes:[]}] };
+                        if(!groups[curr.group].poster && curr.poster) groups[curr.group].poster = curr.poster;
+                        groups[curr.group].seasons[0].episodes.push(curr);
+                    } else {
+                        list.push(curr); // Película suelta
+                    }
+                    curr = null;
+                }
+            }
+        }
+        if(currentCategory === 'series') return Object.values(groups);
+        return list;
+    }
+
+    function parseEPG(xml) {
+        const parser = new DOMParser(); const doc = parser.parseFromString(xml, "text/xml");
+        EPG = {};
+        doc.querySelectorAll('programme').forEach(p => {
+            const id = p.getAttribute('channel');
+            if(!EPG[id]) EPG[id] = [];
+            EPG[id].push({
+                title: p.querySelector('title')?.textContent || "Sin título",
+                start: parseDate(p.getAttribute('start')),
+                end: parseDate(p.getAttribute('stop'))
+            });
+        });
+    }
+    function parseDate(s) {
+        if(!s) return 0;
+        const y=s.substr(0,4), m=s.substr(4,2), d=s.substr(6,2), h=s.substr(8,2), min=s.substr(10,2);
+        return new Date(`${y}-${m}-${d}T${h}:${min}:00`).getTime()/1000;
+    }
+
+    // --- MODAL DETALLES ---
+    function openModal(item) {
+        currentMode = 'details';
+        document.getElementById('modal-vod').style.display = 'flex';
+        document.getElementById('m-title').innerText = item.title || item.titulo;
+        document.getElementById('m-desc').innerText = item.description || item.sinopsis || "Sin descripción disponible.";
+        document.getElementById('m-poster').src = item.poster || item.img || DEFAULT_IMG;
+        
+        const btnPlay = document.getElementById('btn-play');
+        const uiSeries = document.getElementById('series-ui');
+
+        if(currentCategory === 'series') {
+            currentSeriesItem = item;
+            uiSeries.style.display = 'block';
+            btnPlay.style.display = 'none'; // Se reproduce desde la lista de episodios
+            
+            // Cargar Temporadas
+            const sel = document.getElementById('season-select');
+            sel.innerHTML = '';
+            // Normalizar datos (JSON vs M3U)
+            const seasons = item.estaciones || item.seasons;
+            seasons.forEach((s, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.text = `Temporada ${s.numero || s.num || idx+1}`;
+                sel.appendChild(opt);
+            });
+            sel.onchange = () => renderEpisodes(seasons[sel.value]);
+            renderEpisodes(seasons[0]);
+            setTimeout(()=>sel.focus(), 100);
+
+        } else {
+            uiSeries.style.display = 'none';
+            btnPlay.style.display = 'inline-block';
+            btnPlay.onclick = () => playStream(item);
+            setTimeout(()=>btnPlay.focus(), 100);
+        }
+    }
+
+    function renderEpisodes(season) {
+        const list = document.getElementById('ep-list');
+        list.innerHTML = '';
+        const eps = season.episodios || season.episodes;
+        eps.forEach((ep, i) => {
+            const d = document.createElement('div');
+            d.className = 'focusable';
+            d.style.padding = '10px'; d.style.borderBottom = '1px solid #444'; d.style.cursor='pointer';
+            d.innerText = `${i+1}. ${ep.title || ep.titulo}`;
+            d.tabIndex = 0;
+            d.onclick = () => playStream({ url: ep.url || ep.mpd || ep.source?.url, drm: ep.drm || ep.source?.drm, title: ep.title });
+            list.appendChild(d);
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('modal-vod').style.display = 'none';
+        currentMode = 'content';
+        document.querySelector('.content-card').focus();
+    }
+
+    // --- REPRODUCTOR ---
+    function initShaka() {
+        shaka.polyfill.installAll();
+        if(shaka.Player.isBrowserSupported()) {
+            player = new shaka.Player(document.getElementById('video'));
+            player.configure({ preferredAudioLanguage: 'es' });
+        }
+    }
+
+    async function playStream(item) {
+        document.getElementById('player-overlay').style.display = 'block';
+        currentMode = 'player';
+        
+        // Update UI
+        document.getElementById('p-title').innerText = item.title || "Reproduciendo";
+        document.getElementById('p-prog').innerText = ""; 
+        document.getElementById('p-next').innerText = "";
+
+        // Si es TV, intentar buscar info EPG actual
+        if(currentCategory === 'tv' && item.tvgid && EPG[item.tvgid]) {
+            const now = Date.now()/1000;
+            const curr = EPG[item.tvgid].find(p => p.start <= now && p.end > now);
+            const next = EPG[item.tvgid].find(p => p.start > now);
+            if(curr) document.getElementById('p-prog').innerText = curr.title;
+            if(next) document.getElementById('p-next').innerText = "Siguiente: " + next.title;
+        }
+
+        try {
+            await player.unload();
+            const url = item.url || item.mpd || item.source?.url;
+            const drm = item.drm || item.source?.drm;
+            
+            if(drm?.clearKeys) player.configure({drm:{clearKeys:drm.clearKeys}});
+            else player.configure({drm:{}});
+            
+            await player.load(url);
+            document.getElementById('video').play();
+            showPlayerUI();
+        } catch(e) { console.error(e); }
+    }
+
+    function closePlayer() {
+        player.unload();
+        document.getElementById('player-overlay').style.display = 'none';
+        if(currentCategory === 'tv') {
+            currentMode = 'content';
+            document.querySelector('.tv-card').focus();
+        } else {
+            currentMode = 'details';
+            document.getElementById('btn-play').focus(); // o season select
+        }
+    }
+
+    function showPlayerUI() {
+        const ui = document.getElementById('player-ui');
+        ui.classList.add('visible');
+        clearTimeout(uiTimer);
+        uiTimer = setTimeout(()=>ui.classList.remove('visible'), 4000);
+    }
+
+    // --- INPUTS ---
+    window.addEventListener('keydown', e => {
+        if([8, 27, 461, 10009].includes(e.keyCode)) { e.preventDefault(); goBack(); }
+        if(e.keyCode===13 || e.keyCode===23) document.activeElement.click();
+        
+        if([37,38,39,40].includes(e.keyCode)) {
+            e.preventDefault();
+            if(currentMode === 'player') { showPlayerUI(); return; } // Flechas despiertan UI en player
+            
+            const items = Array.from(document.querySelectorAll('.focusable:not([style*="display:none"])'));
+            const idx = items.indexOf(document.activeElement);
+            if(idx === -1 && items.length) { items[0].focus(); return; }
+
+            if(e.keyCode===40) { // Abajo
+                const cols = Math.floor(document.body.clientWidth / 180); 
+                if(idx+cols < items.length) items[idx+cols].focus();
+                else items[items.length-1].focus();
+            }
+            else if(e.keyCode===38) { // Arriba
+                const cols = Math.floor(document.body.clientWidth / 180);
+                if(idx-cols >= 0) items[idx-cols].focus();
+                else items[0].focus();
+            }
+            else if(e.keyCode===39 && idx < items.length-1) items[idx+1].focus(); // Der
+            else if(e.keyCode===37 && idx > 0) items[idx-1].focus(); // Izq
+        }
+    });
+    
+    document.getElementById('player-overlay').addEventListener('mousemove', showPlayerUI);
+</script>
 </body>
 </html>
