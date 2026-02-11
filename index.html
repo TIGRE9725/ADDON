@@ -297,7 +297,7 @@
             l = l.trim();
             if(l.startsWith('#EXTINF')) {
                 curr = { drm: {} };
-                curr.title = l.split(',')[1];
+                curr.title = l.split('",')[1];
                 const logo = l.match(/tvg-logo="([^"]+)"/); curr.logo = logo ? logo[1] : '';
                 const id = l.match(/tvg-id="([^"]+)"/); curr.tvgid = id ? id[1] : null;
             } else if(l.startsWith('#KODIPROP')) {
