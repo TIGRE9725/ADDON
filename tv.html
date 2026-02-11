@@ -2,100 +2,73 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TV en Vivo</title>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
-    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        /* ESTILOS BASE (Iguales a Películas/Series para consistencia) */
-        :root { --primary: #00A8E8; --bg: #000000; --overlay: rgba(0,0,0,0.85); }
+        /* TUS ESTILOS ORIGINALES + AJUSTES TV */
+        :root { --primary: #E50914; --bg: #000000; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; }
-        
-        .focusable:focus { 
-            outline: none; border: 3px solid white !important; transform: scale(1.05); 
-            box-shadow: 0 0 20px rgba(0,168,232,0.6); z-index: 100; background-color: rgba(255,255,255,0.15); 
-        }
+        .focusable:focus { outline: none; border: 3px solid white !important; transform: scale(1.05); box-shadow: 0 0 20px rgba(0,0,0,0.9); z-index: 9999; background-color: rgba(255,255,255,0.2); }
 
         /* HEADER */
-        header { position: fixed; top: 0; width: 100%; height: 70px; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
+        header { position: fixed; top: 0; width: 100%; height: 60px; z-index: 100; background: linear-gradient(to bottom, rgba(0,0,0,0.95), transparent); display: flex; align-items: center; justify-content: space-between; padding: 0 4%; box-sizing: border-box; }
         .nav-left { display: flex; align-items: center; gap: 20px; }
         .logo { color: var(--primary); font-size: 24px; font-weight: 900; }
-        .clock-header { font-size: 1.2rem; font-weight: bold; text-shadow: 1px 1px 2px black; font-variant-numeric: tabular-nums; }
-        .btn-back-header { background: rgba(255,255,255,0.1); border: 2px solid transparent; color: white; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .clock { font-size: 1.2rem; font-weight: bold; }
 
-        /* APP CONTAINER */
-        #app { padding-top: 80px; height: 100vh; overflow-y: auto; padding-bottom: 50px; box-sizing: border-box; }
-        
-        /* GRID DE PROVEEDORES */
+        /* GRID PROVEEDORES */
+        #app { padding-top: 80px; height: 100vh; overflow-y: auto; box-sizing: border-box; }
         .grid-prov { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 0 4%; }
-        .card-prov { aspect-ratio: 16/9; background: #1a1a1a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
+        .card-prov { aspect-ratio: 16/9; background: #222; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 3px solid transparent; }
         .card-prov img { height: 50px; object-fit: contain; margin-bottom: 10px; }
-        .card-prov-title { font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* GRID DE CANALES (CUADRADOS) */
-        .grid-ch { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 0 4%; display: none; }
-        .card-ch { 
-            aspect-ratio: 1/1; /* CUADRADO */
-            background: #222; border-radius: 6px; cursor: pointer; position: relative; overflow: hidden; 
-            border: 2px solid transparent; display: flex; flex-direction: column; 
-        }
-        .ch-img-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #151515; padding: 10px; }
-        .ch-img { max-width: 80%; max-height: 80%; object-fit: contain; }
-        .ch-info { background: rgba(0,0,0,0.9); padding: 8px; text-align: left; }
-        .ch-title { font-weight: bold; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-        .ch-prog { font-size: 0.8rem; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; display: block; }
+        /* GRID CANALES (CUADRADOS COMO PEDISTE) */
+        .grid-ch { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 0 4%; display: none; }
+        .card-ch { aspect-ratio: 1/1; background: #222; border-radius: 6px; cursor: pointer; position: relative; border: 3px solid transparent; display: flex; flex-direction: column; }
+        .ch-logo-container { flex: 2; display: flex; align-items: center; justify-content: center; background: #151515; }
+        .ch-logo-img { max-width: 80%; max-height: 80%; object-fit: contain; }
+        .ch-info { flex: 1; background: rgba(0,0,0,0.8); padding: 5px; font-size: 0.8rem; display: flex; flex-direction: column; justify-content: center; }
+        .ch-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ch-prog { color: #aaa; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* PLAYER UI (INFO BAR TIPO DECODIFICADOR) */
+        /* PLAYER UI (TIVIMATE STYLE) */
         #player-container { position: fixed; inset: 0; background: black; z-index: 5000; display: none; }
         #video { width: 100%; height: 100%; }
         
-        .player-ui { 
-            position: absolute; inset: 0; pointer-events: none; 
-            display: flex; flex-direction: column; justify-content: flex-end; 
-            z-index: 6000; 
-        }
+        .player-ui { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 6000; }
         .ui-fade-out { opacity: 0; transition: opacity 0.5s; }
-
-        .info-bar { 
-            background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.95) 60%, transparent); 
-            padding: 30px 50px; padding-bottom: 50px;
-            display: flex; flex-direction: column; gap: 5px;
-        }
         
+        .info-bar { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 40px; }
         .bar-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-        .bar-ch-name { font-size: 2.5rem; font-weight: 900; color: white; text-shadow: 2px 2px 4px black; }
-        .bar-clock { font-size: 1.5rem; color: #ddd; font-weight: bold; }
-        
-        .bar-prog-current { font-size: 1.4rem; color: var(--primary); font-weight: bold; text-shadow: 1px 1px 2px black; }
-        .bar-prog-next { font-size: 1rem; color: #999; margin-top: 5px; }
-        
-        .progress-line { height: 4px; background: #333; margin-top: 15px; border-radius: 2px; position: relative; width: 100%; }
-        .progress-now { height: 100%; background: var(--primary); width: 0%; border-radius: 2px; }
+        .bar-title { font-size: 2.5rem; font-weight: 900; text-shadow: 2px 2px 4px black; }
+        .bar-clock { font-size: 1.5rem; font-weight: bold; color: #ddd; }
+        .bar-prog-now { font-size: 1.4rem; color: var(--primary); font-weight: bold; text-shadow: 1px 1px 2px black; }
+        .bar-prog-next { font-size: 1rem; color: #bbb; margin-top: 5px; }
+        .progress-container { width: 100%; height: 4px; background: #444; margin-top: 15px; }
+        .progress-bar { height: 100%; background: var(--primary); width: 0%; }
 
-        /* LOADING */
-        #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--primary); color: black; padding: 10px 30px; border-radius: 5px; font-weight: bold; display: none; z-index: 9999; }
+        #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 20px; border-radius: 8px; z-index: 9999; display: none; }
     </style>
 </head>
 <body>
 
     <header id="main-header">
         <div class="nav-left">
-            <button class="btn-back-header focusable" onclick="goBack()"><span class="material-icons-round">arrow_back</span></button>
+            <span class="material-icons-round" style="font-size:30px; margin-right:15px; cursor:pointer;" onclick="goBack()">arrow_back</span>
             <div class="logo">TV EN VIVO</div>
         </div>
-        <div class="clock-header" id="header-clock">00:00</div>
+        <div class="clock" id="header-clock">00:00</div>
     </header>
 
     <div id="loading">Cargando...</div>
 
     <div id="app">
-        <div class="grid-prov" id="prov-grid"></div>
-        <div class="grid-ch" id="ch-grid"></div>
+        <div id="prov-grid" class="grid-prov"></div>
+        <div id="ch-grid" class="grid-ch"></div>
     </div>
 
     <div id="player-container">
@@ -103,40 +76,35 @@
         <div id="player-ui" class="player-ui">
             <div class="info-bar">
                 <div class="bar-top">
-                    <div class="bar-ch-name" id="p-ch-name">Canal</div>
+                    <div class="bar-title" id="p-ch-name">Canal</div>
                     <div class="bar-clock" id="p-clock">00:00</div>
                 </div>
-                <div class="bar-prog-current" id="p-prog-curr">Cargando guía...</div>
+                <div class="bar-prog-now" id="p-prog-curr">Cargando guía...</div>
                 <div class="bar-prog-next" id="p-prog-next">Siguiente: ...</div>
-                <div class="progress-line"><div class="progress-now" id="p-bar"></div></div>
+                <div class="progress-container"><div class="progress-bar" id="p-bar"></div></div>
             </div>
         </div>
     </div>
 
 <script>
-    // TUS ENLACES REALES
-    const PROVIDERS = [
+    // CONFIGURACIÓN PROVEEDORES
+    const PROVS = [
         { title: 'IZZI TV', url: 'https://dl.dropboxusercontent.com/scl/fi/9y6dlas2jujl5tlsmrgse/IZZI.m3u?rlkey=qmbog8h21oha6upqxr0y54o2o&st=lgx3ekfe&dl=0', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_izzi.xml', img: 'https://i.imgur.com/LOGO_IZZI.png' },
         { title: 'DISH', url: 'https://dl.dropboxusercontent.com/s/8vkt6055ift44x9yd5gm8/DISH.m3u?rlkey=66ltvgj7q8lsw352j5gvvm4ri', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_dish.xml', img: 'https://i.imgur.com/LOGO_DISH.png' },
-        { title: 'STAR TV', url: 'https://dl.dropboxusercontent.com/s/vnmo8y2l2z25dpzkv52hl/STARTV.m3u?rlkey=d3oj0vqgldbnmuqf30qaeqqti', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_startv.xml', img: 'https://i.imgur.com/LOGO_STARTV.png' },
+        { title: 'STARTV', url: 'https://dl.dropboxusercontent.com/s/vnmo8y2l2z25dpzkv52hl/STARTV.m3u?rlkey=d3oj0vqgldbnmuqf30qaeqqti', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_startv.xml', img: 'https://i.imgur.com/LOGO_STARTV.png' },
         { title: 'DIRECTV', url: 'https://dl.dropboxusercontent.com/s/avcnlb0d4bjrftmvzyau1/DTVGO.m3u?rlkey=xastr4qmw5e47772el989a0p5', img: 'https://i.imgur.com/LOGO_DIRECTV.png' },
-        { title: 'CLARO TV', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_claro.xml', img: 'https://i.imgur.com/LOGO_CLARO.png' },
+        { title: 'CLARO', url: 'https://dl.dropboxusercontent.com/s/eh5mm29jasa9y2gesiih0/CLAROTV.m3u?rlkey=eqn05qohgj10vbsa7279ij5qh', epg: 'https://raw.githubusercontent.com/TIGRE9725/guia/main/guia_claro.xml', img: 'https://i.imgur.com/LOGO_CLARO.png' },
         { title: 'AMAZON', url: 'https://dl.dropboxusercontent.com/s/agoem2v71esupgmbj1gck/AMAZON.m3u?rlkey=7tzh7zpan9quxz7l019sgndnh', img: 'https://i.imgur.com/LOGO_AMAZON.png' },
         { title: 'SENSA', url: 'https://dl.dropboxusercontent.com/s/dv2o6zl6zaekmenag4xkg/ARG.m3u?rlkey=hj1u6yyshizmco48qkrbhkyft', img: 'https://i.imgur.com/LOGO_SENSA.png' },
         { title: 'INTERNET', url: 'https://dl.dropboxusercontent.com/s/q7xiqcsb8ymwo0g/MX-TPLAY.m3u?dl=0', img: 'https://i.imgur.com/LOGO_INTERNET.png' }
     ];
 
-    let player;
-    let currentList = [];
-    let EPG = {}; 
-    let uiTimer = null;
-    let clockInterval = null;
+    let player, currentList = [], EPG = {}, uiTimer;
 
     window.onload = () => {
         initShaka();
         renderProviders();
-        updateClocks();
-        clockInterval = setInterval(updateClocks, 1000);
+        setInterval(updateClocks, 1000);
     };
 
     function updateClocks() {
@@ -146,13 +114,10 @@
     }
 
     function renderProviders() {
-        const grid = document.getElementById('prov-grid');
-        grid.innerHTML = '';
-        PROVIDERS.forEach(p => {
-            const c = document.createElement('div');
-            c.className = 'card-prov focusable';
-            c.tabIndex = 0;
-            c.innerHTML = `<img src="${p.img}"><div class="card-prov-title">${p.title}</div>`;
+        const grid = document.getElementById('prov-grid'); grid.innerHTML = '';
+        PROVS.forEach(p => {
+            const c = document.createElement('div'); c.className = 'card-prov focusable'; c.tabIndex = 0;
+            c.innerHTML = `<img src="${p.img}"><div>${p.title}</div>`;
             c.onclick = () => loadProvider(p);
             grid.appendChild(c);
         });
@@ -166,10 +131,8 @@
                 fetch(p.url).then(r=>r.text()),
                 p.epg ? fetch(p.epg).then(r=>r.text()) : Promise.resolve(null)
             ]);
-            
             parseM3U(m3u);
             if(epg) parseEPG(epg);
-            
             document.getElementById('prov-grid').style.display = 'none';
             document.getElementById('ch-grid').style.display = 'grid';
             renderChannels();
@@ -178,34 +141,23 @@
     }
 
     function renderChannels() {
-        const grid = document.getElementById('ch-grid');
-        grid.innerHTML = '';
+        const grid = document.getElementById('ch-grid'); grid.innerHTML = '';
         currentList.forEach(ch => {
-            // Buscar programa actual para la tarjeta
             let progTxt = "Sin información";
             if(ch.tvgid && EPG[ch.tvgid]) {
                 const now = Date.now()/1000;
                 const p = EPG[ch.tvgid].find(x => x.start <= now && x.end > now);
                 if(p) progTxt = p.title;
             }
-
-            const c = document.createElement('div');
-            c.className = 'card-ch focusable';
-            c.tabIndex = 0;
-            c.innerHTML = `
-                <div class="ch-img-container"><img src="${ch.logo}" class="ch-img" onerror="this.style.display='none'"></div>
-                <div class="ch-info">
-                    <span class="ch-title">${ch.title}</span>
-                    <span class="ch-prog">${progTxt}</span>
-                </div>
-            `;
+            const c = document.createElement('div'); c.className = 'card-ch focusable'; c.tabIndex = 0;
+            c.innerHTML = `<div class="ch-logo-container"><img src="${ch.logo}" class="ch-logo-img" onerror="this.style.display='none'"></div>
+                           <div class="ch-info"><span class="ch-name">${ch.title}</span><span class="ch-prog">${progTxt}</span></div>`;
             c.onclick = () => playChannel(ch);
             grid.appendChild(c);
         });
         setTimeout(()=>document.querySelector('.card-ch')?.focus(), 100);
     }
 
-    // === REPRODUCTOR Y EPG ===
     function initShaka() {
         shaka.polyfill.installAll();
         if(shaka.Player.isBrowserSupported()) {
@@ -217,7 +169,6 @@
     async function playChannel(ch) {
         document.getElementById('player-container').style.display = 'block';
         updatePlayerInfo(ch);
-        
         try {
             await player.unload();
             if(ch.drm.clearKeys) player.configure({drm:{clearKeys:ch.drm.clearKeys}});
@@ -230,7 +181,7 @@
 
     function updatePlayerInfo(ch) {
         document.getElementById('p-ch-name').innerText = ch.title;
-        document.getElementById('p-prog-curr').innerText = "Cargando datos...";
+        document.getElementById('p-prog-curr').innerText = "Cargando...";
         document.getElementById('p-prog-next').innerText = "";
         document.getElementById('p-bar').style.width = "0%";
 
@@ -244,33 +195,24 @@
                 document.getElementById('p-prog-curr').innerText = curr.title;
                 const pct = ((now - curr.start) / (curr.end - curr.start)) * 100;
                 document.getElementById('p-bar').style.width = pct + "%";
-            } else {
-                document.getElementById('p-prog-curr').innerText = "Programación no disponible";
-            }
-
+            } else document.getElementById('p-prog-curr').innerText = "Sin guía";
+            
             if(next) {
                 const nextTime = new Date(next.start*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 document.getElementById('p-prog-next').innerText = `Siguiente: ${nextTime} - ${next.title}`;
             }
-        } else {
-            document.getElementById('p-prog-curr').innerText = "En Vivo";
-        }
+        } else document.getElementById('p-prog-curr').innerText = "En Vivo";
     }
 
-    // === PARSERS ===
     function parseM3U(text) {
-        const lines = text.split('\n');
-        currentList = [];
-        let curr = null;
+        const lines = text.split('\n'); currentList = []; let curr = null;
         for(let l of lines) {
             l = l.trim();
             if(l.startsWith('#EXTINF')) {
                 curr = { drm: {} };
                 curr.title = l.split(',')[1];
-                const logo = l.match(/tvg-logo="([^"]+)"/);
-                curr.logo = logo ? logo[1] : '';
-                const id = l.match(/tvg-id="([^"]+)"/);
-                curr.tvgid = id ? id[1] : null;
+                const logo = l.match(/tvg-logo="([^"]+)"/); curr.logo = logo ? logo[1] : '';
+                const id = l.match(/tvg-id="([^"]+)"/); curr.tvgid = id ? id[1] : null;
             } else if(l.startsWith('#KODIPROP')) {
                 if(curr) {
                     const keys = l.split('=')[1].split(',');
@@ -300,16 +242,14 @@
     }
 
     function parseDate(s) {
-        const y=s.substr(0,4), m=s.substr(4,2), d=s.substr(6,2), h=s.substr(8,2), min=s.substr(10,2);
-        return new Date(`${y}-${m}-${d}T${h}:${min}:00`).getTime()/1000;
+        if(!s) return 0;
+        const y=s.substr(0,4), m=s.substr(4,2), d=s.substr(6,2), h=s.substr(8,2), min=s.substr(10,2), sec=s.substr(12,2);
+        return new Date(`${y}-${m}-${d}T${h}:${min}:${sec}`).getTime()/1000;
     }
 
-    // === CONTROLES ===
     function goBack() {
         if(document.getElementById('player-container').style.display === 'block') {
-            player.unload();
-            document.getElementById('player-container').style.display = 'none';
-            document.querySelector('.card-ch').focus(); // Volver al foco del canal
+            player.unload(); document.getElementById('player-container').style.display = 'none';
             return;
         }
         if(document.getElementById('ch-grid').style.display === 'grid') {
@@ -322,9 +262,7 @@
     }
 
     function resetUiTimer() {
-        const ui = document.getElementById('player-ui');
-        ui.classList.remove('ui-fade-out');
-        clearTimeout(uiTimer);
+        const ui = document.getElementById('player-ui'); ui.classList.remove('ui-fade-out'); clearTimeout(uiTimer);
         uiTimer = setTimeout(() => ui.classList.add('ui-fade-out'), 4000);
     }
 
@@ -332,17 +270,14 @@
         if([8, 27, 461, 10009].includes(e.keyCode)) { e.preventDefault(); goBack(); }
         if(e.keyCode===13 || e.keyCode===23) document.activeElement.click();
         if([37,38,39,40].includes(e.keyCode)) {
-            if(document.getElementById('player-container').style.display === 'block') {
-                e.preventDefault(); resetUiTimer(); // Cualquier tecla despierta la UI
-                return;
-            }
             e.preventDefault();
+            if(document.getElementById('player-container').style.display === 'block') { resetUiTimer(); return; }
             const items = Array.from(document.querySelectorAll('.focusable:not([style*="display: none"])'));
             const idx = items.indexOf(document.activeElement);
-            if(e.keyCode===40 && idx+4 < items.length) items[idx+4].focus(); // Grid de 4 aprox
-            else if(e.keyCode===38 && idx-4 >= 0) items[idx-4].focus();
-            else if(e.keyCode===39 && idx < items.length-1) items[idx+1].focus();
-            else if(e.keyCode===37 && idx > 0) items[idx-1].focus();
+            if(e.keyCode===39 && idx < items.length-1) items[idx+1].focus();
+            if(e.keyCode===37 && idx > 0) items[idx-1].focus();
+            if(e.keyCode===40) { const c = Math.floor(document.body.clientWidth/160); if(idx+c < items.length) items[idx+c].focus(); }
+            if(e.keyCode===38) { const c = Math.floor(document.body.clientWidth/160); if(idx-c >= 0) items[idx-c].focus(); }
         }
     });
     
