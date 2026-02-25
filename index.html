@@ -7,83 +7,115 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/shaka-player.ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.0/controls.min.css">
-    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        /* =========================================
-           ESTILOS GENERALES
-           ========================================= */
         :root { --primary: #E50914; --bg: #000000; --key-bg: #222; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Roboto', sans-serif; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* Interfaz de Menú */
-        #ui-container { padding: 20px; height: 100vh; overflow-y: auto; }
-        .categoria-titulo { font-size: 24px; font-weight: 900; margin-bottom: 10px; border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 5px; }
-        .grid-contenido { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        
+        /* UTILIDADES */
+        .oculto { display: none !important; }
+        .btn-volver { background: transparent; color: white; border: none; font-size: 18px; padding: 15px; cursor: pointer; display: flex; align-items: center; }
+        .btn-volver .material-icons-round { margin-right: 8px; }
+
+        /* MENÚ PRINCIPAL */
+        #menu-principal { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
+        .menu-btn { background: var(--key-bg); border: 2px solid transparent; width: 80%; max-width: 300px; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.3s; }
+        .menu-btn:hover, .menu-btn:active { border-color: var(--primary); transform: scale(1.05); }
+        .menu-btn.tv { border-bottom: 4px solid #3498db; }
+        .menu-btn.movies { border-bottom: 4px solid #e74c3c; }
+        .menu-btn.series { border-bottom: 4px solid #9b59b6; }
+
+        /* VISTA DE CATÁLOGO */
+        #vista-catalogo { height: 100vh; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .grid-contenido { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
         .card { background: var(--key-bg); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; position: relative; }
         .card:hover { transform: scale(1.05); }
         .card img { width: 100%; height: 180px; object-fit: cover; }
         .card.tv img { height: 100px; object-fit: contain; background: white; padding: 10px; }
         .card-info { padding: 10px; font-size: 14px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* Contenedor del Reproductor */
-        #video-container { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: black; }
+        /* VISTA DE DETALLES DE SERIE */
+        #vista-serie { height: 100vh; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .serie-header { display: flex; gap: 20px; margin-bottom: 20px; }
+        .serie-header img { width: 120px; border-radius: 8px; }
+        .episodio-item { background: var(--key-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; }
+        .episodio-item:hover { background: #333; border-left: 4px solid var(--primary); }
+        .temporada-titulo { margin-top: 20px; margin-bottom: 10px; font-size: 20px; color: var(--primary); }
+
+        /* REPRODUCTOR */
+        #video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: black; }
         #video { width: 100%; height: 100%; }
+        #btn-cerrar-player { position: absolute; top: 20px; left: 20px; z-index: 10000; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer; }
         
-        /* Botón de regreso */
-        #btn-cerrar { position: absolute; top: 20px; left: 20px; z-index: 10000; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer; }
+        /* Controles extra para Series (Siguiente/Anterior) */
+        #controles-serie { position: absolute; bottom: 80px; right: 20px; z-index: 10000; display: flex; gap: 10px; }
+        .btn-ep { background: rgba(0,0,0,0.7); color: white; border: 1px solid var(--primary); padding: 10px 15px; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="ui-container">
-        <div id="catalogo-tv"></div>
-        <div id="catalogo-peliculas"></div>
-        <div id="catalogo-series"></div>
+    <div id="menu-principal">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" width="150" style="margin-bottom: 20px; filter: grayscale(1) brightness(2);">
+        <div class="menu-btn tv" onclick="abrirCatalogo('tv')">TV EN VIVO</div>
+        <div class="menu-btn movies" onclick="abrirCatalogo('movies')">PELÍCULAS</div>
+        <div class="menu-btn series" onclick="abrirCatalogo('series')">SERIES</div>
     </div>
 
-    <div id="video-container" data-shaka-player-container>
-        <button id="btn-cerrar" onclick="cerrarReproductor()"><span class="material-icons-round">arrow_back</span></button>
+    <div id="vista-catalogo" class="oculto">
+        <button class="btn-volver" onclick="volverAlMenu()"><span class="material-icons-round">arrow_back</span> Menú Principal</button>
+        <h2 id="titulo-catalogo"></h2>
+        <div id="grid-catalogo" class="grid-contenido"></div>
+    </div>
+
+    <div id="vista-serie" class="oculto">
+        <button class="btn-volver" onclick="cerrarSerie()"><span class="material-icons-round">arrow_back</span> Volver a Series</button>
+        <div class="serie-header">
+            <img id="serie-poster" src="">
+            <div>
+                <h2 id="serie-titulo"></h2>
+                <p id="serie-sinopsis"></p>
+            </div>
+        </div>
+        <div id="lista-temporadas"></div>
+    </div>
+
+    <div id="video-container" class="oculto" data-shaka-player-container>
+        <button id="btn-cerrar-player" onclick="cerrarReproductor()"><span class="material-icons-round">arrow_back</span></button>
+        
+        <div id="controles-serie" class="oculto">
+            <button class="btn-ep" onclick="changeEpisode(-1)">Anterior</button>
+            <button class="btn-ep" onclick="changeEpisode(1)">Siguiente</button>
+        </div>
+
         <video id="video" autoplay data-shaka-player></video>
     </div>
 
     <script>
-        // =========================================================================
-        // NÚCLEO STREAMNET SERVERLESS: LÓGICA DE DATOS Y REPRODUCTOR
-        // =========================================================================
-
+        // ==========================================
+        // CONFIGURACIÓN Y BASES DE DATOS
+        // ==========================================
         const URL_TV = "https://dl.dropboxusercontent.com/s/xfnhw0dfk7hrdx0zphj3l/TV-PLUS.m3u?rlkey=iqzrr4s7bjo7jljw02gd42apt&dl=1";
         const URL_PELICULAS = "https://dl.dropboxusercontent.com/s/2hv588f06l7y265fx12ti/peliculas.json?rlkey=w2ob1lmu9clymri00puohuhbd&dl=1";
         const URL_SERIES = "https://dl.dropboxusercontent.com/s/bryak61h00csivwlq84vt/series.json?rlkey=9dkv93rejmqogxvrt2vcs2i4v&dl=1";
 
+        let db = { tv: [], movies: [], series: [] };
         let currentItem = null;
         let currentSeasonIdx = 0;
         let currentEpIdx = 0;
 
         // ==========================================
-        // 1. INICIALIZACIÓN DE SHAKA PLAYER Y FILTROS
+        // INICIALIZACIÓN Y DESCARGA DE DATOS
         // ==========================================
         async function initApp() {
             shaka.polyfill.installAll();
-            if (!shaka.Player.isBrowserSupported()) {
-                console.error('Navegador no soportado');
-                return;
-            }
-
-            const video = document.getElementById('video');
-            window.player = new shaka.Player(video);
-
-            // Escuchar errores de Shaka
+            window.player = new shaka.Player(document.getElementById('video'));
             window.player.addEventListener('error', onErrorEvent);
 
-            // EL FILTRO MAESTRO (Engaño a Izzi/Sensa para TODO el contenido)
+            // Filtro de red para Izzi y Sensa
             window.player.getNetworkingEngine().registerRequestFilter(function(type, request) {
-                if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST || 
-                    type === shaka.net.NetworkingEngine.RequestType.SEGMENT) {
-                    
+                if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST || type === shaka.net.NetworkingEngine.RequestType.SEGMENT) {
                     const url = request.uris[0];
                     if (url.includes('izzigo.tv')) {
                         request.headers['Referer'] = 'https://www.izzigo.tv/';
@@ -94,52 +126,34 @@
                 }
             });
 
-            // Guardar progreso periódicamente (Tu función nativa)
-            video.addEventListener('timeupdate', () => {
-                if (currentItem && currentItem.tipo !== 'tv' && video.currentTime > 5) {
+            // Guardado de progreso
+            document.getElementById('video').addEventListener('timeupdate', () => {
+                if (currentItem && currentItem.tipo !== 'tv' && window.player.getMediaElement().currentTime > 5) {
                     let id = currentItem.tipo === 'series' ? getEpId(currentItem.id, currentSeasonIdx, currentEpIdx) : currentItem.id;
-                    saveProgress(id, video.currentTime, video.duration);
+                    saveProgress(id, window.player.getMediaElement().currentTime, window.player.getMediaElement().duration);
                 }
             });
 
-            // Iniciar descarga de catálogos al vuelo
-            await descargarCatalogos();
+            // Descargar datos en segundo plano
+            descargarCatalogos();
         }
 
-        // ==========================================
-        // 2. DESCARGA Y PARSEO DE DATOS (SERVERLESS)
-        // ==========================================
         async function descargarCatalogos() {
             try {
-                // Descargar JSONs
-                const [resPeliculas, resSeries, resTV] = await Promise.all([
-                    fetch(URL_PELICULAS),
-                    fetch(URL_SERIES),
-                    fetch(URL_TV)
-                ]);
-
-                const peliculas = await resPeliculas.json();
-                const series = await resSeries.json();
-                
-                // Parsear M3U de TV localmente
+                const [resPeliculas, resSeries, resTV] = await Promise.all([fetch(URL_PELICULAS), fetch(URL_SERIES), fetch(URL_TV)]);
+                db.movies = await resPeliculas.json();
+                db.series = await resSeries.json();
                 const textoTV = await resTV.text();
-                const canales = parsearM3U(textoTV);
-
-                renderizarCategoria('catalogo-tv', 'TV en Vivo', canales, 'tv');
-                renderizarCategoria('catalogo-peliculas', 'Películas', peliculas, 'movies');
-                renderizarCategoria('catalogo-series', 'Series', series, 'series');
-
+                db.tv = parsearM3U(textoTV);
+                console.log("Bases de datos cargadas exitosamente.");
             } catch (error) {
-                console.error("Error al sincronizar datos:", error);
+                console.error("Error al descargar catálogos:", error);
             }
         }
 
         function parsearM3U(texto) {
-            const lineas = texto.split('\n');
-            let canales = [];
-            let canalActual = {};
-
-            for (let linea of lineas) {
+            let canales = [], canalActual = {};
+            for (let linea of texto.split('\n')) {
                 linea = linea.trim();
                 if (linea.startsWith('#EXTINF')) {
                     const logoMatch = linea.match(/tvg-logo="(.*?)"/);
@@ -159,71 +173,146 @@
         }
 
         // ==========================================
-        // 3. RENDERIZADO DE INTERFAZ
+        // NAVEGACIÓN Y RENDERIZADO
         // ==========================================
-        function renderizarCategoria(contenedorId, titulo, items, tipo) {
-            const contenedor = document.getElementById(contenedorId);
-            let html = `<div class="categoria-titulo">${titulo}</div><div class="grid-contenido">`;
+        function volverAlMenu() {
+            document.getElementById('vista-catalogo').classList.add('oculto');
+            document.getElementById('vista-serie').classList.add('oculto');
+            document.getElementById('menu-principal').classList.remove('oculto');
+        }
+
+        function abrirCatalogo(tipo) {
+            document.getElementById('menu-principal').classList.add('oculto');
+            document.getElementById('vista-catalogo').classList.remove('oculto');
             
-            items.forEach((item, index) => {
-                // Si es serie, tomamos el MPD del primer episodio como base para iniciar
-                let mpd = item.mpd;
-                if(tipo === 'series' && item.estaciones) {
-                    mpd = item.estaciones[0].episodios[0].mpd; 
-                    // Almacenamos el item completo para procesarlo luego en tu lógica de episodios
+            const titulos = { 'tv': 'TV en Vivo', 'movies': 'Películas', 'series': 'Series' };
+            document.getElementById('titulo-catalogo').innerText = titulos[tipo];
+            
+            const grid = document.getElementById('grid-catalogo');
+            grid.innerHTML = '';
+
+            db[tipo].forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = `card ${tipo === 'tv' ? 'tv' : ''}`;
+                
+                // Si es serie va a los detalles, si es peli/tv va al reproductor
+                if(tipo === 'series') {
+                    card.onclick = () => abrirDetallesSerie(index);
+                } else {
+                    card.onclick = () => prepararReproduccion(item);
                 }
 
-                html += `
-                    <div class="card ${tipo === 'tv' ? 'tv' : ''}" onclick='prepararReproduccion(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
-                        <img src="${item.logo || item.poster || item.img}" alt="${item.nombre || item.id}">
-                        <div class="card-info">${item.nombre || item.id}</div>
-                    </div>
+                card.innerHTML = `
+                    <img src="${item.logo || item.poster || item.img}" alt="${item.nombre || item.id}">
+                    <div class="card-info">${item.nombre || item.id}</div>
                 `;
+                grid.appendChild(card);
             });
-            html += `</div>`;
-            contenedor.innerHTML = html;
         }
 
         // ==========================================
-        // 4. MOTOR DE REPRODUCCIÓN UNIVERSAL
+        // LÓGICA DE SERIES
         // ==========================================
-        async function prepararReproduccion(item) {
+        function abrirDetallesSerie(index) {
+            currentItem = db.series[index];
+            document.getElementById('vista-catalogo').classList.add('oculto');
+            document.getElementById('vista-serie').classList.remove('oculto');
+
+            document.getElementById('serie-poster').src = currentItem.poster || currentItem.img;
+            document.getElementById('serie-titulo').innerText = currentItem.id;
+            document.getElementById('serie-sinopsis').innerText = currentItem.sinopsis || '';
+
+            const lista = document.getElementById('lista-temporadas');
+            lista.innerHTML = '';
+
+            // Renderizar Temporadas y Episodios
+            if (currentItem.estaciones) {
+                currentItem.estaciones.forEach((estacion, sIdx) => {
+                    lista.innerHTML += `<div class="temporada-titulo">Temporada ${estacion.número || sIdx + 1}</div>`;
+                    
+                    estacion.episodios.forEach((ep, eIdx) => {
+                        // Revisar si hay progreso guardado para mostrarlo
+                        let prog = getProgress(getEpId(currentItem.id, sIdx, eIdx));
+                        let infoProgreso = prog && prog.pct > 0 ? `<span style="color:var(--primary); font-size:12px;">(${Math.round(prog.pct)}%)</span>` : '';
+
+                        lista.innerHTML += `
+                            <div class="episodio-item" onclick="prepararReproduccion(currentItem, ${sIdx}, ${eIdx})">
+                                <span>${eIdx + 1}. ${ep.title} ${infoProgreso}</span>
+                                <span>${ep.duración || ''}</span>
+                            </div>
+                        `;
+                    });
+                });
+            }
+        }
+
+        function cerrarSerie() {
+            document.getElementById('vista-serie').classList.add('oculto');
+            document.getElementById('vista-catalogo').classList.remove('oculto');
+            currentItem = null;
+        }
+
+        function changeEpisode(dir) {
+            if (!currentItem || currentItem.tipo !== 'series') return;
+            
+            let newEp = currentEpIdx + dir;
+            let newSe = currentSeasonIdx;
+            
+            if (dir === 1 && newEp >= currentItem.estaciones[newSe].episodios.length) { 
+                newSe++; newEp = 0; 
+            } else if (dir === -1 && newEp < 0) { 
+                newSe--; 
+                if(newSe >= 0) newEp = currentItem.estaciones[newSe].episodios.length - 1; 
+                else return; 
+            }
+            
+            if(newSe >= 0 && newSe < currentItem.estaciones.length) {
+                prepararReproduccion(currentItem, newSe, newEp);
+            } else {
+                cerrarReproductor();
+            }
+        }
+
+        // ==========================================
+        // REPRODUCTOR UNIVERSAL
+        // ==========================================
+        async function prepararReproduccion(item, sIdx = 0, eIdx = 0) {
             currentItem = item;
             let urlFinal = item.mpd;
+            let drmKeys = item.drm;
 
-            // Logica para Series (Cargar primer episodio por defecto o el último visto)
+            // Procesar si es Serie
             if (item.tipo === 'series') {
-                // Aquí puedes integrar tu UI de selección de episodios. 
-                // Por ahora, forzamos la reproducción del S01E01.
-                currentSeasonIdx = 0;
-                currentEpIdx = 0;
-                urlFinal = item.estaciones[0].episodios[0].mpd;
-                item.drm = item.estaciones[0].episodios[0].drm; // Extraer DRM del episodio
+                currentSeasonIdx = sIdx;
+                currentEpIdx = eIdx;
+                const episodio = item.estaciones[sIdx].episodios[eIdx];
+                urlFinal = episodio.mpd;
+                drmKeys = episodio.drm;
+                document.getElementById('controles-serie').classList.remove('oculto');
+            } else {
+                document.getElementById('controles-serie').classList.add('oculto');
             }
 
-            // Lógica de Catchup Dinámico para canales en vivo que lo soporten
+            // Procesar Catchup Dinámico para TV
             if (item.tipo === 'tv' && urlFinal.includes('{utc}')) {
-                const horasAtras = 0; // 0 = En vivo (Puedes crear un botón para cambiar esto a 2 horas)
                 const ahora = new Date();
-                const tiempoInicio = new Date(ahora.getTime() - (horasAtras * 3600000));
-                
-                const utcStart = Math.floor(tiempoInicio.getTime() / 1000);
+                const utcStart = Math.floor(ahora.getTime() / 1000);
                 const utcEnd = Math.floor(ahora.getTime() / 1000);
-
                 urlFinal = urlFinal.replace('{utc}', utcStart).replace('{utcend}', utcEnd);
             }
 
             try {
-                // Limpiar DRM anterior y aplicar el nuevo si existe
-                window.player.configure({ drm: item.drm || {} });
+                // Interfaz
+                document.getElementById('vista-catalogo').classList.add('oculto');
+                document.getElementById('vista-serie').classList.add('oculto');
+                document.getElementById('menu-principal').classList.add('oculto');
+                document.getElementById('video-container').classList.remove('oculto');
 
-                // Mostrar interfaz de video
-                document.getElementById('ui-container').style.display = 'none';
-                document.getElementById('video-container').style.display = 'block';
-
+                // Cargar DRM y Video
+                window.player.configure({ drm: drmKeys || {} });
                 await window.player.load(urlFinal);
                 
-                // Retomar progreso (Solo para VOD)
+                // Restaurar Progreso
                 if (item.tipo !== 'tv') {
                     let id = item.tipo === 'series' ? getEpId(item.id, currentSeasonIdx, currentEpIdx) : item.id;
                     let prog = getProgress(id);
@@ -231,37 +320,37 @@
                         document.getElementById('video').currentTime = prog.time;
                     }
                 }
-                
-                console.log("Reproducción exitosa!");
-
             } catch (e) {
-                console.error("Error en la carga:", e);
-                showError("No se pudo cargar el stream.");
+                showError(e.code);
                 cerrarReproductor();
             }
         }
 
         function cerrarReproductor() {
             window.player.unload();
-            document.getElementById('video-container').style.display = 'none';
-            document.getElementById('ui-container').style.display = 'block';
-            currentItem = null;
+            document.getElementById('video-container').classList.add('oculto');
+            
+            // Volver a la vista correcta
+            if (currentItem && currentItem.tipo === 'series') {
+                abrirDetallesSerie(db.series.indexOf(currentItem)); // Recargar para actualizar progreso
+                document.getElementById('vista-serie').classList.remove('oculto');
+            } else {
+                document.getElementById('vista-catalogo').classList.remove('oculto');
+                currentItem = null;
+            }
         }
 
         // ==========================================
-        // 5. FUNCIONES UTILITARIAS Y DE ERROR (De tu código original)
+        // UTILIDADES (Progreso y Errores)
         // ==========================================
-        function onErrorEvent(event) { onError(event.detail); }
-        function onError(error) { console.error('Error código', error.code, 'objeto', error); showError(error.code); }
-        function showError(msg) { console.log("Error interceptado:", msg); } // Sin popups molestos
+        function onErrorEvent(event) { showError(event.detail.code); }
+        function showError(msg) { console.log("Error de Shaka:", msg); }
         
         function getEpId(itemId, sIdx, eIdx) { return `${itemId}_s${sIdx}e${eIdx}`; }
         function saveProgress(id, time, dur) { localStorage.setItem('prog_'+id, JSON.stringify({time, pct:(time/dur)*100})); }
         function getProgress(id) { const d = localStorage.getItem('prog_'+id); return d ? JSON.parse(d) : null; }
 
-        // Arrancar la magia cuando cargue la página
         document.addEventListener('DOMContentLoaded', initApp);
-
     </script>
 </body>
 </html>
