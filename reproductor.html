@@ -2,33 +2,28 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Reproductor Izzi Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Izzi - Fix CORS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; }
-        #video-container { width: 100%; height: 100%; }
         video { width: 100%; height: 100%; object-fit: contain; }
-        #status { position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 10px; font-family: sans-serif; z-index: 10; border-radius: 5px; }
+        #status { position: absolute; top: 10px; left: 10px; color: #0f0; font-family: monospace; z-index: 100; background: rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
-
     <div id="status">Iniciando...</div>
-    <div id="video-container">
-        <video id="reproductor" autoplay playsinline></video>
-    </div>
+    <video id="reproductor" autoplay playsinline></video>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlMpd = urlParams.get('mpd');
-        const rawKeys = urlParams.get('keys');
-        const ref = urlParams.get('ref');
-        const ori = urlParams.get('ori');
-        const ua = urlParams.get('ua');
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const mpd = urlParams.get('mpd');
+    const rawKeys = urlParams.get('keys');
+    const ref = urlParams.get('ref');
+    const ori = urlParams.get('ori');
 
-        // FUNCIÓN CLAVE: Convierte Base64 (de la lista) a Hexadecimal (lo que pide el motor)
-        function base64ToHex(base64) {
+    function base64ToHex(base64) {
+        try {
             const raw = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
             let result = '';
             for (let i = 0; i < raw.length; i++) {
@@ -36,59 +31,63 @@
                 result += (hex.length === 2 ? hex : '0' + hex);
             }
             return result.toLowerCase();
-        }
+        } catch (e) { return ''; }
+    }
 
-        async function initPlayer() {
-            const video = document.getElementById('reproductor');
-            const player = new shaka.Player(video);
-            const status = document.getElementById('status');
+    async function init() {
+        const video = document.getElementById('reproductor');
+        const player = new shaka.Player(video);
+        const status = document.getElementById('status');
 
-            // Configuración de Headers (Falsificación de identidad)
-            player.getNetworkingEngine().registerRequestFilter((type, request) => {
-                if (ref) request.headers['Referer'] = ref;
-                if (ori) request.headers['Origin'] = ori;
-                // Nota: User-Agent a veces es bloqueado por el navegador en HTTP, pero en App funciona
-                request.allowCrossSiteCredentials = true;
-            });
+        // --- SOLUCIÓN AL ERROR 1002 / CORS ---
+        player.getNetworkingEngine().registerRequestFilter((type, request) => {
+            // 1. Forzamos a que NO incluya credenciales para que el navegador no bloquee el fetch
+            request.allowCrossSiteCredentials = false; 
 
-            const config = {
-                streaming: { bufferingGoal: 15, rebufferingGoal: 2 },
-                drm: { clearKeys: {} }
-            };
+            // 2. Inyectamos los escudos de Izzi
+            if (ref) request.headers['Referer'] = ref;
+            if (ori) request.headers['Origin'] = ori;
+        });
 
-            // PROCESAMIENTO DE LLAVES
-            if (rawKeys) {
-                try {
-                    const keyJson = JSON.parse(rawKeys);
-                    if (keyJson.keys) {
-                        keyJson.keys.forEach(kObj => {
-                            // Convertimos Kid y K de Base64 a el Hexadecimal que me diste
-                            const kidHex = base64ToHex(kObj.kid);
-                            const keyHex = base64ToHex(kObj.k);
-                            config.drm.clearKeys[kidHex] = keyHex;
-                            console.log(`🔑 Inyectada: ${kidHex}:${keyHex}`);
-                        });
-                        status.innerText = "Llaves inyectadas correctamente.";
-                    }
-                } catch (e) {
-                    status.innerText = "Error en formato de llaves.";
-                }
-            }
+        const config = {
+            streaming: { 
+                bufferingGoal: 10,
+                // Esto ayuda en navegadores con bloqueos estrictos
+                dispatchAllEmsgBoxes: true 
+            },
+            drm: { clearKeys: {} }
+        };
 
-            player.configure(config);
-
+        if (rawKeys) {
             try {
-                await player.load(urlMpd);
-                status.style.display = 'none';
-                console.log("¡Reproduciendo!");
-            } catch (error) {
-                console.error("Error Shaka:", error);
-                status.innerText = `Error: ${error.code}. Revisa la consola.`;
-                if(error.code == 6001) status.innerText = "Error DRM: Llaves inválidas o formato incorrecto.";
-            }
+                const keyJson = JSON.parse(rawKeys);
+                keyJson.keys.forEach(k => {
+                    const kid = base64ToHex(k.kid);
+                    const key = base64ToHex(k.k);
+                    if (kid && key) {
+                        config.drm.clearKeys[kid] = key;
+                        console.log(`✅ DRM Hex: ${kid}:${key}`);
+                    }
+                });
+            } catch (e) { console.error("Error parseando llaves"); }
         }
 
-        document.addEventListener('DOMContentLoaded', initPlayer);
-    </script>
+        player.configure(config);
+
+        try {
+            await player.load(mpd);
+            status.style.display = 'none';
+        } catch (e) {
+            console.error("Error Shaka:", e);
+            status.innerHTML = `<span style="color:red">Error ${e.code}: ${e.message}</span>`;
+            
+            if (e.code === 1002) {
+                status.innerHTML += "<br>CORS bloqueó el archivo. Prueba usando una extensión de 'Allow CORS' en Chrome.";
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
