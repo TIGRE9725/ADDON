@@ -3,25 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Reproductor Streamnet DRM</title>
+    <title>Reproductor Izzi DRM</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
     <style>
         :root { --accent: #007bff; }
-        body, html {
-            margin: 0; padding: 0; width: 100vw; height: 100vh;
-            background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden;
-        }
-        
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #video-container { width: 100%; height: 100%; position: relative; }
         video { width: 100%; height: 100%; object-fit: contain; }
 
-        /* OSD (Barra de Reproducción y DVR) */
         #osd-overlay {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 25%;
             background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
             padding: 30px 50px; box-sizing: border-box; z-index: 100;
-            transition: opacity 0.3s ease-in-out;
-            display: flex; flex-direction: column; justify-content: flex-end;
+            transition: opacity 0.3s ease-in-out; display: flex; flex-direction: column; justify-content: flex-end;
         }
         .oculto { opacity: 0; pointer-events: none; }
         
@@ -36,12 +30,7 @@
         .etiqueta.dvr { background: var(--accent); color: white; }
         .etiqueta.diferido { background: #555; color: white; }
 
-        /* Pantalla de Carga Inicial */
-        #pantalla-carga {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #1a1a1a; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 200;
-        }
+        #pantalla-carga { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; }
         .spinner { border: 5px solid #333; border-top: 5px solid var(--accent); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #texto-carga { font-size: 18px; color: #aaa; }
@@ -51,14 +40,13 @@
 
     <div id="pantalla-carga">
         <div class="spinner"></div>
-        <div id="texto-carga">Desencriptando canal...</div>
+        <div id="texto-carga">Cifrando cabeceras y conectando...</div>
     </div>
 
     <div id="video-container">
         <video id="reproductor" autoplay></video>
-        
         <div id="osd-overlay" class="oculto">
-            <h2 id="osd-nombre-canal">Canal DRM</h2>
+            <h2 id="osd-nombre-canal">Transmisión Activa</h2>
             <div class="osd-progreso">
                 <span id="osd-tiempo-inicio">00:00</span>
                 <div class="barra-fondo"><div id="osd-barra-llena" style="width: 0%;"></div></div>
@@ -72,35 +60,47 @@
         let osdTimeout;
         let dvrInterval;
 
-        // 1. Extraer datos pasados por tu index.html
         const urlParams = new URLSearchParams(window.location.search);
         const urlMpd = urlParams.get('mpd');
-        const clearKeyKid = urlParams.get('kid');
-        const clearKeyKey = urlParams.get('key');
+        const rawKeys = urlParams.get('keys');
+        const ref = urlParams.get('ref');
+        const ori = urlParams.get('ori');
+        const ua = urlParams.get('ua');
 
         document.addEventListener('DOMContentLoaded', iniciarReproductor);
 
         async function iniciarReproductor() {
-            if (!urlMpd) {
-                document.getElementById('texto-carga').innerText = "Error: Falta URL del manifiesto.";
-                return;
-            }
+            if (!urlMpd) return;
 
             const video = document.getElementById('reproductor');
             player = new shaka.Player(video);
 
-            // Optimización de buffers
-            const configuracion = {
-                streaming: { bufferingGoal: 10, rebufferingGoal: 2 }
-            };
+            // 1. INYECTOR DE HEADERS PARA ENGAÑAR A IZZI
+            player.getNetworkingEngine().registerRequestFilter((type, request) => {
+                // Al inyectar esto, Shaka hace creer al servidor que somos www.izzigo.tv
+                if (ref) request.headers['Referer'] = ref;
+                if (ori) request.headers['Origin'] = ori;
+                if (ua) request.headers['User-Agent'] = ua;
+                request.allowCrossSiteCredentials = true;
+            });
 
-            // Inyectar llaves DRM si vienen en la URL
-            if (clearKeyKid && clearKeyKey) {
-                configuracion.drm = {
-                    clearKeys: {
-                        [clearKeyKid]: clearKeyKey
+            // 2. PROCESAR MULTIPLES LLAVES CLEARKEY (Audio y Video)
+            const configuracion = { streaming: { bufferingGoal: 10, rebufferingGoal: 2 } };
+
+            if (rawKeys) {
+                try {
+                    const keyJson = JSON.parse(rawKeys);
+                    const parsedKeys = {};
+                    if (keyJson.keys) {
+                        keyJson.keys.forEach(kObj => {
+                            parsedKeys[kObj.kid] = kObj.k;
+                        });
+                        configuracion.drm = { clearKeys: parsedKeys };
+                        console.log("Llaves múltiples cargadas con éxito.");
                     }
-                };
+                } catch (e) {
+                    console.error("No se pudo parsear el JSON de llaves.");
+                }
             }
 
             player.configure(configuracion);
@@ -111,22 +111,16 @@
                 mostrarOSD();
                 iniciarRastreoDVR();
             } catch (error) {
-                console.error("Error cargando Shaka:", error);
-                document.getElementById('texto-carga').innerHTML = `<span style="color:red">Error de Reproducción: ${error.code}</span>`;
+                console.error("Error de Shaka:", error);
+                document.getElementById('texto-carga').innerHTML = `<span style="color:red">Error: ${error.code} (Revisa CORS)</span>`;
             }
         }
 
-        // --- SISTEMA OSD Y DVR ---
         function mostrarOSD() {
             const osd = document.getElementById('osd-overlay');
             osd.classList.remove('oculto');
-            
             clearTimeout(osdTimeout);
-            osdTimeout = setTimeout(() => {
-                if(!document.getElementById('reproductor').paused) {
-                    osd.classList.add('oculto');
-                }
-            }, 5000);
+            osdTimeout = setTimeout(() => { if(!document.getElementById('reproductor').paused) osd.classList.add('oculto'); }, 5000);
         }
 
         function iniciarRastreoDVR() {
@@ -134,29 +128,23 @@
                 const video = document.getElementById('reproductor');
                 const seekRange = player.seekRange();
                 const ventanaDVR = seekRange.end - seekRange.start;
-                
                 const textoInicio = document.getElementById('osd-tiempo-inicio');
                 const textoFin = document.getElementById('osd-tiempo-fin');
                 const barraLlena = document.getElementById('osd-barra-llena');
 
-                // Si el MPD permite más de 300 segundos (5 min) de salto hacia atrás = Tiene Catchup/DVR
                 if (ventanaDVR > 300) {
                     const porcentaje = ((video.currentTime - seekRange.start) / ventanaDVR) * 100;
                     barraLlena.style.width = `${Math.max(0, Math.min(100, porcentaje))}%`;
-
                     const retroceso = seekRange.end - video.currentTime;
                     
                     if (retroceso > 15) {
-                        // Está atrasado (Viendo en el pasado)
                         textoInicio.innerText = `-${formatearSegs(retroceso)}`;
                         textoFin.innerHTML = `<span class="etiqueta diferido">DIFERIDO</span>`;
                     } else {
-                        // Está viendo en vivo, pero soporta DVR
                         textoInicio.innerText = "00:00";
                         textoFin.innerHTML = `<span class="etiqueta vivo">EN VIVO</span><span class="etiqueta dvr">DVR</span>`;
                     }
                 } else {
-                    // Transmisión Live sin DVR
                     barraLlena.style.width = "100%";
                     textoInicio.innerText = "";
                     textoFin.innerHTML = `<span class="etiqueta vivo">EN VIVO</span>`;
@@ -172,7 +160,6 @@
         function saltarEnElTiempo(segundos) {
             const video = document.getElementById('reproductor');
             const seekRange = player.seekRange();
-            
             if ((seekRange.end - seekRange.start) > 30) {
                 let nuevoTiempo = video.currentTime + segundos;
                 video.currentTime = Math.max(seekRange.start, Math.min(seekRange.end, nuevoTiempo));
@@ -180,43 +167,20 @@
             }
         }
 
-        // --- CONTROL REMOTO ANDROID TV / PC ---
         document.addEventListener('keydown', (e) => {
             const video = document.getElementById('reproductor');
-            
-            // Traductor de teclas de Android TV
             let tecla = e.keyCode;
-            if (tecla === 19) tecla = 38; // Up
-            if (tecla === 20) tecla = 40; // Down
-            if (tecla === 21) tecla = 37; // Left
-            if (tecla === 22) tecla = 39; // Right
-            if (tecla === 23 || tecla === 66) tecla = 13; // Enter / OK
-            if (tecla === 4) tecla = 27; // Back
+            if (tecla === 19) tecla = 38; if (tecla === 20) tecla = 40;
+            if (tecla === 21) tecla = 37; if (tecla === 22) tecla = 39;
+            if (tecla === 23 || tecla === 66) tecla = 13;
+            if (tecla === 4) tecla = 27;
 
             switch (tecla) {
-                case 13: // OK / Enter (Pausar/Reanudar)
-                    e.preventDefault();
-                    video.paused ? video.play() : video.pause();
-                    mostrarOSD();
-                    break;
-                case 37: // Izquierda (Atrasar 15s)
-                    e.preventDefault();
-                    saltarEnElTiempo(-15);
-                    break;
-                case 39: // Derecha (Adelantar 15s)
-                    e.preventDefault();
-                    saltarEnElTiempo(15);
-                    break;
-                case 27: // Escape o Botón Atrás del control remoto
-                case 10009: // Atrás en WebOS/Tizen
-                    e.preventDefault();
-                    window.location.href = 'index.html'; // Volver al Launcher
-                    break;
-                case 38: // Arriba (Muestra OSD)
-                case 40: // Abajo (Muestra OSD)
-                    e.preventDefault();
-                    mostrarOSD();
-                    break;
+                case 13: e.preventDefault(); video.paused ? video.play() : video.pause(); mostrarOSD(); break;
+                case 37: e.preventDefault(); saltarEnElTiempo(-15); break;
+                case 39: e.preventDefault(); saltarEnElTiempo(15); break;
+                case 27: case 10009: e.preventDefault(); window.location.href = 'index.html'; break;
+                case 38: case 40: e.preventDefault(); mostrarOSD(); break;
             }
         });
     </script>
