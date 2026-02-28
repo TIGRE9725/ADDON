@@ -1,93 +1,93 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
+    <title>Reproductor Universal</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor Izzi - Fix CORS</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.min.css">
     <style>
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #000; overflow: hidden; }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        #status { position: absolute; top: 10px; left: 10px; color: #0f0; font-family: monospace; z-index: 100; background: rgba(0,0,0,0.5); }
+        body { margin: 0; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
+        /* El contenedor debe ocupar toda la pantalla */
+        .player-container { width: 100vw; height: 100vh; position: relative; }
+        video { width: 100%; height: 100%; }
+        
+        /* Mensaje de error visible para entender qué pasa */
+        #error-msg {
+            position: absolute;
+            top: 20px; left: 20px;
+            background: rgba(255,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            display: none; /* Oculto por defecto */
+            z-index: 1000;
+            max-width: 80%;
+        }
     </style>
 </head>
 <body>
-    <div id="status">Iniciando...</div>
-    <video id="reproductor" autoplay playsinline></video>
 
-<script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const mpd = urlParams.get('mpd');
-    const rawKeys = urlParams.get('keys');
-    const ref = urlParams.get('ref');
-    const ori = urlParams.get('ori');
+    <div id="error-msg"></div>
 
-    function base64ToHex(base64) {
-        try {
-            const raw = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-            let result = '';
-            for (let i = 0; i < raw.length; i++) {
-                const hex = raw.charCodeAt(i).toString(16);
-                result += (hex.length === 2 ? hex : '0' + hex);
-            }
-            return result.toLowerCase();
-        } catch (e) { return ''; }
-    }
+    <div class="player-container" data-shaka-player-container>
+        <video autoplay muted data-shaka-player id="video"></video>
+    </div>
 
-    async function init() {
-        const video = document.getElementById('reproductor');
-        const player = new shaka.Player(video);
-        const status = document.getElementById('status');
-
-        // --- SOLUCIÓN AL ERROR 1002 / CORS ---
-        player.getNetworkingEngine().registerRequestFilter((type, request) => {
-            // 1. Forzamos a que NO incluya credenciales para que el navegador no bloquee el fetch
-            request.allowCrossSiteCredentials = false; 
-
-            // 2. Inyectamos los escudos de Izzi
-            if (ref) request.headers['Referer'] = ref;
-            if (ori) request.headers['Origin'] = ori;
-        });
-
-        const config = {
-            streaming: { 
-                bufferingGoal: 10,
-                // Esto ayuda en navegadores con bloqueos estrictos
-                dispatchAllEmsgBoxes: true 
-            },
-            drm: { clearKeys: {} }
+    <script>
+        const showError = (msg) => {
+            const errDiv = document.getElementById('error-msg');
+            errDiv.style.display = 'block';
+            errDiv.innerText = "⚠️ ERROR: " + msg;
         };
 
-        if (rawKeys) {
+        async function init() {
+            // 1. Leer datos de la URL
+            const params = new URLSearchParams(window.location.search);
+            const mpd = params.get('mpd');
+            const kid = params.get('kid');
+            const key = params.get('key');
+
+            if (!mpd) {
+                showError("No se encontró el link del video (MPD) en la URL.");
+                return;
+            }
+
+            // 2. Configurar Player
+            const video = document.getElementById('video');
+            const ui = video['ui'];
+            const controls = ui.getControls();
+            const player = controls.getPlayer();
+
+            // Manejo de errores de Shaka
+            player.addEventListener('error', (event) => {
+                showError("Error del Player: Código " + event.detail.code);
+                console.error('Error code', event.detail.code, 'object', event.detail);
+            });
+
+            const config = {
+                preferredAudioLanguage: 'es', 
+            };
+
+            // Solo agregamos DRM si hay claves (para permitir canales abiertos también)
+            if (kid && key) {
+                const clearKeys = {};
+                clearKeys[kid] = key;
+                config.drm = { clearKeys: clearKeys };
+            }
+
+            player.configure(config);
+
             try {
-                const keyJson = JSON.parse(rawKeys);
-                keyJson.keys.forEach(k => {
-                    const kid = base64ToHex(k.kid);
-                    const key = base64ToHex(k.k);
-                    if (kid && key) {
-                        config.drm.clearKeys[kid] = key;
-                        console.log(`✅ DRM Hex: ${kid}:${key}`);
-                    }
-                });
-            } catch (e) { console.error("Error parseando llaves"); }
-        }
-
-        player.configure(config);
-
-        try {
-            await player.load(mpd);
-            status.style.display = 'none';
-        } catch (e) {
-            console.error("Error Shaka:", e);
-            status.innerHTML = `<span style="color:red">Error ${e.code}: ${e.message}</span>`;
-            
-            if (e.code === 1002) {
-                status.innerHTML += "<br>CORS bloqueó el archivo. Prueba usando una extensión de 'Allow CORS' en Chrome.";
+                console.log("Intentando cargar:", mpd);
+                await player.load(mpd);
+                console.log('Video cargado. Iniciando...');
+            } catch (e) {
+                showError("No se pudo cargar el video. Verifica tu conexión o si el link/claves han expirado.");
+                console.error('Error load:', e);
             }
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', init);
-</script>
+        document.addEventListener('shaka-ui-loaded', init);
+    </script>
 </body>
 </html>
