@@ -103,6 +103,678 @@
     // Aquí solo pones los datos puros.
     // tipo: 'drm' (para usar tu reproductor) o 'web' (para ir a youtube o google)
     const canales = [
+             {
+                nombre: "TUDN-HD-H265",
+                icono: "https://www.izzigo.tv/images/repository/579/8706579-LOGO-m.png",
+                tipo: "drm",
+                kid: "efb8c03855ede85c0deb0a62d7a12007",
+                key: "af421ecfc4a521652e18a16cf7d08c58",
+                mpd: "https://zap-live2-ott.izzigo.tv/6/out/u/dash/TUDN-HD-H265/default.mpd"
+            },
+            {
+                nombre: "FOX-SPORTS-2-HD-H265",
+                icono: "https://www.izzigo.tv/images/repository/110/17224110-LOGO-m.png",
+                tipo: "drm",
+                kid: "dfaf8dcd06c9eba4c51f003a55fe71fa",
+                key: "061aae83fe54eb57e49ebee698f0aa6d",
+                mpd: "https://zap-live1-ott.izzigo.tv/6/out/u/dash/FOX-SPORTS-2-HD-H265/default.mpd"
+            },
+            {
+                nombre: "ESPN-HD-H265",
+                icono: "https://www.izzigo.tv/images/repository/797/9703797-LOGO-m.png",
+                tipo: "drm",
+                kid: "3fb8167957692836eca1464b7f952b45",
+                key: "f31042e8167eb4b49ce8117c9e5f1e85",
+                mpd: "https://zap-live1-ott.izzigo.tv/6/out/u/dash/ESPN-HD-H265/default.mpd"
+            },
+            {
+                nombre: "ESPN-3-HD-H265",
+                icono: "https://www.izzigo.tv/images/repository/921/256921-LOGO-m.png",
+                tipo: "drm",
+                kid: "10580600369dbd7ac029f7e737247917",
+                key: "24ef48adb31daa130675c2a502da6982",
+                mpd: "https://zap-live1-ott.izzigo.tv/6/out/u/dash/ESPN-3-HD-H265/default.mpd"
+            },
+            {
+                nombre: "ESPN-4-HD-H265",
+                icono: "https://www.izzigo.tv/images/repository/895/15603895-LOGO-m.png",
+                tipo: "drm",
+                kid: "1d2d7f1116eeec62d19943a892d721f7",
+                key: "033b809769a3c248af7383aa817fce72",
+                mpd: "https://zap-live1-ott.izzigo.tv/6/out/u/dash/ESPN-4-HD-H265/default.mpd"
+            },
+            {
+                nombre: "CANAL-4-TELEVISA-MTY-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "c8d45a1ba2c157fb92bd8a6de1b19ace",
+                key: "5ebeac0256af6b1fe0f5bfd272d0e145",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CDVIC2/CANAL-4-TELEVISA-MTY-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-6-DELAY2-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "04cf15d75a8a8863cad0c4219e62cb80",
+                key: "5069b92140199e16d5258bb43a127f9d",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CDVIC2/CANAL-6-DELAY2-HD/default.mpd"
+            },
+            {
+                nombre: "TELEACTIVA-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "f785607f909bcd91241cb2dafa2159bf",
+                key: "63492e8a83ecdb7d8af0e8cdc13e980b",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CDVIC2/TELEACTIVA-HD/default.mpd"
+            },
+            {
+                nombre: "TELEFUTURA-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "deb081b7a2e8b265fe664027a4f1fd63",
+                key: "0f0bc7c17a29b08733fb9d0dec83de8a",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/MAT2/TELEFUTURA-SD/default.mpd"
+            },
+            {
+                nombre: "VALLEVISION-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "3e3de3b979f01f6d98cc2e69e504393e",
+                key: "b62078b0e8d9943558075c00c68d5d20",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/MAT2/VALLEVISION-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-4-TELEVISA-MONTERREY-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6fd94534e19cef41bc756f9bbc24dba5",
+                key: "fa528482314f5023de0186d7a1922f57",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO1/CANAL-4-TELEVISA-MONTERREY-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-SEIS-TRES-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "d356c2268ac5267a88f3becda6adf17a",
+                key: "6dc1b292e1aa44339c0dd85189c3b54a",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO3/CANAL-SEIS-TRES-SD/default.mpd"
+            },
+            {
+                nombre: "ENLACE-13-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "387cb2d47805b48ae8a8f9fd12ebc3d9",
+                key: "2622e19f28d8381d9842bb9d5167602e",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO1/ENLACE-13-HD/default.mpd"
+            },
+            {
+                nombre: "MULTIMEDIOS-TORREON-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "e2da8c0ec5b79776473a37b9a59c0de8",
+                key: "ae71aa84431d7043c2529f3b168c2561",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO2/MULTIMEDIOS-TORREON-SD/default.mpd"
+            },
+            {
+                nombre: "TELE-SALTILLO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "442898ac4eac469a67b2e915b2340d44",
+                key: "784260e5f84d2dd477e3a62f72a3b55d",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO3/TELE-SALTILLO-HD/default.mpd"
+            },
+            {
+                nombre: "GOBIERNO-DE-ESTADO-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "cb6c11b25d0e452ee0be12aa6f80f320",
+                key: "37a53d087ed4594365a8dbfe68fa4db9",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO3/GOBIERNO-DE-ESTADO-SD/default.mpd"
+            },
+            {
+                nombre: "RCG-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "a2490b387a7ff7a3455071fe8940c441",
+                key: "5bb50073d6fde3bfbf08528930908c84",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO2/RCG-HD/default.mpd"
+            },
+            {
+                nombre: "RCG-2-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "ca57bed76af2e50d373765364f57daf3",
+                key: "6f2b1d4002f42940c8b4f5e94491d37c",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO2/RCG-2-HD/default.mpd"
+            },
+            {
+                nombre: "RCG-3-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "ebac1472f3a00bb15230df83151a6097",
+                key: "1162792630d7ff539981487149fba02e",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO1/RCG-3-HD/default.mpd"
+            },
+            {
+                nombre: "TELEMUNDO-LOCAL-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "4b80dfcc8e50b49f0a4b4960d7d2fc8c",
+                key: "ad67021988e0f386b1c4c795fd241ea2",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/TELEMUNDO-LOCAL-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-6-DELAY1-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6d99d2d03a1eab1467000818382d7a41",
+                key: "4873663ebc53ea59a01e1afa39a8564f",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/CANAL-6-DELAY1-SD/default.mpd"
+            },
+            {
+                nombre: "UAT-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "56959985d1c55e486ad6fccebafba306",
+                key: "527c4cfadbdc71541db5719aade26ca9",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY1/UAT-SD/default.mpd"
+            },
+            {
+                nombre: "D99-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "0b63835457f64447a278f5f17eb1b3ba",
+                key: "5181c11c194282a464b11c5df1b650a2",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/D99-SD/default.mpd"
+            },
+            {
+                nombre: "CANAL-DEL-PUENTE-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "8e065f414e51b3155d6bf614ca2742ef",
+                key: "13799a1de02ebe25b6aef80ccb7b2b3e",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/CANAL-DEL-PUENTE-SD/default.mpd"
+            },
+            {
+                nombre: "VALLEVISION-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "4b1b22ae8ec04ff23931932c14b3c0ca",
+                key: "7d5d253fd5a6d075418e35500d9a2f0f",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/VALLEVISION-HD/default.mpd"
+            },
+            {
+                nombre: "LAS-ESTRELLAS-REGIONAL-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "7d0a10fa07d40cf6b2f23421e23d477d",
+                key: "158f49687547690777fb6dfb4c42d830",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/LAS-ESTRELLAS-REGIONAL-HD/default.mpd"
+            },
+            {
+                nombre: "UNIVISION-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "154b44d50c8275e00f613280e6fcd41e",
+                key: "d525ba3151425a53753ceb7d9ec9d080",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/UNIVISION-HD/default.mpd"
+            },
+            {
+                nombre: "NBC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "41d140315850c7a6a68646307cd77f3b",
+                key: "46c579744557804e89d01d09b1229d12",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/NBC-HD/default.mpd"
+            },
+            {
+                nombre: "ABC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "4333764048f11ff107d0c08ad775636e",
+                key: "f983c348e6bff5a52c39c249dcb9098f",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/ABC-HD/default.mpd"
+            },
+            {
+                nombre: "CBS-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6b3ab23c688a4b1c4d2038e98f2aeaa6",
+                key: "b7bffa9ab313c095d07dbad587d12867",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/CBS-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-23-DE-ENSENADA-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "cb4c76b89c436d4312d65fcd1ccc8373",
+                key: "209e47c70b67f835a45196f2ef6c4fdf",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS1/CANAL-23-DE-ENSENADA-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-51-DE-SAN-DIEGO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "e77042e06ba9f09373a8ebdf1897a299",
+                key: "da52cd9e4512411175470e080a17e372",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS2/CANAL-51-DE-SAN-DIEGO-HD/default.mpd"
+            },
+            {
+                nombre: "FOX-AIRE-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "054007c063d3342e70c71ad1e586d317",
+                key: "41dd7d2ef344ebee97c4becc0f4de68c",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS3/FOX-AIRE-HD/default.mpd"
+            },
+            {
+                nombre: "KPBS-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "ced27e21dc5fd7d69c2c68299617a45a",
+                key: "b427252fa6fddf7912b8902bf2ab3e29",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS2/KPBS-HD/default.mpd"
+            },
+            {
+                nombre: "NBC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "0257782b17192bad9fcebe8b99dd5930",
+                key: "971dbd45f91306f16cf71cb1e3fda5ac",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS3/NBC-HD/default.mpd"
+            },
+            {
+                nombre: "ABC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "9fd811f90d99261bedd3db90b6a9aa51",
+                key: "ba9c2a59a0b9beadfdf94e87248cf8b3",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS2/ABC-HD/default.mpd"
+            },
+            {
+                nombre: "CBS-8-DE-SAN-DIEGO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "2bfdd3b2856ddeaf255a8744ec5f71ab",
+                key: "65112890a45abafce090c88ee1dd0abb",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS3/CBS-8-DE-SAN-DIEGO-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-15-TV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "54735eef604dd5c778c653e5d5b176a3",
+                key: "02a9deb36b0c335656028267008b2f77",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/CANAL-15-TV-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-24-SIZART-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "b46627f944ed275227ff0dfc158517b9",
+                key: "75c8351bc73fd46e3f033832c926d2b8",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/CANAL-24-SIZART-HD/default.mpd"
+            },
+            {
+                nombre: "ZER-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "c8f4ce8406438342ee9fbd7f3587ec40",
+                key: "e7abba8200d2b245de4cf23fd034ec04",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/ZER-HD/default.mpd"
+            },
+            {
+                nombre: "NTRTV-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6f39f366a95e38e28e564d0e8964d6b4",
+                key: "1658556b867ff3e29738760ee1899ac7",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/NTRTV-SD/default.mpd"
+            },
+            {
+                nombre: "UAQTV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "7cbaa83eaa5709e3c81fe6036020c3c1",
+                key: "ffdc39c6b410d5b47f1086cae86d8d10",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO2/UAQTV-HD/default.mpd"
+            },
+            {
+                nombre: "RTQ-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "86694b1dbf8d1488bd25178c33cbea52",
+                key: "b27c51de38f34aca01033754d67276d5",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO1/RTQ-SD/default.mpd"
+            },
+            {
+                nombre: "BAJIO-TV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "b70bcc3cd2b4c8df8239d1cdd2bb49c6",
+                key: "6590967e2f8e3a4f14e19a35fb6a299b",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO2/BAJIO-TV-HD/default.mpd"
+            },
+            {
+                nombre: "RADARTV-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "94fa060e91a7a2dcd2a8fe70626ab761",
+                key: "fd11bd7066806b309bd3004ffe04f22c",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO2/RADARTV-SD/default.mpd"
+            },
+            {
+                nombre: "MEXIQUENSE-TV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "78879920d0f67c68bc06720912f029e4",
+                key: "21767eebc07cad5e4e3556499f57602e",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/MEXIQUENSE-TV-HD/default.mpd"
+            },
+            {
+                nombre: "RADIO-Y-TV-DE-HIDALGO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "df17c643cdc968099073bd03228f221e",
+                key: "cad32a51155e0d78a843298d1f004d05",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/RADIO-Y-TV-DE-HIDALGO-HD/default.mpd"
+            },
+            {
+                nombre: "SUMA-TV-UAEH-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6bd465b06cd216908b9cb003c3298b88",
+                key: "e5ac3cee6a58ee9fa9bc9b8822c18fb6",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/SUMA-TV-UAEH-HD/default.mpd"
+            },
+            {
+                nombre: "SUMA-TV-UAEH-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6bd465b06cd216908b9cb003c3298b88",
+                key: "e5ac3cee6a58ee9fa9bc9b8822c18fb6",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/SUMA-TV-UAEH-HD/default.mpd"
+            },
+            {
+                nombre: "DIX-TV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "795f7cbeb83e0c1073c53f674610437c",
+                key: "418f5a1cb7e6113107074f7637f6b4e8",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CVA2/DIX-TV-HD/default.mpd"
+            },
+            {
+                nombre: "EL-CANAL-DE-MORELOS-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "ef339e8923f40313a8c5be88241318c2",
+                key: "af6545c2c8e9f2773451ce52e3eab633",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CVA2/EL-CANAL-DE-MORELOS-HD/default.mpd"
+            },
+            {
+                nombre: "CABLESENAL-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "3f9ef1dedeb82a8ab3795c6e1ec9afbc",
+                key: "0fb05137005a278d99614b9f0a97e196",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CVA2/CABLESENAL-SD/default.mpd"
+            },
+            {
+                nombre: "CANAL-12-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "36fe83ee9f0c68ef460d4d95040614fb",
+                key: "08ef6be3652fa806e166cb9d653bbd7c",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/POZA2/CANAL-12-SD/default.mpd"
+            },
+            {
+                nombre: "TELEVER-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "17c02798962ee3deb4b1cb17049c53da",
+                key: "8d45c3577a9298db7d6d1234bfe510b1",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/POZA2/TELEVER-HD/default.mpd"
+            },
+            {
+                nombre: "TVMAS-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "95f5f91fe3cb67e7d53967176c71a94d",
+                key: "ab27ad88b6b910f010ce041cd8f18d49",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/POZA2/TVMAS-HD/default.mpd"
+            },
+            {
+                nombre: "CORTV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "fbfe73d8429c532c70ca3d64b1efe015",
+                key: "d40a1c29f431f58a5cce092641152c6d",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/OAX1/CORTV-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-13-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "329543595553e86d171fcbfeddcdce96",
+                key: "532d40e74f004141bbea090e8a127cd2",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/OAX2/CANAL-13-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-13-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "d35b039488cb92c6460fee922bfec7b4",
+                key: "8d6c60de073e8ff298b64397e7c79fff",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/CANAL-13-HD/default.mpd"
+            },
+            {
+                nombre: "UNIVERSIDAD-JUAREZ-AUTONOMA-DE-TABASCO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "bac4279452c09fb7906caaa08305d410",
+                key: "01b50a7a43618dfdf3b4eea28338e515",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/UNIVERSIDAD-JUAREZ-AUTONOMA-DE-TABASCO-HD/default.mpd"
+            },
+            {
+                nombre: "TVT-TELEVISION-TABASQUENA-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "17cabdbff2a543a0bbab688e37d0ea35",
+                key: "4c910346f870bb172912d1bd989567a8",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/TVT-TELEVISION-TABASQUENA-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-13-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "d35b039488cb92c6460fee922bfec7b4",
+                key: "8d6c60de073e8ff298b64397e7c79fff",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/CANAL-13-HD/default.mpd"
+            },
+            {
+                nombre: "CABLESENAL-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "bc3f25889e4ba33b5cd09cf9ab2784bb",
+                key: "e8f185a084decab4d4e6d3ab46e723a2",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/COATZA2/CABLESENAL-SD/default.mpd"
+            },
+            {
+                nombre: "CANAL-13-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "7c091692c92436bf679db0e23206cf9e",
+                key: "48366928632cf20a90b0712360666ce2",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/COATZA2/CANAL-13-HD/default.mpd"
+            },
+            {
+                nombre: "TVMAS-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "bc4673ef05e767f9b2e61c7d99cfab39",
+                key: "bd776825a39d88f21cbf38658e86c21a",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/COATZA2/TVMAS-HD/default.mpd"
+            },
+            {
+                nombre: "MAYAVISION-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "edb5ee0b66e1841f4f6258441d6d47e2",
+                key: "6482b26d726dd1fade8fbcbf73d12b18",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE2/MAYAVISION-SD/default.mpd"
+            },
+            {
+                nombre: "CABLESENAL-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "17c88521fd24b827ff58b91444fe0a14",
+                key: "9d920a9e36da74945c55306a19313da0",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE2/CABLESENAL-SD/default.mpd"
+            },
+            {
+                nombre: "TRC-TELEVISION-CAMPECHANA-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "401bad96c177be7359bd4970cb48378d",
+                key: "4b539f20569a6eb2b58497e0a3779fb4",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE1/TRC-TELEVISION-CAMPECHANA-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-13-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "bcc3ffbcc31ad4da384f332f33ab57d2",
+                key: "da35fcbedec354c4cf23ca96a9455f97",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE2/CANAL-13-HD/default.mpd"
+            },
+            {
+                nombre: "UNIVISION-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "b2bec4e7ef8551b0d09b6dc756379f8c",
+                key: "3677ed57b95018f3b2f3d0c56b0b5f6a",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/UNIVISION-HD/default.mpd"
+            },
+            {
+                nombre: "NBC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "57a8086e94628914cd45eb62fdb9c4c2",
+                key: "88aa269082c26b8202395a333ef0a3ab",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/NBC-HD/default.mpd"
+            },
+            {
+                nombre: "ABC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "ab9bdec289a601260756029cbb239fe5",
+                key: "39fdbf972d90039e11473c4ef5c950d1",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/ABC-HD/default.mpd"
+            },
+            {
+                nombre: "CBS-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "90ea061cf469e088ba6ecd6611f54f72",
+                key: "fde179e57c4c2ff439614436e549d54d",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/CBS-HD/default.mpd"
+            },
+            {
+                nombre: "TELEFUTURA-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6421fd995f18c8f114a8eec5cd644037",
+                key: "125b87bfb809d6ae2aa7c87b84b5f1dd",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/TELEFUTURA-SD/default.mpd"
+            },
+            {
+                nombre: "FOX-AIRE-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "a8714af1b27c6361e979a07f85a4360b",
+                key: "c898563382c0437bf4e09aa66eb6e8c3",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/FOX-AIRE-HD/default.mpd"
+            },
+            {
+                nombre: "CANAL-4-TELEVISA-NUEVO-LAREDO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "e53fb48edb39c50e531a52c49fe2668f",
+                key: "5863a8b4faf03a4af3ebbad9b9662b12",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD1/CANAL-4-TELEVISA-NUEVO-LAREDO-HD/default.mpd"
+            },
+            {
+                nombre: "SUPER-CHANNEL-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "85a024e769198e91f876657ea6dd243d",
+                key: "5001523761c57b7837b25fea23f94c48",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/SUPER-CHANNEL-HD/default.mpd"
+            },
+            {
+                nombre: "RCG-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "830703d7dc9c361040eb57ccf12171b7",
+                key: "540d03676483c20446203bfb3809c42e",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/RCG-SD/default.mpd"
+            },
+            {
+                nombre: "UAT-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6b253ce6d81bcf122028ca6632f5dd35",
+                key: "07c8e24894eda905ff809866d282c78a",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ALTMR1/UAT-SD/default.mpd"
+            },
+            {
+                nombre: "TELEVISA-DEL-GOLFO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "20ddc98cc5dca4545064ac618d46bd06",
+                key: "b80e3cbfe9b1376f2ad928e7d1da2e22",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ALTMR1/TELEVISA-DEL-GOLFO-HD/default.mpd"
+            },
+            {
+                nombre: "MULTIMEDIOS-TAMPICO-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "76c504f8523464a2d41d15fee363c068",
+                key: "5b60b1c4921d6e82595ffdb1a7edbbc4",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ALTMR1/MULTIMEDIOS-TAMPICO-SD/default.mpd"
+            },
+            {
+                nombre: "INFOCABLE-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "d5a6279dfde1c76b6ee39ef8ef79fbcb",
+                key: "c019fbfb6e6988531c5d8111906b64f9",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA2/INFOCABLE-SD/default.mpd"
+            },
+            {
+                nombre: "RTQ-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "7803b5de97a9a2429597bcb7ac514b63",
+                key: "128347882001d73f05d63acc8da823bc",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA1/RTQ-SD/default.mpd"
+            },
+            {
+                nombre: "BAJIO-TV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "cad39c18dff6f16b0ed3ed6c39ae9084",
+                key: "64a0cbb09cb7de750ba932b137be1826",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA2/BAJIO-TV-HD/default.mpd"
+            },
+            {
+                nombre: "EXPRESA-TV-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "719a81d468ef1dd931331db0e066851b",
+                key: "1b5ac597e07e9dcb4c4ead68f1a2b6f5",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA2/EXPRESA-TV-HD/default.mpd"
+            },
             {
                 nombre: "Canal_Local_Gigared_Santa_Fe",
                 icono: "🌍",
@@ -797,638 +1469,6 @@
                 mpd: "https://cdn02.gigared.com.ar/live/eds/Canal_12_Misiones/sa_live_dash/Canal_12_Misiones.mpd",
                 kid: "ed6e9faec04aa78f261171d1ace48957",
                 key: "2995fa69fa1158e82547d5d5a22b4e98"
-            },
-            {
-                nombre: "CANAL-4-TELEVISA-MTY-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "c8d45a1ba2c157fb92bd8a6de1b19ace",
-                key: "5ebeac0256af6b1fe0f5bfd272d0e145",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CDVIC2/CANAL-4-TELEVISA-MTY-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-6-DELAY2-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "04cf15d75a8a8863cad0c4219e62cb80",
-                key: "5069b92140199e16d5258bb43a127f9d",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CDVIC2/CANAL-6-DELAY2-HD/default.mpd"
-            },
-            {
-                nombre: "TELEACTIVA-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "f785607f909bcd91241cb2dafa2159bf",
-                key: "63492e8a83ecdb7d8af0e8cdc13e980b",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CDVIC2/TELEACTIVA-HD/default.mpd"
-            },
-            {
-                nombre: "TELEFUTURA-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "deb081b7a2e8b265fe664027a4f1fd63",
-                key: "0f0bc7c17a29b08733fb9d0dec83de8a",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/MAT2/TELEFUTURA-SD/default.mpd"
-            },
-            {
-                nombre: "VALLEVISION-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "3e3de3b979f01f6d98cc2e69e504393e",
-                key: "b62078b0e8d9943558075c00c68d5d20",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/MAT2/VALLEVISION-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-4-TELEVISA-MONTERREY-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6fd94534e19cef41bc756f9bbc24dba5",
-                key: "fa528482314f5023de0186d7a1922f57",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO1/CANAL-4-TELEVISA-MONTERREY-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-SEIS-TRES-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "d356c2268ac5267a88f3becda6adf17a",
-                key: "6dc1b292e1aa44339c0dd85189c3b54a",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO3/CANAL-SEIS-TRES-SD/default.mpd"
-            },
-            {
-                nombre: "ENLACE-13-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "387cb2d47805b48ae8a8f9fd12ebc3d9",
-                key: "2622e19f28d8381d9842bb9d5167602e",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO1/ENLACE-13-HD/default.mpd"
-            },
-            {
-                nombre: "MULTIMEDIOS-TORREON-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "e2da8c0ec5b79776473a37b9a59c0de8",
-                key: "ae71aa84431d7043c2529f3b168c2561",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO2/MULTIMEDIOS-TORREON-SD/default.mpd"
-            },
-            {
-                nombre: "TELE-SALTILLO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "442898ac4eac469a67b2e915b2340d44",
-                key: "784260e5f84d2dd477e3a62f72a3b55d",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO3/TELE-SALTILLO-HD/default.mpd"
-            },
-            {
-                nombre: "GOBIERNO-DE-ESTADO-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "cb6c11b25d0e452ee0be12aa6f80f320",
-                key: "37a53d087ed4594365a8dbfe68fa4db9",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO3/GOBIERNO-DE-ESTADO-SD/default.mpd"
-            },
-            {
-                nombre: "RCG-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "a2490b387a7ff7a3455071fe8940c441",
-                key: "5bb50073d6fde3bfbf08528930908c84",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO2/RCG-HD/default.mpd"
-            },
-            {
-                nombre: "RCG-2-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "ca57bed76af2e50d373765364f57daf3",
-                key: "6f2b1d4002f42940c8b4f5e94491d37c",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO2/RCG-2-HD/default.mpd"
-            },
-            {
-                nombre: "RCG-3-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "ebac1472f3a00bb15230df83151a6097",
-                key: "1162792630d7ff539981487149fba02e",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/SALTILLO1/RCG-3-HD/default.mpd"
-            },
-            {
-                nombre: "TELEMUNDO-LOCAL-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "4b80dfcc8e50b49f0a4b4960d7d2fc8c",
-                key: "ad67021988e0f386b1c4c795fd241ea2",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/TELEMUNDO-LOCAL-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-6-DELAY1-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6d99d2d03a1eab1467000818382d7a41",
-                key: "4873663ebc53ea59a01e1afa39a8564f",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/CANAL-6-DELAY1-SD/default.mpd"
-            },
-            {
-                nombre: "UAT-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "56959985d1c55e486ad6fccebafba306",
-                key: "527c4cfadbdc71541db5719aade26ca9",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY1/UAT-SD/default.mpd"
-            },
-            {
-                nombre: "D99-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "0b63835457f64447a278f5f17eb1b3ba",
-                key: "5181c11c194282a464b11c5df1b650a2",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/D99-SD/default.mpd"
-            },
-            {
-                nombre: "CANAL-DEL-PUENTE-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "8e065f414e51b3155d6bf614ca2742ef",
-                key: "13799a1de02ebe25b6aef80ccb7b2b3e",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/CANAL-DEL-PUENTE-SD/default.mpd"
-            },
-            {
-                nombre: "VALLEVISION-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "4b1b22ae8ec04ff23931932c14b3c0ca",
-                key: "7d5d253fd5a6d075418e35500d9a2f0f",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/VALLEVISION-HD/default.mpd"
-            },
-            {
-                nombre: "LAS-ESTRELLAS-REGIONAL-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "7d0a10fa07d40cf6b2f23421e23d477d",
-                key: "158f49687547690777fb6dfb4c42d830",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY3/LAS-ESTRELLAS-REGIONAL-HD/default.mpd"
-            },
-            {
-                nombre: "UNIVISION-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "154b44d50c8275e00f613280e6fcd41e",
-                key: "d525ba3151425a53753ceb7d9ec9d080",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/UNIVISION-HD/default.mpd"
-            },
-            {
-                nombre: "NBC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "41d140315850c7a6a68646307cd77f3b",
-                key: "46c579744557804e89d01d09b1229d12",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/NBC-HD/default.mpd"
-            },
-            {
-                nombre: "ABC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "4333764048f11ff107d0c08ad775636e",
-                key: "f983c348e6bff5a52c39c249dcb9098f",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/ABC-HD/default.mpd"
-            },
-            {
-                nombre: "CBS-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6b3ab23c688a4b1c4d2038e98f2aeaa6",
-                key: "b7bffa9ab313c095d07dbad587d12867",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/CBS-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-23-DE-ENSENADA-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "cb4c76b89c436d4312d65fcd1ccc8373",
-                key: "209e47c70b67f835a45196f2ef6c4fdf",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS1/CANAL-23-DE-ENSENADA-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-51-DE-SAN-DIEGO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "e77042e06ba9f09373a8ebdf1897a299",
-                key: "da52cd9e4512411175470e080a17e372",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS2/CANAL-51-DE-SAN-DIEGO-HD/default.mpd"
-            },
-            {
-                nombre: "FOX-AIRE-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "054007c063d3342e70c71ad1e586d317",
-                key: "41dd7d2ef344ebee97c4becc0f4de68c",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS3/FOX-AIRE-HD/default.mpd"
-            },
-            {
-                nombre: "KPBS-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "ced27e21dc5fd7d69c2c68299617a45a",
-                key: "b427252fa6fddf7912b8902bf2ab3e29",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS2/KPBS-HD/default.mpd"
-            },
-            {
-                nombre: "NBC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "0257782b17192bad9fcebe8b99dd5930",
-                key: "971dbd45f91306f16cf71cb1e3fda5ac",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS3/NBC-HD/default.mpd"
-            },
-            {
-                nombre: "ABC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "9fd811f90d99261bedd3db90b6a9aa51",
-                key: "ba9c2a59a0b9beadfdf94e87248cf8b3",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS2/ABC-HD/default.mpd"
-            },
-            {
-                nombre: "CBS-8-DE-SAN-DIEGO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "2bfdd3b2856ddeaf255a8744ec5f71ab",
-                key: "65112890a45abafce090c88ee1dd0abb",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ENS3/CBS-8-DE-SAN-DIEGO-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-15-TV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "54735eef604dd5c778c653e5d5b176a3",
-                key: "02a9deb36b0c335656028267008b2f77",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/CANAL-15-TV-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-24-SIZART-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "b46627f944ed275227ff0dfc158517b9",
-                key: "75c8351bc73fd46e3f033832c926d2b8",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/CANAL-24-SIZART-HD/default.mpd"
-            },
-            {
-                nombre: "ZER-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "c8f4ce8406438342ee9fbd7f3587ec40",
-                key: "e7abba8200d2b245de4cf23fd034ec04",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/ZER-HD/default.mpd"
-            },
-            {
-                nombre: "NTRTV-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6f39f366a95e38e28e564d0e8964d6b4",
-                key: "1658556b867ff3e29738760ee1899ac7",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ZAC2/NTRTV-SD/default.mpd"
-            },
-            {
-                nombre: "UAQTV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "7cbaa83eaa5709e3c81fe6036020c3c1",
-                key: "ffdc39c6b410d5b47f1086cae86d8d10",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO2/UAQTV-HD/default.mpd"
-            },
-            {
-                nombre: "RTQ-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "86694b1dbf8d1488bd25178c33cbea52",
-                key: "b27c51de38f34aca01033754d67276d5",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO1/RTQ-SD/default.mpd"
-            },
-            {
-                nombre: "BAJIO-TV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "b70bcc3cd2b4c8df8239d1cdd2bb49c6",
-                key: "6590967e2f8e3a4f14e19a35fb6a299b",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO2/BAJIO-TV-HD/default.mpd"
-            },
-            {
-                nombre: "RADARTV-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "94fa060e91a7a2dcd2a8fe70626ab761",
-                key: "fd11bd7066806b309bd3004ffe04f22c",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/QRO2/RADARTV-SD/default.mpd"
-            },
-            {
-                nombre: "MEXIQUENSE-TV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "78879920d0f67c68bc06720912f029e4",
-                key: "21767eebc07cad5e4e3556499f57602e",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/MEXIQUENSE-TV-HD/default.mpd"
-            },
-            {
-                nombre: "RADIO-Y-TV-DE-HIDALGO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "df17c643cdc968099073bd03228f221e",
-                key: "cad32a51155e0d78a843298d1f004d05",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/RADIO-Y-TV-DE-HIDALGO-HD/default.mpd"
-            },
-            {
-                nombre: "SUMA-TV-UAEH-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6bd465b06cd216908b9cb003c3298b88",
-                key: "e5ac3cee6a58ee9fa9bc9b8822c18fb6",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/SUMA-TV-UAEH-HD/default.mpd"
-            },
-            {
-                nombre: "SUMA-TV-UAEH-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6bd465b06cd216908b9cb003c3298b88",
-                key: "e5ac3cee6a58ee9fa9bc9b8822c18fb6",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PACHU2/SUMA-TV-UAEH-HD/default.mpd"
-            },
-            {
-                nombre: "DIX-TV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "795f7cbeb83e0c1073c53f674610437c",
-                key: "418f5a1cb7e6113107074f7637f6b4e8",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CVA2/DIX-TV-HD/default.mpd"
-            },
-            {
-                nombre: "EL-CANAL-DE-MORELOS-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "ef339e8923f40313a8c5be88241318c2",
-                key: "af6545c2c8e9f2773451ce52e3eab633",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CVA2/EL-CANAL-DE-MORELOS-HD/default.mpd"
-            },
-            {
-                nombre: "CABLESENAL-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "3f9ef1dedeb82a8ab3795c6e1ec9afbc",
-                key: "0fb05137005a278d99614b9f0a97e196",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CVA2/CABLESENAL-SD/default.mpd"
-            },
-            {
-                nombre: "CANAL-12-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "36fe83ee9f0c68ef460d4d95040614fb",
-                key: "08ef6be3652fa806e166cb9d653bbd7c",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/POZA2/CANAL-12-SD/default.mpd"
-            },
-            {
-                nombre: "TELEVER-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "17c02798962ee3deb4b1cb17049c53da",
-                key: "8d45c3577a9298db7d6d1234bfe510b1",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/POZA2/TELEVER-HD/default.mpd"
-            },
-            {
-                nombre: "TVMAS-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "95f5f91fe3cb67e7d53967176c71a94d",
-                key: "ab27ad88b6b910f010ce041cd8f18d49",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/POZA2/TVMAS-HD/default.mpd"
-            },
-            {
-                nombre: "CORTV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "fbfe73d8429c532c70ca3d64b1efe015",
-                key: "d40a1c29f431f58a5cce092641152c6d",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/OAX1/CORTV-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-13-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "329543595553e86d171fcbfeddcdce96",
-                key: "532d40e74f004141bbea090e8a127cd2",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/OAX2/CANAL-13-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-13-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "d35b039488cb92c6460fee922bfec7b4",
-                key: "8d6c60de073e8ff298b64397e7c79fff",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/CANAL-13-HD/default.mpd"
-            },
-            {
-                nombre: "UNIVERSIDAD-JUAREZ-AUTONOMA-DE-TABASCO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "bac4279452c09fb7906caaa08305d410",
-                key: "01b50a7a43618dfdf3b4eea28338e515",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/UNIVERSIDAD-JUAREZ-AUTONOMA-DE-TABASCO-HD/default.mpd"
-            },
-            {
-                nombre: "TVT-TELEVISION-TABASQUENA-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "17cabdbff2a543a0bbab688e37d0ea35",
-                key: "4c910346f870bb172912d1bd989567a8",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/TVT-TELEVISION-TABASQUENA-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-13-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "d35b039488cb92c6460fee922bfec7b4",
-                key: "8d6c60de073e8ff298b64397e7c79fff",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/VSA1/CANAL-13-HD/default.mpd"
-            },
-            {
-                nombre: "CABLESENAL-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "bc3f25889e4ba33b5cd09cf9ab2784bb",
-                key: "e8f185a084decab4d4e6d3ab46e723a2",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/COATZA2/CABLESENAL-SD/default.mpd"
-            },
-            {
-                nombre: "CANAL-13-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "7c091692c92436bf679db0e23206cf9e",
-                key: "48366928632cf20a90b0712360666ce2",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/COATZA2/CANAL-13-HD/default.mpd"
-            },
-            {
-                nombre: "TVMAS-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "bc4673ef05e767f9b2e61c7d99cfab39",
-                key: "bd776825a39d88f21cbf38658e86c21a",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/COATZA2/TVMAS-HD/default.mpd"
-            },
-            {
-                nombre: "MAYAVISION-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "edb5ee0b66e1841f4f6258441d6d47e2",
-                key: "6482b26d726dd1fade8fbcbf73d12b18",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE2/MAYAVISION-SD/default.mpd"
-            },
-            {
-                nombre: "CABLESENAL-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "17c88521fd24b827ff58b91444fe0a14",
-                key: "9d920a9e36da74945c55306a19313da0",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE2/CABLESENAL-SD/default.mpd"
-            },
-            {
-                nombre: "TRC-TELEVISION-CAMPECHANA-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "401bad96c177be7359bd4970cb48378d",
-                key: "4b539f20569a6eb2b58497e0a3779fb4",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE1/TRC-TELEVISION-CAMPECHANA-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-13-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "bcc3ffbcc31ad4da384f332f33ab57d2",
-                key: "da35fcbedec354c4cf23ca96a9455f97",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE2/CANAL-13-HD/default.mpd"
-            },
-            {
-                nombre: "UNIVISION-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "b2bec4e7ef8551b0d09b6dc756379f8c",
-                key: "3677ed57b95018f3b2f3d0c56b0b5f6a",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/UNIVISION-HD/default.mpd"
-            },
-            {
-                nombre: "NBC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "57a8086e94628914cd45eb62fdb9c4c2",
-                key: "88aa269082c26b8202395a333ef0a3ab",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/NBC-HD/default.mpd"
-            },
-            {
-                nombre: "ABC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "ab9bdec289a601260756029cbb239fe5",
-                key: "39fdbf972d90039e11473c4ef5c950d1",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/ABC-HD/default.mpd"
-            },
-            {
-                nombre: "CBS-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "90ea061cf469e088ba6ecd6611f54f72",
-                key: "fde179e57c4c2ff439614436e549d54d",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/CBS-HD/default.mpd"
-            },
-            {
-                nombre: "TELEFUTURA-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6421fd995f18c8f114a8eec5cd644037",
-                key: "125b87bfb809d6ae2aa7c87b84b5f1dd",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/TELEFUTURA-SD/default.mpd"
-            },
-            {
-                nombre: "FOX-AIRE-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "a8714af1b27c6361e979a07f85a4360b",
-                key: "c898563382c0437bf4e09aa66eb6e8c3",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/FOX-AIRE-HD/default.mpd"
-            },
-            {
-                nombre: "CANAL-4-TELEVISA-NUEVO-LAREDO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "e53fb48edb39c50e531a52c49fe2668f",
-                key: "5863a8b4faf03a4af3ebbad9b9662b12",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD1/CANAL-4-TELEVISA-NUEVO-LAREDO-HD/default.mpd"
-            },
-            {
-                nombre: "SUPER-CHANNEL-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "85a024e769198e91f876657ea6dd243d",
-                key: "5001523761c57b7837b25fea23f94c48",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/SUPER-CHANNEL-HD/default.mpd"
-            },
-            {
-                nombre: "RCG-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "830703d7dc9c361040eb57ccf12171b7",
-                key: "540d03676483c20446203bfb3809c42e",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/RCG-SD/default.mpd"
-            },
-            {
-                nombre: "UAT-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6b253ce6d81bcf122028ca6632f5dd35",
-                key: "07c8e24894eda905ff809866d282c78a",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ALTMR1/UAT-SD/default.mpd"
-            },
-            {
-                nombre: "TELEVISA-DEL-GOLFO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "20ddc98cc5dca4545064ac618d46bd06",
-                key: "b80e3cbfe9b1376f2ad928e7d1da2e22",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ALTMR1/TELEVISA-DEL-GOLFO-HD/default.mpd"
-            },
-            {
-                nombre: "MULTIMEDIOS-TAMPICO-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "76c504f8523464a2d41d15fee363c068",
-                key: "5b60b1c4921d6e82595ffdb1a7edbbc4",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/ALTMR1/MULTIMEDIOS-TAMPICO-SD/default.mpd"
-            },
-            {
-                nombre: "INFOCABLE-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "d5a6279dfde1c76b6ee39ef8ef79fbcb",
-                key: "c019fbfb6e6988531c5d8111906b64f9",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA2/INFOCABLE-SD/default.mpd"
-            },
-            {
-                nombre: "RTQ-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "7803b5de97a9a2429597bcb7ac514b63",
-                key: "128347882001d73f05d63acc8da823bc",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA1/RTQ-SD/default.mpd"
-            },
-            {
-                nombre: "BAJIO-TV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "cad39c18dff6f16b0ed3ed6c39ae9084",
-                key: "64a0cbb09cb7de750ba932b137be1826",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA2/BAJIO-TV-HD/default.mpd"
-            },
-            {
-                nombre: "EXPRESA-TV-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "719a81d468ef1dd931331db0e066851b",
-                key: "1b5ac597e07e9dcb4c4ead68f1a2b6f5",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CLYA2/EXPRESA-TV-HD/default.mpd"
             }
     ];
 
