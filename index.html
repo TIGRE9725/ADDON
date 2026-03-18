@@ -1643,7 +1643,7 @@
 
                 // Link inteligente para DRM
                 if (canal.tipo === 'drm') {
-                    card.href = `reproductor.html?mpd=${encodeURIComponent(canal.mpd)}&kid=${encodeURIComponent(canal.kid)}&key=${encodeURIComponent(canal.key)}&nombre=${encodeURIComponent(canal.nombre)}`;
+                    card.href = `reproductor.html?mpd=${encodeURIComponent(canal.mpd)}&kid=${encodeURIComponent(canal.kid)}&key=${encodeURIComponent(canal.key)}`;
                 } else {
                     card.href = canal.url || '#';
                 }
