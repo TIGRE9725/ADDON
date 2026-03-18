@@ -1,304 +1,167 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>▶️ Reproductor TV HD</title>
+    <title>Reproductor TV</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.5/shaka-player.compiled.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.5/shaka-player.ui.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.5/controls.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background: #000;
-            color: #fff;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            overflow: hidden;
+        body { 
+            background: #000; 
+            overflow: hidden; 
             height: 100vh;
-            touch-action: none;
+            font-family: sans-serif;
         }
-
         #videoContainer {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
+            width: 100vw; 
+            height: 100vh; 
+            position: relative; 
         }
-
         #video {
-            width: 100%;
-            height: 100%;
+            width: 100%; 
+            height: 100%; 
             background: #000;
         }
-
-        #error-overlay {
+        /* OCULTAR COMPLETAMENTE LOS CONTROLES PROBLEMÁTICOS */
+        .shaka-controls-container,
+        .shaka-bottom-controls,
+        .shaka-display-container {
+            display: none !important;
+        }
+        #error-msg {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(220, 53, 69, 0.95);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 90%;
-            z-index: 1000;
-            display: none;
-        }
-
-        #loading-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #00d4ff;
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(0,212,255,0.3);
-            border-top: 3px solid #00d4ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .btn-retry {
-            background: #007bff;
+            top: 20px; 
+            left: 20px;
+            background: rgba(255,0,0,0.9);
             color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .btn-retry:hover {
-            background: #0056b3;
-        }
-
-        #channel-info {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px 15px;
+            padding: 15px;
             border-radius: 8px;
-            font-size: 0.9rem;
+            max-width: 80%;
+            display: none;
+            z-index: 1000;
+            font-size: 14px;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff88;
+            font-size: 18px;
             display: none;
         }
     </style>
 </head>
 <body>
     <div id="videoContainer">
-        <video id="video" 
-               autoplay  
-               playsinline 
-               controls
-               disablePictureInPicture
-               webkit-playsinline>
-        </video>
-        
-        <div id="channel-info"></div>
-        
-        <div id="loading-overlay">
-            <div class="spinner"></div>
-            <div>Iniciando reproductor...</div>
-        </div>
-        
-        <div id="error-overlay">
-            <h3>⚠️ Error de Reproducción</h3>
-            <p id="error-message">Cargando...</p>
-            <button class="btn-retry" onclick="initPlayer()">🔄 Reintentar</button>
-        </div>
+        <video id="video" autoplay playsinline></video>
+        <div id="loading">🔄 Cargando...</div>
+        <div id="error-msg"></div>
     </div>
 
     <script>
-        let player = null;
-        let isLoading = true;
-
         const video = document.getElementById('video');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const errorOverlay = document.getElementById('error-overlay');
-        const errorMessage = document.getElementById('error-message');
-        const channelInfo = document.getElementById('channel-info');
+        const errorMsg = document.getElementById('error-msg');
+        const loading = document.getElementById('loading');
 
         function showError(msg) {
-            console.error('Error:', msg);
-            loadingOverlay.style.display = 'none';
-            errorMessage.textContent = msg;
-            errorOverlay.style.display = 'block';
-            isLoading = false;
+            errorMsg.style.display = 'block';
+            errorMsg.textContent = msg;
+            loading.style.display = 'none';
+            console.error(msg);
         }
 
         function hideError() {
-            errorOverlay.style.display = 'none';
+            errorMsg.style.display = 'none';
         }
 
         function showLoading() {
-            loadingOverlay.style.display = 'flex';
+            loading.style.display = 'block';
             hideError();
         }
 
         function hideLoading() {
-            loadingOverlay.style.display = 'none';
-            isLoading = false;
-        }
-
-        function updateChannelInfo(nombre) {
-            if (nombre) {
-                channelInfo.textContent = `📺 ${nombre}`;
-                channelInfo.style.display = 'block';
-            }
+            loading.style.display = 'none';
         }
 
         async function initPlayer() {
             try {
                 showLoading();
                 
-                // Obtener parámetros de URL
+                // Parámetros URL
                 const params = new URLSearchParams(window.location.search);
-                const mpd = decodeURIComponent(params.get('mpd') || '');
-                const kid = decodeURIComponent(params.get('kid') || '');
-                const key = decodeURIComponent(params.get('key') || '');
-                const nombre = decodeURIComponent(params.get('nombre') || '');
+                const mpd = params.get('mpd');
+                const kid = params.get('kid');
+                const key = params.get('key');
 
                 if (!mpd) {
-                    throw new Error('❌ No se encontró el stream del canal');
+                    throw new Error("No se encontró el MPD");
                 }
 
-                updateChannelInfo(nombre);
-
-                // Verificar Shaka Player
-                if (!shaka.Player.isBrowserSupported()) {
-                    throw new Error('❌ Tu navegador no soporta reproducción DASH');
+                // Destroy player anterior
+                if (window.player) {
+                    await window.player.destroy();
                 }
 
-                // Destruir player anterior si existe
-                if (player) {
-                    await player.destroy();
-                }
+                // Polyfills
+                shaka.polyfill.installAll();
 
-                // Crear nuevo player
-                player = new shaka.Player(video);
+                // Nuevo player
+                window.player = new shaka.Player(video);
                 
-                // Configuración optimizada
-                player.configure({
+                // CONFIGURACIÓN MÍNIMA Y ESTABLE (COMO TU VERSIÓN ORIGINAL)
+                const config = {
+                    abr: { enabled: false }, // Desactivar ABR para estabilidad
                     streaming: {
-                        bufferingGoal: 30,
-                        bufferBehind: 90,
-                        rebufferingGoal: 15
-                    },
-                    abr: {
-                        enabled: true
-                    },
-                    playback: {
-                        autostartInLowLatencyMode: true
+                        bufferingGoal: 20,
+                        bufferBehind: 30
                     }
-                });
+                };
 
-                // Configurar DRM si hay claves
+                // DRM solo si hay claves
                 if (kid && key) {
-                    const clearKeys = {};
-                    clearKeys[kid] = key;
-                    player.configure('drm.clearKeys', clearKeys);
+                    config.drm = {
+                        clearKeys: { [kid]: key }
+                    };
                 }
 
-                // Event listeners
-                player.addEventListener('loading', () => {
-                    console.log('🔄 Cargando manifest...');
+                window.player.configure(config);
+
+                // Eventos mínimos
+                window.player.addEventListener('error', (event) => {
+                    showError("Error: " + event.detail.code);
                 });
 
-                player.addEventListener('loaded', () => {
-                    console.log('✅ Manifest cargado');
-                    hideLoading();
-                });
-
-                player.addEventListener('unloading', () => {
-                    console.log('🔄 Descargando...');
-                });
-
-                player.addEventListener('error', (event) => {
-                    const error = event.detail;
-                    console.error('Shaka Player Error:', error);
-                    
-                    let msg = 'Error desconocido';
-                    switch (error.code) {
-                        case shaka.util.Error.CODE_PLAYER:
-                            msg = 'Error del reproductor';
-                            break;
-                        case shaka.util.Error.CODE_BUFFERING:
-                            msg = 'Buffer insuficiente';
-                            break;
-                        case shaka.util.Error.CODE_NETWORK:
-                            msg = '🌐 Error de conexión';
-                            break;
-                        case shaka.util.Error.CODE_MANIFEST:
-                            msg = '❌ Stream no válido';
-                            break;
-                        case 7001:
-                        case 7002:
-                            msg = '🔑 Error de DRM/claves';
-                            break;
-                    }
-                    
-                    showError(`❌ ${msg}\nCódigo: ${error.code}`);
-                });
-
-                player.addEventListener('trackschanged', () => {
-                    console.log('✅ Pistas de video cargadas');
-                    video.play().catch(e => console.log('Autoplay bloqueado:', e));
-                    hideLoading();
-                });
-
-                // Cargar stream
-                console.log('🚀 Cargando:', mpd);
-                await player.load(mpd);
+                // Cargar
+                await window.player.load(mpd);
                 
-            } catch (error) {
-                console.error('Error initPlayer:', error);
-                showError(`❌ ${error.message}`);
+                // ÉXITO
+                hideLoading();
+                video.play();
+                
+            } catch (e) {
+                showError("No se pudo cargar: " + e.message);
             }
         }
 
-        // Inicializar cuando Shaka esté listo
-        async function init() {
-            shaka.polyfill.installAll();
-            
-            if (shaka.Player.isBrowserSupported()) {
-                await initPlayer();
-            } else {
-                showError('❌ Navegador no compatible');
-            }
-        }
-
-        // Iniciar cuando el DOM esté listo
+        // INICIAR CUANDO TODO ESTÉ LISTO
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
+            document.addEventListener('DOMContentLoaded', () => {
+                shaka.polyfill.installAll().then(initPlayer);
+            });
         } else {
-            init();
+            shaka.polyfill.installAll().then(initPlayer);
         }
 
-        // Cleanup al cerrar
-        window.addEventListener('beforeunload', async () => {
-            if (player) {
-                await player.destroy();
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (window.player) {
+                window.player.destroy();
             }
         });
-
-        // Prevenir gestos no deseados
-        document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('selectstart', e => e.preventDefault());
     </script>
 </body>
 </html>
