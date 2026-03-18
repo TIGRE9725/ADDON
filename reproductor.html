@@ -1,167 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reproductor TV</title>
+    <title>Reproductor Universal</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: #000; 
-            overflow: hidden; 
-            height: 100vh;
-            font-family: sans-serif;
-        }
-        #videoContainer {
-            width: 100vw; 
-            height: 100vh; 
-            position: relative; 
-        }
-        #video {
-            width: 100%; 
-            height: 100%; 
-            background: #000;
-        }
-        /* OCULTAR COMPLETAMENTE LOS CONTROLES PROBLEMÁTICOS */
-        .shaka-controls-container,
-        .shaka-bottom-controls,
-        .shaka-display-container {
-            display: none !important;
-        }
+        body { margin: 0; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
+        /* El contenedor debe ocupar toda la pantalla */
+        .player-container { width: 100vw; height: 100vh; position: relative; }
+        video { width: 100%; height: 100%; }
+        
+        /* Mensaje de error visible para entender qué pasa */
         #error-msg {
             position: absolute;
-            top: 20px; 
-            left: 20px;
-            background: rgba(255,0,0,0.9);
-            color: white;
+            top: 20px; left: 20px;
+            background: rgba(255,0,0,0.7);
             padding: 15px;
             border-radius: 8px;
-            max-width: 80%;
-            display: none;
+            display: none; /* Oculto por defecto */
             z-index: 1000;
-            font-size: 14px;
-        }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #00ff88;
-            font-size: 18px;
-            display: none;
+            max-width: 80%;
         }
     </style>
 </head>
 <body>
-    <div id="videoContainer">
-        <video id="video" autoplay playsinline></video>
-        <div id="loading">🔄 Cargando...</div>
-        <div id="error-msg"></div>
+
+    <div id="error-msg"></div>
+
+    <div class="player-container" data-shaka-player-container>
+        <video autoplay data-shaka-player id="video"></video>
     </div>
 
     <script>
-        const video = document.getElementById('video');
-        const errorMsg = document.getElementById('error-msg');
-        const loading = document.getElementById('loading');
+        const showError = (msg) => {
+            const errDiv = document.getElementById('error-msg');
+            errDiv.style.display = 'block';
+            errDiv.innerText = "⚠️ ERROR: " + msg;
+        };
 
-        function showError(msg) {
-            errorMsg.style.display = 'block';
-            errorMsg.textContent = msg;
-            loading.style.display = 'none';
-            console.error(msg);
-        }
+        async function init() {
+            // 1. Leer datos de la URL
+            const params = new URLSearchParams(window.location.search);
+            const mpd = params.get('mpd');
+            const kid = params.get('kid');
+            const key = params.get('key');
 
-        function hideError() {
-            errorMsg.style.display = 'none';
-        }
-
-        function showLoading() {
-            loading.style.display = 'block';
-            hideError();
-        }
-
-        function hideLoading() {
-            loading.style.display = 'none';
-        }
-
-        async function initPlayer() {
-            try {
-                showLoading();
-                
-                // Parámetros URL
-                const params = new URLSearchParams(window.location.search);
-                const mpd = params.get('mpd');
-                const kid = params.get('kid');
-                const key = params.get('key');
-
-                if (!mpd) {
-                    throw new Error("No se encontró el MPD");
-                }
-
-                // Destroy player anterior
-                if (window.player) {
-                    await window.player.destroy();
-                }
-
-                // Polyfills
-                shaka.polyfill.installAll();
-
-                // Nuevo player
-                window.player = new shaka.Player(video);
-                
-                // CONFIGURACIÓN MÍNIMA Y ESTABLE (COMO TU VERSIÓN ORIGINAL)
-                const config = {
-                    abr: { enabled: false }, // Desactivar ABR para estabilidad
-                    streaming: {
-                        bufferingGoal: 20,
-                        bufferBehind: 30
-                    }
-                };
-
-                // DRM solo si hay claves
-                if (kid && key) {
-                    config.drm = {
-                        clearKeys: { [kid]: key }
-                    };
-                }
-
-                window.player.configure(config);
-
-                // Eventos mínimos
-                window.player.addEventListener('error', (event) => {
-                    showError("Error: " + event.detail.code);
-                });
-
-                // Cargar
-                await window.player.load(mpd);
-                
-                // ÉXITO
-                hideLoading();
-                video.play();
-                
-            } catch (e) {
-                showError("No se pudo cargar: " + e.message);
+            if (!mpd) {
+                showError("No se encontró el link del video (MPD) en la URL.");
+                return;
             }
-        }
 
-        // INICIAR CUANDO TODO ESTÉ LISTO
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                shaka.polyfill.installAll().then(initPlayer);
+            // 2. Configurar Player
+            const video = document.getElementById('video');
+            const ui = video['ui'];
+            const controls = ui.getControls();
+            const player = controls.getPlayer();
+
+            // Manejo de errores de Shaka
+            player.addEventListener('error', (event) => {
+                showError("Error del Player: Código " + event.detail.code);
+                console.error('Error code', event.detail.code, 'object', event.detail);
             });
-        } else {
-            shaka.polyfill.installAll().then(initPlayer);
+
+            const config = {
+                preferredAudioLanguage: 'es', 
+            };
+
+            // Solo agregamos DRM si hay claves (para permitir canales abiertos también)
+            if (kid && key) {
+                const clearKeys = {};
+                clearKeys[kid] = key;
+                config.drm = { clearKeys: clearKeys };
+            }
+
+            player.configure(config);
+
+            try {
+                console.log("Intentando cargar:", mpd);
+                await player.load(mpd);
+                console.log('Video cargado. Iniciando...');
+            } catch (e) {
+                showError("No se pudo cargar el video. Verifica tu conexión o si el link/claves han expirado.");
+                console.error('Error load:', e);
+            }
         }
 
-        // Cleanup
-        window.addEventListener('beforeunload', () => {
-            if (window.player) {
-                window.player.destroy();
-            }
-        });
+        document.addEventListener('shaka-ui-loaded', init);
     </script>
 </body>
 </html>
