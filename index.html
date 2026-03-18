@@ -3,106 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Launcher de Streaming</title>
+    <title>📺 Mi Launcher TV - Canales HD</title>
+    <meta name="description" content="Launcher de canales HD con reproductor DRM integrado">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
     <style>
-        /* --- ESTILOS GENERALES --- */
         :root {
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
-            --text-color: #ffffff;
-            --accent-color: #007bff;
-            --hover-color: #3d3d3d;
+            --bg-primary: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+            --card-bg: rgba(45, 45, 45, 0.9);
+            --card-hover: rgba(60, 60, 60, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #ff6b6b;
+            --accent-sports: #00ff88;
+            --glow: 0 0 20px rgba(0, 212, 255, 0.5);
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: 'Segoe UI', -apple-system, system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 15px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeInDown 1s ease-out;
         }
 
         h1 {
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 1.5rem;
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            margin: 0 0 10px 0;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: var(--glow);
+            letter-spacing: 1px;
         }
 
-        /* --- GRILLA RESPONSIVA --- */
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
         .grid-container {
             display: grid;
-            /* Esto hace la magia responsive: rellena columnas automáticamente */
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 18px;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 10px;
         }
 
-        /* --- TARJETAS (RECTÁNGULOS) --- */
         .card {
-            background-color: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
-            text-decoration: none; /* Quitar subrayado del link */
-            color: var(--text-color);
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px 15px;
+            text-decoration: none;
+            color: var(--text-primary);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            aspect-ratio: 1 / 1; /* Mantiene forma cuadrada/rectangular */
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 1;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .card:hover::before {
+            left: 100%;
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            background-color: var(--hover-color);
-            box-shadow: 0 10px 15px rgba(0,0,0,0.5);
-            border-bottom: 3px solid var(--accent-color);
+            transform: translateY(-8px) scale(1.02);
+            background: var(--card-hover);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), var(--glow);
+            border-color: var(--accent-primary);
         }
 
-        /* --- ICONOS Y TEXTO --- */
-        .card-icon {
-            font-size: 3rem; /* Tamaño del icono/emoji */
-            margin-bottom: 10px;
+        .card:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-primary);
         }
-        
-        .card-icon img {
-            width: 60px; /* Si usas imágenes en vez de emojis */
-            height: 60px;
-            object-fit: contain;
+
+        .card-icon {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            margin-bottom: 12px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .card-title {
-            font-size: 1.1rem;
-            font-weight: bold;
+            font-size: 0.85rem;
+            font-weight: 600;
             text-align: center;
+            line-height: 1.2;
+            max-height: 2.4em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
 
-        /* Ajuste para móviles muy pequeños */
-        @media (max-width: 400px) {
-            .grid-container {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 50vh;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .grid-container { 
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 15px;
             }
+        }
+
+        @media (max-width: 480px) {
+            .grid-container { 
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 12px;
+            }
+            h1 { font-size: 1.4rem; }
+        }
+
+        /* Mejoras para TV/Remoto */
+        .card[tabindex="0"]:focus {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-primary);
         }
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>📺 Mi Launcher TV</h1>
+        <p class="subtitle">Canales HD en vivo • Deportes • Series • Películas</p>
+        <div class="stats" id="stats" style="display: none;">
+            <span><strong id="total-channels">-</strong> Canales</span>
+            <span><strong id="sports-channels">-</strong> Deportes</span>
+        </div>
+    </div>
 
-    <h1>Mis Canales</h1>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Cargando canales...</div>
+    </div>
 
-<div class="grid-container" id="app-grid"></div>
+    <div class="grid-container" id="app-grid" style="display: none;"></div>
 
-<script>
-    // --- LISTA DE CANALES ---
-    // Aquí solo pones los datos puros.
-    // tipo: 'drm' (para usar tu reproductor) o 'web' (para ir a youtube o google)
-    const canales = [
+    <script>
+        // Lista de canales (mantenida igual pero organizada)
+        const canales = [
              {
                 nombre: "AZTECA-7-HD-H265",
                 icono: "🌍",
@@ -1496,45 +1618,82 @@
             }
     ];
 
-    const gridContainer = document.getElementById('app-grid');
-
-    canales.forEach((canal, index) => {
-        const card = document.createElement('a');
-        card.className = 'card';
-        
-        // tabindex para el control remoto
-        card.setAttribute('tabindex', '0');
-        if(index === 0) card.id = "first-item";
-
-        // --- LÓGICA INTELIGENTE DE LINKS ---
-        if (canal.tipo === 'drm') {
-            // Si es DRM, construimos el link hacia NUESTRO reproductor enviando los datos
-            // Usamos encodeURIComponent para evitar errores con caracteres raros
-            card.href = `reproductor.html?mpd=${encodeURIComponent(canal.mpd)}&kid=${encodeURIComponent(canal.kid)}&key=${encodeURIComponent(canal.key)}`;
-        } else {
-            // Si es web normal, usa la url directa
-            card.href = canal.url;
+        // Función para contar estadísticas
+        function calcularEstadisticas() {
+            const total = canales.length;
+            const deportes = canales.filter(c => c.icono === '⚽' || c.nombre.toLowerCase().includes('espn') || 
+                                               c.nombre.toLowerCase().includes('fox') || 
+                                               c.nombre.toLowerCase().includes('tudn') ||
+                                               c.nombre.toLowerCase().includes('tyc')).length;
+            
+            document.getElementById('total-channels').textContent = total;
+            document.getElementById('sports-channels').textContent = deportes;
+            document.getElementById('stats').style.display = 'flex';
         }
 
-        card.innerHTML = `
-            <div class="card-icon">${canal.icono}</div>
-            <div class="card-title">${canal.nombre}</div>
-        `;
+        function crearLauncher() {
+            const gridContainer = document.getElementById('app-grid');
+            const loading = document.getElementById('loading');
+            
+            canales.forEach((canal, index) => {
+                const card = document.createElement('a');
+                card.className = 'card';
+                card.tabIndex = 0;
+                if (index === 0) card.id = 'first-item';
 
-        // Soporte para tecla Enter del control remoto
-        card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                window.location.href = card.href;
+                // Link inteligente para DRM
+                if (canal.tipo === 'drm') {
+                    card.href = `reproductor.html?mpd=${encodeURIComponent(canal.mpd)}&kid=${encodeURIComponent(canal.kid)}&key=${encodeURIComponent(canal.key)}`;
+                } else {
+                    card.href = canal.url || '#';
+                }
+
+                card.innerHTML = `
+                    <div class="card-icon">${canal.icono}</div>
+                    <div class="card-title">${canal.nombre}</div>
+                `;
+
+                // Navegación por teclado/remoto
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        window.location.href = card.href;
+                    }
+                });
+
+                gridContainer.appendChild(card);
+            });
+
+            // Mostrar grid y ocultar loading
+            setTimeout(() => {
+                loading.style.display = 'none';
+                gridContainer.style.display = 'grid';
+                calcularEstadisticas();
+                
+                // Focus automático al primer elemento
+                const firstItem = document.getElementById('first-item');
+                if (firstItem) firstItem.focus();
+            }, 800);
+        }
+
+        // Cargar al iniciar
+        window.addEventListener('load', crearLauncher);
+
+        // Prevenir zoom en móviles/TV
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
             }
         });
 
-        gridContainer.appendChild(card);
-    });
-
-    window.onload = () => {
-        const first = document.getElementById('first-item');
-        if(first) first.focus();
-    };
-</script>
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
 </body>
 </html>
