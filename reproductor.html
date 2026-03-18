@@ -1,222 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>▶️ Reproductor TV HD</title>
+    <title>Reproductor Universal</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.5/shaka-player.ui.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.5/controls.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { margin: 0; background: #000; overflow: hidden; color: white; font-family: sans-serif; }
+        /* El contenedor debe ocupar toda la pantalla */
+        .player-container { width: 100vw; height: 100vh; position: relative; }
+        video { width: 100%; height: 100%; }
         
-        body {
-            background: #000;
-            color: #fff;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            touch-action: none;
-            user-select: none;
-        }
-
-        .player-container {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        /* Controles personalizados */
-        .shaka-controls-container {
-            background: linear-gradient(transparent, rgba(0,0,0,0.7));
-        }
-
-        /* Overlay de información */
-        #info-overlay {
+        /* Mensaje de error visible para entender qué pasa */
+        #error-msg {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(20px);
+            top: 20px; left: 20px;
+            background: rgba(255,0,0,0.7);
             padding: 15px;
-            border-radius: 12px;
-            display: none;
-            z-index: 1001;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        #error-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(220, 53, 69, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 90%;
-            display: none;
-            z-index: 1002;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-
-        .btn-retry {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 1rem;
-            cursor: pointer;
-            margin-top: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-retry:hover {
-            background: #0056b3;
-            transform: scale(1.05);
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255,255,255,0.2);
-            border-top: 4px solid #00d4ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Optimizaciones TV */
-        @media (min-width: 1200px) {
-            .shaka-bottom-controls {
-                bottom: 30px !important;
-            }
+            border-radius: 8px;
+            display: none; /* Oculto por defecto */
+            z-index: 1000;
+            max-width: 80%;
         }
     </style>
 </head>
 <body>
+
+    <div id="error-msg"></div>
+
     <div class="player-container" data-shaka-player-container>
-        <video autoplay muted playsinline data-shaka-player id="video"></video>
-    </div>
-
-    <div id="info-overlay">
-        <div id="channel-name"></div>
-        <div id="status" style="font-size: 0.9rem; color: #00ff88; margin-top: 5px;">🔴 EN VIVO</div>
-    </div>
-
-    <div id="error-overlay">
-        <div class="loading-spinner" id="error-spinner" style="display: none;"></div>
-        <h3>⚠️ Error de Reproducción</h3>
-        <p id="error-message">Cargando canal...</p>
-        <button class="btn-retry" onclick="retryLoad()">🔄 Reintentar</button>
+        <video autoplay data-shaka-player id="video"></video>
     </div>
 
     <script>
-        const video = document.getElementById('video');
-        const infoOverlay = document.getElementById('info-overlay');
-        const errorOverlay = document.getElementById('error-overlay');
-        const errorMessage = document.getElementById('error-message');
-        const channelName = document.getElementById('channel-name');
-        const errorSpinner = document.getElementById('error-spinner');
-
-        let currentPlayer = null;
-        let currentManifest = '';
-
-        function showError(msg, showSpinner = false) {
-            errorMessage.textContent = msg;
-            errorSpinner.style.display = showSpinner ? 'block' : 'none';
-            errorOverlay.style.display = 'block';
-        }
-
-        function hideError() {
-            errorOverlay.style.display = 'none';
-        }
-
-        function showInfo(channel) {
-            channelName.textContent = channel || 'Canal en vivo';
-            infoOverlay.style.display = 'block';
-        }
-
-        function hideInfo() {
-            infoOverlay.style.display = 'none';
-        }
-
-        window.retryLoad = async function() {
-            hideError();
-            await initPlayer();
+        const showError = (msg) => {
+            const errDiv = document.getElementById('error-msg');
+            errDiv.style.display = 'block';
+            errDiv.innerText = "⚠️ ERROR: " + msg;
         };
 
-        async function initPlayer() {
+        async function init() {
+            // 1. Leer datos de la URL
+            const params = new URLSearchParams(window.location.search);
+            const mpd = params.get('mpd');
+            const kid = params.get('kid');
+            const key = params.get('key');
+
+            if (!mpd) {
+                showError("No se encontró el link del video (MPD) en la URL.");
+                return;
+            }
+
+            // 2. Configurar Player
+            const video = document.getElementById('video');
+            const ui = video['ui'];
+            const controls = ui.getControls();
+            const player = controls.getPlayer();
+
+            // Manejo de errores de Shaka
+            player.addEventListener('error', (event) => {
+                showError("Error del Player: Código " + event.detail.code);
+                console.error('Error code', event.detail.code, 'object', event.detail);
+            });
+
+            const config = {
+                preferredAudioLanguage: 'es', 
+            };
+
+            // Solo agregamos DRM si hay claves (para permitir canales abiertos también)
+            if (kid && key) {
+                const clearKeys = {};
+                clearKeys[kid] = key;
+                config.drm = { clearKeys: clearKeys };
+            }
+
+            player.configure(config);
+
             try {
-                // Leer parámetros
-                const params = new URLSearchParams(window.location.search);
-                const mpd = params.get('mpd');
-                const kid = params.get('kid');
-                const key = params.get('key');
-                const nombre = params.get('nombre') || 'Canal HD';
+                console.log("Intentando cargar:", mpd);
+                await player.load(mpd);
+                console.log('Video cargado. Iniciando...');
+            } catch (e) {
+                showError("No se pudo cargar el video. Verifica tu conexión o si el link/claves han expirado.");
+                console.error('Error load:', e);
+            }
+        }
 
-                if (!mpd) {
-                    showError('❌ No se encontró el stream del canal');
-                    return;
-                }
-
-                showInfo(nombre);
-                hideError();
-
-                // Configurar Shaka Player
-                const player = new shaka.Player(video);
-                currentPlayer = player;
-
-                // Configuración optimizada
-                player.configure({
-                    streaming: {
-                        bufferingGoal: 30,
-                        bufferBehind: 60,
-                        rebufferingGoal: 15
-                    },
-                    abr: {
-                        enabled: true
-                    },
-                    preferredAudioLanguage: 'es',
-                    preferredTextLanguage: 'es'
-                });
-
-                // Configuración DRM si existe
-                if (kid && key) {
-                    const clearKeys = { [kid]: key };
-                    player.configure('drm.clearKeys', clearKeys);
-                }
-
-                // Eventos
-                player.addEventListener('error', (event) => {
-                    console.error('Shaka error:', event.detail);
-                    const code = event.detail.code;
-                    let msg = 'Error desconocido';
-                    
-                    switch(code) {
-                        case 1001: msg = '❌ Stream no disponible'; break;
-                        case 1002: msg = '❌ Formato no soportado'; break;
-                        case 7001: msg = '🔑 Error de claves DRM'; break;
-                        case 3016: msg = '🌐 Error de red'; break;
-                        default
+        document.addEventListener('shaka-ui-loaded', init);
     </script>
 </body>
 </html>
