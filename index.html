@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📺 Mi Launcher TV - Canales HD</title>
+    <title>📺 Mi Launcher TV</title>
     <meta name="description" content="Launcher de canales HD con reproductor DRM integrado">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
     <style>
@@ -129,6 +129,18 @@
             margin-bottom: 12px;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
             transition: transform 0.3s ease;
+            /* Nuevas reglas para contenedores de imagen */
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 10px; /* Opcional: redondea las esquinas del logo */
         }
 
         .card:hover .card-icon {
@@ -208,7 +220,7 @@
 <body>
     <div class="header">
         <h1>📺 Mi Launcher TV</h1>
-        <p class="subtitle">Canales HD en vivo • Deportes • Series • Películas</p>
+        <p class="subtitle">Canales HD en vivo</p>
     </div>
 
     <div class="loading" id="loading">
@@ -223,7 +235,7 @@
         const canales = [
              {
                 nombre: "AZTECA-7-HD-H265",
-                icono: "🌍",
+                icono: "http://dsmx.tmsimg.com/assets/s116154_h3_ba.png",
                 tipo: "drm",
                 kid: "032ff89fbebc3ddb96b84ab3a54a12cf",
                 key: "34eb53948023be25f66f7ef5fb63a34d",
@@ -492,6 +504,78 @@
                 kid: "6b3ab23c688a4b1c4d2038e98f2aeaa6",
                 key: "b7bffa9ab313c095d07dbad587d12867",
                 mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/REY2/CBS-HD/default.mpd"
+            },
+            {
+                nombre: "NLD2/UNIVISION-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "b2bec4e7ef8551b0d09b6dc756379f8c",
+                key: "3677ed57b95018f3b2f3d0c56b0b5f6a",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/UNIVISION-HD/default.mpd"
+            },
+            {
+                nombre: "NLD2/NBC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "57a8086e94628914cd45eb62fdb9c4c2",
+                key: "88aa269082c26b8202395a333ef0a3ab",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/NBC-HD/default.mpd"
+            },
+            {
+                nombre: "NLD2/ABC-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "ab9bdec289a601260756029cbb239fe5",
+                key: "39fdbf972d90039e11473c4ef5c950d1",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/ABC-HD/default.mpd"
+            },
+            {
+                nombre: "NLD2/CBS-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "90ea061cf469e088ba6ecd6611f54f72",
+                key: "fde179e57c4c2ff439614436e549d54d",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/CBS-HD/default.mpd"
+            },
+            {
+                nombre: "NLD2/TELEFUTURA-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "6421fd995f18c8f114a8eec5cd644037",
+                key: "125b87bfb809d6ae2aa7c87b84b5f1dd",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/TELEFUTURA-SD/default.mpd"
+            },
+            {
+                nombre: "NLD2/FOX-AIRE-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "a8714af1b27c6361e979a07f85a4360b",
+                key: "c898563382c0437bf4e09aa66eb6e8c3",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/FOX-AIRE-HD/default.mpd"
+            },
+            {
+                nombre: "NLD1/CANAL-4-TELEVISA-NUEVO-LAREDO-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "e53fb48edb39c50e531a52c49fe2668f",
+                key: "5863a8b4faf03a4af3ebbad9b9662b12",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD1/CANAL-4-TELEVISA-NUEVO-LAREDO-HD/default.mpd"
+            },
+            {
+                nombre: "PDS1/SUPER-CHANNEL-HD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "85a024e769198e91f876657ea6dd243d",
+                key: "5001523761c57b7837b25fea23f94c48",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/SUPER-CHANNEL-HD/default.mpd"
+            },
+            {
+                nombre: "PDS1/RCG-SD",
+                icono: "🌍",
+                tipo: "drm",
+                kid: "830703d7dc9c361040eb57ccf12171b7",
+                key: "540d03676483c20446203bfb3809c42e",
+                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/RCG-SD/default.mpd"
             },
             {
                 nombre: "ENS1/CANAL-23-DE-ENSENADA-HD",
@@ -796,78 +880,6 @@
                 kid: "bcc3ffbcc31ad4da384f332f33ab57d2",
                 key: "da35fcbedec354c4cf23ca96a9455f97",
                 mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/CPE2/CANAL-13-HD/default.mpd"
-            },
-            {
-                nombre: "NLD2/UNIVISION-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "b2bec4e7ef8551b0d09b6dc756379f8c",
-                key: "3677ed57b95018f3b2f3d0c56b0b5f6a",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/UNIVISION-HD/default.mpd"
-            },
-            {
-                nombre: "NLD2/NBC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "57a8086e94628914cd45eb62fdb9c4c2",
-                key: "88aa269082c26b8202395a333ef0a3ab",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/NBC-HD/default.mpd"
-            },
-            {
-                nombre: "NLD2/ABC-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "ab9bdec289a601260756029cbb239fe5",
-                key: "39fdbf972d90039e11473c4ef5c950d1",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/ABC-HD/default.mpd"
-            },
-            {
-                nombre: "NLD2/CBS-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "90ea061cf469e088ba6ecd6611f54f72",
-                key: "fde179e57c4c2ff439614436e549d54d",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/CBS-HD/default.mpd"
-            },
-            {
-                nombre: "NLD2/TELEFUTURA-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "6421fd995f18c8f114a8eec5cd644037",
-                key: "125b87bfb809d6ae2aa7c87b84b5f1dd",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/TELEFUTURA-SD/default.mpd"
-            },
-            {
-                nombre: "NLD2/FOX-AIRE-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "a8714af1b27c6361e979a07f85a4360b",
-                key: "c898563382c0437bf4e09aa66eb6e8c3",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD2/FOX-AIRE-HD/default.mpd"
-            },
-            {
-                nombre: "NLD1/CANAL-4-TELEVISA-NUEVO-LAREDO-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "e53fb48edb39c50e531a52c49fe2668f",
-                key: "5863a8b4faf03a4af3ebbad9b9662b12",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/NLD1/CANAL-4-TELEVISA-NUEVO-LAREDO-HD/default.mpd"
-            },
-            {
-                nombre: "PDS1/SUPER-CHANNEL-HD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "85a024e769198e91f876657ea6dd243d",
-                key: "5001523761c57b7837b25fea23f94c48",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/SUPER-CHANNEL-HD/default.mpd"
-            },
-            {
-                nombre: "PDS1/RCG-SD",
-                icono: "🌍",
-                tipo: "drm",
-                kid: "830703d7dc9c361040eb57ccf12171b7",
-                key: "540d03676483c20446203bfb3809c42e",
-                mpd: "https://zap-live2-ott.izzigo.tv/out/u/dash/PDS1/RCG-SD/default.mpd"
             },
             {
                 nombre: "ALTMR1/UAT-SD",
@@ -1652,8 +1664,12 @@
                     card.href = canal.url || '#';
                 }
 
+                const esImagen = canal.icono.includes('http') || canal.icono.includes('.png') || canal.icono.includes('.jpg');
+
                 card.innerHTML = `
-                    <div class="card-icon">${canal.icono}</div>
+                    <div class="card-icon">
+                        ${esImagen ? `<img src="${canal.icono}" alt="${canal.nombre}" style="width: 100%; height: 100%; object-fit: contain;">` : canal.icono}
+                    </div>
                     <div class="card-title">${canal.nombre}</div>
                 `;
 
