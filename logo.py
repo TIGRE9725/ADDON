@@ -47,5 +47,5 @@ def procesar_canales(limite=3000):
     print(f"\nProceso terminado. Se descargaron {descargados} logos en total.")
 
 if __name__ == "__main__":
-    # Escanear del ID 1 al 3000
+    # Escanear del ID 1 al 3000 
     procesar_canales(3000)
