@@ -232,23 +232,20 @@
     <div class="grid-container" id="app-grid" style="display: none;"></div>
 
     <script>
-        // 1. EL MENSAJERO: Agarramos lo que el usuario escriba en la URL
+        
 		const parametros = new URLSearchParams(window.location.search);
 		const tokenWeb = parametros.get('token');
 
-		// 2. LA BÓVEDA: Le pasamos ese token directamente al Worker
+		
 		const urlBoveda = `https://yellow.vixtvpremium.workers.dev/azul.json?token=${tokenWeb}`;
 
-		// Si el usuario no escribió ningún token en la barra de direcciones, destruimos la página por si acaso
+		
 		if (!tokenWeb) {
 			document.body.innerHTML = "<h2 style='color: white; text-align: center; margin-top: 20%;'>404 - Not Found</h2>";
 			document.body.style.background = "black";
 			throw new Error("Sin token");
 		}
 
-        // =======================================================================
-        // 2. LA BÓVEDA INVISIBLE (Carga del JSON por CORS)
-        // =======================================================================
         let canales = [];
 
         async function cargarDatosSeguros() {
@@ -257,7 +254,7 @@
                 if (!response.ok) throw new Error("Bloqueado por el Worker (CORS o Seguridad)");
                 
                 canales = await response.json();
-                crearLauncher(); // Construimos la interfaz solo si los datos llegaron
+                crearLauncher(); 
 
             } catch (error) {
                 console.error("Fallo de seguridad o conexión:", error);
